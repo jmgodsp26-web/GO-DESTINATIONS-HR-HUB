@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { createServer as createViteServer } from 'vite';
 import { db } from './server/db.js';
+import { getFirestoreDb } from './server/firestore.js';
 import { UserProfile } from './src/types.js';
 
 // Extend Express Request to include authenticated user
@@ -13,7 +14,10 @@ export interface AuthenticatedRequest extends Request {
 }
 
 const app = express();
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+const PORT = 3000;
+
+// Enable trust proxy for Cloud Run and reverse proxy environments (nginx)
+app.set('trust proxy', 1);
 
 // --- PRODUCTION SECURITY HEADERS (HELMET) ---
 // Note: frameguard is disabled to ensure proper rendering within the AI Studio embedded preview iframe.
@@ -33,6 +37,10 @@ const apiLimiter = rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: {
+    xForwardedForHeader: false,
+    forwardedHeader: false,
+  },
   message: { error: 'Too many requests from this IP. Please try again in 15 minutes.' },
 });
 
@@ -42,6 +50,10 @@ const loginLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: {
+    xForwardedForHeader: false,
+    forwardedHeader: false,
+  },
   message: { error: 'Too many login attempts from this IP. Please wait 15 minutes before trying again.' },
 });
 
@@ -82,6 +94,15 @@ function adminOnlyMiddleware(req: AuthenticatedRequest, res: Response, next: Nex
 }
 
 // --- API ROUTES ---
+
+// Health & System Status
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    firestoreInitialized: Boolean(getFirestoreDb()),
+  });
+});
 
 // 1. Auth routes
 app.post('/api/auth/login', (req: Request, res: Response) => {
@@ -550,9 +571,19 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 // --- CLIENT SERVING VIA VITE MIDDLEWARE ---
 async function start() {
+  try {
+    await db.initFirestoreSync();
+  } catch (syncErr) {
+    console.warn('[Firestore] Initial sync warning:', syncErr);
+  }
+
   if (process.env.NODE_ENV !== 'production') {
+    const isHmrDisabled = process.env.DISABLE_HMR === 'true';
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: isHmrDisabled ? false : undefined,
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);

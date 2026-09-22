@@ -24,7 +24,8 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
   const { showToast } = useToast();
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'leaves'>('all');
 
-  const filteredNotifications = notifications.filter((notif) => {
+  const notifList = notifications || [];
+  const filteredNotifications = notifList.filter((notif) => {
     if (activeFilter === 'unread') return !notif.read;
     if (activeFilter === 'leaves') {
       return (
@@ -199,7 +200,13 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
                       type="button"
                       onClick={() => {
                         markNotificationRead(notif.id);
-                        onNavigateTab(notif.link_tab);
+                        const targetTab =
+                          notif.link_tab === 'requests' || notif.link_tab === 'leave-requests'
+                            ? (user?.role === 'admin' ? 'leave-requests' : 'leave')
+                            : notif.link_tab === 'history' || notif.link_tab === 'leave'
+                            ? (user?.role === 'admin' ? 'leave-requests' : 'leave')
+                            : notif.link_tab;
+                        onNavigateTab(targetTab);
                       }}
                       className="flex items-center space-x-1 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors"
                     >

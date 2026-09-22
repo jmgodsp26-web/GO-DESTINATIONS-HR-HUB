@@ -28,5 +28,21 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read, write: if true;
     }
+
+    match /notifications/{notifId} {
+      allow read, write: if true;
+    }
+
+    match /employee_documents/{docId} {
+      allow read, write: if true;
+    }
+
+    match /leave_transactions/{txId} {
+      allow read, write: if true;
+    }
+
+    match /_connection_test/{docId} {
+      allow read, write: if true;
+    }
   }
 }

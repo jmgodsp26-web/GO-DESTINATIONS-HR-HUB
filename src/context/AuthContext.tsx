@@ -65,6 +65,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [refreshUser]);
 
+  // Periodic polling to keep notification counter badge real-time
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      refreshNotifications();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [user, refreshNotifications]);
+
   const login = async (identifier: string, passwordHash?: string) => {
     setIsLoading(true);
     setError(null);

@@ -152,11 +152,13 @@ export const Header: React.FC<HeaderProps> = ({
               id="notifications-btn"
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
-              aria-label="Notifications"
+              aria-label={`Notifications (${unreadCount} unread)`}
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ED8F2B] rounded-full ring-2 ring-white animate-pulse" />
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#ED8F2B] text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white shadow-xs tabular-nums leading-none">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
               )}
             </button>
 
@@ -193,10 +195,14 @@ export const Header: React.FC<HeaderProps> = ({
                         key={notif.id}
                         onClick={() => {
                           markNotificationRead(notif.id);
-                          if (notif.link_tab) {
-                            onTabChange(notif.link_tab);
-                            setShowNotifications(false);
-                          }
+                          const targetTab =
+                            notif.link_tab === 'requests' || notif.link_tab === 'leave-requests'
+                              ? (isAdmin ? 'leave-requests' : 'leave')
+                              : notif.link_tab === 'history' || notif.link_tab === 'leave'
+                              ? (isAdmin ? 'leave-requests' : 'leave')
+                              : notif.link_tab || 'notifications';
+                          onTabChange(targetTab);
+                          setShowNotifications(false);
                         }}
                         className={`p-3.5 hover:bg-slate-50/80 transition-colors cursor-pointer flex items-start space-x-3 ${
                           !notif.read ? 'bg-[#3A5D83]/5' : ''
@@ -226,6 +232,19 @@ export const Header: React.FC<HeaderProps> = ({
                       </div>
                     ))
                   )}
+                </div>
+
+                <div className="p-2.5 bg-slate-50 border-t border-slate-200/80">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onTabChange('notifications');
+                      setShowNotifications(false);
+                    }}
+                    className="w-full text-center py-1.5 px-3 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold transition-colors"
+                  >
+                    View All in Notifications Center →
+                  </button>
                 </div>
               </div>
             )}

@@ -24,10 +24,17 @@ import {
   deleteEmployeeFromFirestore,
   saveLeaveBalanceToFirestore,
   saveLeaveRequestToFirestore,
+  deleteLeaveRequestFromFirestore,
+  saveLeaveTransactionToFirestore,
   saveHolidayToFirestore,
   deleteHolidayFromFirestore,
   saveHolidayShiftToFirestore,
+  deleteHolidayShiftFromFirestore,
   saveAuditLogToFirestore,
+  saveNotificationToFirestore,
+  deleteNotificationFromFirestore,
+  saveEmployeeDocumentToFirestore,
+  deleteEmployeeDocumentFromFirestore,
   saveCompanySettingsToFirestore,
   loadDataFromFirestore,
   seedInitialFirestoreData,
@@ -75,24 +82,43 @@ class HRDatabase {
         console.log(`[Firestore] Syncing ${cloudData.employees.length} employees, ${cloudData.leaveRequests.length} leave requests, ${cloudData.leaveBalances.length} balances from cloud Firestore.`);
 
         if (cloudData.users && cloudData.users.length > 0) {
-          this.users = cloudData.users;
+          // Merge with initial seeded users to preserve master password hashes if cloud hash is blank
+          this.users = cloudData.users.map((cu) => {
+            const defaultUser = this.users.find((du) => du.id === cu.id || du.email === cu.email);
+            return {
+              ...cu,
+              passwordHash: cu.passwordHash || (defaultUser ? defaultUser.passwordHash : ''),
+            };
+          });
         } else {
-          this.users = cloudData.employees.map((emp) => ({
-            id: emp.id,
-            email: emp.email,
-            passwordHash: '',
-            profile: emp,
-          }));
+          this.users = cloudData.employees.map((emp) => {
+            const defaultUser = this.users.find((du) => du.id === emp.id || du.email === emp.email);
+            return {
+              id: emp.id,
+              email: emp.email,
+              passwordHash: defaultUser ? defaultUser.passwordHash : '',
+              profile: emp,
+            };
+          });
         }
 
         this.leaveBalances = cloudData.leaveBalances || [];
         this.leaveRequests = cloudData.leaveRequests || [];
+        if (cloudData.leaveTransactions && cloudData.leaveTransactions.length > 0) {
+          this.leaveTransactions = cloudData.leaveTransactions;
+        }
         if (cloudData.holidays && cloudData.holidays.length > 0) {
           this.holidays = cloudData.holidays;
         }
         this.holidayShifts = cloudData.holidayShifts || [];
         if (cloudData.auditLogs && cloudData.auditLogs.length > 0) {
           this.auditLogs = cloudData.auditLogs;
+        }
+        if (cloudData.notifications && cloudData.notifications.length > 0) {
+          this.notifications = cloudData.notifications;
+        }
+        if (cloudData.employeeDocuments && cloudData.employeeDocuments.length > 0) {
+          this.employeeDocuments = cloudData.employeeDocuments;
         }
         if (cloudData.companySettings) {
           this.companySettings = {
@@ -885,7 +911,9 @@ class HRDatabase {
     });
 
     // Cloud Firestore persistence
-    saveEmployeeToFirestore(user.profile).catch((e) => console.error('[Firestore] Update employee error:', e));
+    saveEmployeeToFirestore(user.profile, { email: user.email, passwordHash: user.passwordHash }).catch((e) =>
+      console.error('[Firestore] Update employee error:', e)
+    );
 
     return user.profile;
   }
@@ -1110,12 +1138,15 @@ class HRDatabase {
     };
 
     this.leaveRequests.unshift(newRequest);
+    saveLeaveRequestToFirestore(newRequest).catch((e) =>
+      console.error('[Firestore] Save leave request error:', e)
+    );
 
     const halfDayLabel = isHalfDay ? ` (Half-Day ${halfDayPeriod === 'morning' ? 'Morning' : 'Afternoon'})` : '';
 
     const admins = this.users.filter((u) => u.profile.role === 'admin');
     for (const admin of admins) {
-      this.notifications.unshift({
+      const notifItem: NotificationItem = {
         id: 'notif-' + Math.random().toString(36).substring(2, 9),
         user_id: admin.id,
         title: 'New Leave Request',
@@ -1123,8 +1154,12 @@ class HRDatabase {
         type: 'new_request',
         read: false,
         created_at: new Date().toISOString(),
-        link_tab: 'requests',
-      });
+        link_tab: 'leave-requests',
+      };
+      this.notifications.unshift(notifItem);
+      saveNotificationToFirestore(notifItem).catch((e) =>
+        console.error('[Firestore] Save notification error:', e)
+      );
     }
 
     return newRequest;
@@ -1168,6 +1203,9 @@ class HRDatabase {
         if (balance) {
           balance.used_days += request.total_days;
           balance.updated_at = new Date().toISOString();
+          saveLeaveBalanceToFirestore(balance).catch((e) =>
+            console.error('[Firestore] Save balance error:', e)
+          );
         }
       }
 
@@ -1177,7 +1215,7 @@ class HRDatabase {
         : '';
 
       // Record Leave Deduction Transaction (or unpaid leave record)
-      this.leaveTransactions.unshift({
+      const deductionTx: LeaveTransaction = {
         id: 'tx-' + Math.random().toString(36).substring(2, 9),
         employee_id: request.employee_id,
         employee_name: employeeName,
@@ -1193,13 +1231,20 @@ class HRDatabase {
         performed_by_id: adminUser.id,
         performed_by_name: adminUser.full_name,
         created_at: new Date().toISOString(),
-      });
+      };
+      this.leaveTransactions.unshift(deductionTx);
+      saveLeaveTransactionToFirestore(deductionTx).catch((e) =>
+        console.error('[Firestore] Save transaction error:', e)
+      );
 
       request.status = 'Approved';
       request.admin_note = adminNote || undefined;
       request.reviewed_at = new Date().toISOString();
       request.reviewed_by = adminUser.id;
       request.reviewed_by_name = adminUser.full_name;
+      saveLeaveRequestToFirestore(request).catch((e) =>
+        console.error('[Firestore] Save leave request error:', e)
+      );
 
       this.logAudit({
         action: 'Leave approved',
@@ -1211,7 +1256,7 @@ class HRDatabase {
         details: `Approved ${request.leave_type} (${request.total_days} days${periodDesc}) for ${employeeName} on ${request.start_date}${request.start_date !== request.end_date ? ' to ' + request.end_date : ''}.`,
       });
 
-      this.notifications.unshift({
+      const approvedNotif: NotificationItem = {
         id: 'notif-' + Math.random().toString(36).substring(2, 9),
         user_id: request.employee_id,
         title: 'Leave Approved',
@@ -1219,14 +1264,21 @@ class HRDatabase {
         type: 'leave_approved',
         read: false,
         created_at: new Date().toISOString(),
-        link_tab: 'history',
-      });
+        link_tab: 'leave',
+      };
+      this.notifications.unshift(approvedNotif);
+      saveNotificationToFirestore(approvedNotif).catch((e) =>
+        console.error('[Firestore] Save notification error:', e)
+      );
     } else {
       request.status = 'Rejected';
       request.admin_note = adminNote || undefined;
       request.reviewed_at = new Date().toISOString();
       request.reviewed_by = adminUser.id;
       request.reviewed_by_name = adminUser.full_name;
+      saveLeaveRequestToFirestore(request).catch((e) =>
+        console.error('[Firestore] Save leave request error:', e)
+      );
 
       this.logAudit({
         action: 'Leave rejected',
@@ -1238,7 +1290,7 @@ class HRDatabase {
         details: `Rejected ${request.leave_type} (${request.total_days} days) for ${employeeName}.${adminNote ? ` Reason: "${adminNote}"` : ''}`,
       });
 
-      this.notifications.unshift({
+      const rejectedNotif: NotificationItem = {
         id: 'notif-' + Math.random().toString(36).substring(2, 9),
         user_id: request.employee_id,
         title: 'Leave Request Rejected',
@@ -1246,8 +1298,12 @@ class HRDatabase {
         type: 'leave_rejected',
         read: false,
         created_at: new Date().toISOString(),
-        link_tab: 'history',
-      });
+        link_tab: 'leave',
+      };
+      this.notifications.unshift(rejectedNotif);
+      saveNotificationToFirestore(rejectedNotif).catch((e) =>
+        console.error('[Firestore] Save notification error:', e)
+      );
     }
 
     return request;
@@ -1377,6 +1433,9 @@ class HRDatabase {
     };
 
     this.holidays.push(holiday);
+    saveHolidayToFirestore(holiday).catch((e) =>
+      console.error('[Firestore] Save holiday error:', e)
+    );
 
     this.logAudit({
       action: 'Holiday created',
@@ -1409,11 +1468,18 @@ class HRDatabase {
     if (data.is_active !== undefined) holiday.is_active = data.is_active;
     holiday.updated_at = new Date().toISOString();
 
+    saveHolidayToFirestore(holiday).catch((e) =>
+      console.error('[Firestore] Save holiday error:', e)
+    );
+
     // Keep shift requests date synchronized
     for (const shift of this.holidayShifts) {
       if (shift.holiday_id === id) {
         shift.holiday_name = holiday.name;
         shift.holiday_date = holiday.date;
+        saveHolidayShiftToFirestore(shift).catch((e) =>
+          console.error('[Firestore] Save holiday shift error:', e)
+        );
       }
     }
 
@@ -1437,6 +1503,10 @@ class HRDatabase {
     holiday.is_active = !holiday.is_active;
     holiday.updated_at = new Date().toISOString();
 
+    saveHolidayToFirestore(holiday).catch((e) =>
+      console.error('[Firestore] Save holiday error:', e)
+    );
+
     this.logAudit({
       action: 'Holiday status toggled',
       user_id: adminUser.id,
@@ -1455,6 +1525,10 @@ class HRDatabase {
     if (index === -1) throw new Error('Holiday not found');
     const removed = this.holidays[index];
     this.holidays.splice(index, 1);
+
+    deleteHolidayFromFirestore(id).catch((e) =>
+      console.error('[Firestore] Delete holiday error:', e)
+    );
 
     this.logAudit({
       action: 'Holiday deleted',
@@ -1535,11 +1609,14 @@ class HRDatabase {
     };
 
     this.holidayShifts.unshift(newShift);
+    saveHolidayShiftToFirestore(newShift).catch((e) =>
+      console.error('[Firestore] Save holiday shift error:', e)
+    );
 
     // Notify admins
     const admins = this.users.filter((u) => u.profile.role === 'admin');
     for (const admin of admins) {
-      this.notifications.unshift({
+      const notifItem: NotificationItem = {
         id: 'notif-' + Math.random().toString(36).substring(2, 9),
         user_id: admin.id,
         title: 'New Holiday Shift Request',
@@ -1548,7 +1625,11 @@ class HRDatabase {
         read: false,
         created_at: new Date().toISOString(),
         link_tab: 'admin-dashboard',
-      });
+      };
+      this.notifications.unshift(notifItem);
+      saveNotificationToFirestore(notifItem).catch((e) =>
+        console.error('[Firestore] Save notification error:', e)
+      );
     }
 
     return newShift;
@@ -1611,6 +1692,10 @@ class HRDatabase {
       this.holidayShifts.unshift(shift);
     }
 
+    saveHolidayShiftToFirestore(shift).catch((e) =>
+      console.error('[Firestore] Save holiday shift error:', e)
+    );
+
     // Award holiday work credit if Approved and not already credited
     if (status === 'Approved') {
       const existingCredit = this.leaveTransactions.find(
@@ -1634,10 +1719,13 @@ class HRDatabase {
         }
         creditBal.allocated_days += 1;
         creditBal.updated_at = new Date().toISOString();
+        saveLeaveBalanceToFirestore(creditBal).catch((e) =>
+          console.error('[Firestore] Save balance error:', e)
+        );
 
         const remaining = creditBal.allocated_days - creditBal.used_days;
 
-        this.leaveTransactions.unshift({
+        const creditTx: LeaveTransaction = {
           id: 'tx-hol-' + Math.random().toString(36).substring(2, 9),
           employee_id: employee.id,
           employee_name: employee.full_name,
@@ -1653,7 +1741,11 @@ class HRDatabase {
           performed_by_id: adminUser.id,
           performed_by_name: adminUser.full_name,
           created_at: new Date().toISOString(),
-        });
+        };
+        this.leaveTransactions.unshift(creditTx);
+        saveLeaveTransactionToFirestore(creditTx).catch((e) =>
+          console.error('[Firestore] Save transaction error:', e)
+        );
       }
     }
 
@@ -1667,7 +1759,7 @@ class HRDatabase {
       details: `Assigned holiday working shift (${shift.working_hours}) to ${employee.full_name} for ${holiday.name} (${holiday.date}).`,
     });
 
-    this.notifications.unshift({
+    const notifItem: NotificationItem = {
       id: 'notif-' + Math.random().toString(36).substring(2, 9),
       user_id: employee.id,
       title: 'Holiday Shift Scheduled',
@@ -1676,7 +1768,11 @@ class HRDatabase {
       read: false,
       created_at: new Date().toISOString(),
       link_tab: 'holidays',
-    });
+    };
+    this.notifications.unshift(notifItem);
+    saveNotificationToFirestore(notifItem).catch((e) =>
+      console.error('[Firestore] Save notification error:', e)
+    );
 
     return shift;
   }
@@ -1705,6 +1801,10 @@ class HRDatabase {
       shift.approved_by_name = adminUser.full_name;
       shift.approved_at = new Date().toISOString();
 
+      saveHolidayShiftToFirestore(shift).catch((e) =>
+        console.error('[Firestore] Save holiday shift error:', e)
+      );
+
       // DUPLICATE CREDIT CHECK
       const existingCredit = this.leaveTransactions.find(
         (t) => t.reference_id === shift.id && t.transaction_type === 'holiday_credit'
@@ -1729,10 +1829,13 @@ class HRDatabase {
 
         creditBal.allocated_days += 1;
         creditBal.updated_at = new Date().toISOString();
+        saveLeaveBalanceToFirestore(creditBal).catch((e) =>
+          console.error('[Firestore] Save balance error:', e)
+        );
 
         const currentRemaining = creditBal.allocated_days - creditBal.used_days;
 
-        this.leaveTransactions.unshift({
+        const creditTx: LeaveTransaction = {
           id: 'tx-hol-' + Math.random().toString(36).substring(2, 9),
           employee_id: shift.employee_id,
           employee_name: employeeName,
@@ -1748,7 +1851,11 @@ class HRDatabase {
           performed_by_id: adminUser.id,
           performed_by_name: adminUser.full_name,
           created_at: new Date().toISOString(),
-        });
+        };
+        this.leaveTransactions.unshift(creditTx);
+        saveLeaveTransactionToFirestore(creditTx).catch((e) =>
+          console.error('[Firestore] Save transaction error:', e)
+        );
       }
 
       this.logAudit({
@@ -1761,7 +1868,7 @@ class HRDatabase {
         details: `Approved holiday shift for ${shift.employee_name} on ${shift.holiday_name} (${shift.holiday_date}). +1 Holiday Work Credit awarded.`,
       });
 
-      this.notifications.unshift({
+      const approvedNotif: NotificationItem = {
         id: 'notif-' + Math.random().toString(36).substring(2, 9),
         user_id: shift.employee_id,
         title: 'Holiday Shift Approved',
@@ -1770,8 +1877,16 @@ class HRDatabase {
         read: false,
         created_at: new Date().toISOString(),
         link_tab: 'leave',
-      });
+      };
+      this.notifications.unshift(approvedNotif);
+      saveNotificationToFirestore(approvedNotif).catch((e) =>
+        console.error('[Firestore] Save notification error:', e)
+      );
     } else {
+      saveHolidayShiftToFirestore(shift).catch((e) =>
+        console.error('[Firestore] Save holiday shift error:', e)
+      );
+
       // If previously approved, reverse credit
       if (previousStatus === 'Approved') {
         const creditTx = this.leaveTransactions.find(
@@ -1784,11 +1899,14 @@ class HRDatabase {
           if (creditBal) {
             creditBal.allocated_days = Math.max(0, creditBal.allocated_days - 1);
             creditBal.updated_at = new Date().toISOString();
+            saveLeaveBalanceToFirestore(creditBal).catch((e) =>
+              console.error('[Firestore] Save balance error:', e)
+            );
           }
 
           const currentRemaining = creditBal ? creditBal.allocated_days - creditBal.used_days : 0;
 
-          this.leaveTransactions.unshift({
+          const revTx: LeaveTransaction = {
             id: 'tx-rev-' + Math.random().toString(36).substring(2, 9),
             employee_id: shift.employee_id,
             employee_name: employeeName,
@@ -1804,7 +1922,11 @@ class HRDatabase {
             performed_by_id: adminUser.id,
             performed_by_name: adminUser.full_name,
             created_at: new Date().toISOString(),
-          });
+          };
+          this.leaveTransactions.unshift(revTx);
+          saveLeaveTransactionToFirestore(revTx).catch((e) =>
+            console.error('[Firestore] Save transaction error:', e)
+          );
         }
       }
 
@@ -1818,7 +1940,7 @@ class HRDatabase {
         details: `Rejected holiday shift for ${shift.employee_name} on ${shift.holiday_name} (${shift.holiday_date}).${adminNote ? ` Reason: "${adminNote}"` : ''}`,
       });
 
-      this.notifications.unshift({
+      const rejectedNotif: NotificationItem = {
         id: 'notif-' + Math.random().toString(36).substring(2, 9),
         user_id: shift.employee_id,
         title: 'Holiday Shift Rejected',
@@ -1827,7 +1949,11 @@ class HRDatabase {
         read: false,
         created_at: new Date().toISOString(),
         link_tab: 'holidays',
-      });
+      };
+      this.notifications.unshift(rejectedNotif);
+      saveNotificationToFirestore(rejectedNotif).catch((e) =>
+        console.error('[Firestore] Save notification error:', e)
+      );
     }
 
     return shift;
@@ -1843,6 +1969,9 @@ class HRDatabase {
     const wasApproved = shift.status === 'Approved';
     shift.status = 'Cancelled';
     shift.updated_at = new Date().toISOString();
+    saveHolidayShiftToFirestore(shift).catch((e) =>
+      console.error('[Firestore] Save holiday shift error:', e)
+    );
 
     if (wasApproved) {
       const creditTx = this.leaveTransactions.find(
@@ -1855,11 +1984,14 @@ class HRDatabase {
         if (creditBal) {
           creditBal.allocated_days = Math.max(0, creditBal.allocated_days - 1);
           creditBal.updated_at = new Date().toISOString();
+          saveLeaveBalanceToFirestore(creditBal).catch((e) =>
+            console.error('[Firestore] Save balance error:', e)
+          );
         }
 
         const currentRemaining = creditBal ? creditBal.allocated_days - creditBal.used_days : 0;
 
-        this.leaveTransactions.unshift({
+        const revTx: LeaveTransaction = {
           id: 'tx-rev-' + Math.random().toString(36).substring(2, 9),
           employee_id: shift.employee_id,
           employee_name: shift.employee_name,
@@ -1875,7 +2007,11 @@ class HRDatabase {
           performed_by_id: user.id,
           performed_by_name: user.full_name,
           created_at: new Date().toISOString(),
-        });
+        };
+        this.leaveTransactions.unshift(revTx);
+        saveLeaveTransactionToFirestore(revTx).catch((e) =>
+          console.error('[Firestore] Save transaction error:', e)
+        );
       }
     }
 
@@ -1920,6 +2056,9 @@ class HRDatabase {
         l.reviewed_at = new Date().toISOString();
         l.reviewed_by = adminUser.id;
         l.reviewed_by_name = adminUser.full_name;
+        saveLeaveRequestToFirestore(l).catch((e) =>
+          console.error('[Firestore] Save leave error:', e)
+        );
 
         // Restore balance
         const bal = this.leaveBalances.find(
@@ -1928,12 +2067,15 @@ class HRDatabase {
         if (bal) {
           bal.used_days = Math.max(0, bal.used_days - l.total_days);
           bal.updated_at = new Date().toISOString();
+          saveLeaveBalanceToFirestore(bal).catch((e) =>
+            console.error('[Firestore] Save balance error:', e)
+          );
         }
 
         const currentRem = bal ? bal.allocated_days - bal.used_days : 0;
 
         // Record reversal transaction
-        this.leaveTransactions.unshift({
+        const revTx: LeaveTransaction = {
           id: 'tx-rev-leave-' + Math.random().toString(36).substring(2, 9),
           employee_id: employeeId,
           employee_name: employee.full_name,
@@ -1947,11 +2089,19 @@ class HRDatabase {
           performed_by_id: adminUser.id,
           performed_by_name: adminUser.full_name,
           created_at: new Date().toISOString(),
-        });
+        };
+        this.leaveTransactions.unshift(revTx);
+        saveLeaveTransactionToFirestore(revTx).catch((e) =>
+          console.error('[Firestore] Save transaction error:', e)
+        );
       }
 
       // Ensure shift has holiday credit
       for (const s of shifts) {
+        saveHolidayShiftToFirestore(s).catch((e) =>
+          console.error('[Firestore] Save shift error:', e)
+        );
+
         const existingCredit = this.leaveTransactions.find(
           (t) => t.reference_id === s.id && t.transaction_type === 'holiday_credit'
         );
@@ -1973,8 +2123,11 @@ class HRDatabase {
           }
           creditBal.allocated_days += 1;
           creditBal.updated_at = new Date().toISOString();
+          saveLeaveBalanceToFirestore(creditBal).catch((e) =>
+            console.error('[Firestore] Save balance error:', e)
+          );
 
-          this.leaveTransactions.unshift({
+          const creditTx: LeaveTransaction = {
             id: 'tx-hol-' + Math.random().toString(36).substring(2, 9),
             employee_id: employeeId,
             employee_name: employee.full_name,
@@ -1990,7 +2143,11 @@ class HRDatabase {
             performed_by_id: adminUser.id,
             performed_by_name: adminUser.full_name,
             created_at: new Date().toISOString(),
-          });
+          };
+          this.leaveTransactions.unshift(creditTx);
+          saveLeaveTransactionToFirestore(creditTx).catch((e) =>
+            console.error('[Firestore] Save transaction error:', e)
+          );
         }
       }
     } else {
@@ -1999,6 +2156,9 @@ class HRDatabase {
         s.status = 'Cancelled';
         s.admin_note = 'Cancelled by Admin in favor of approved leave request.';
         s.updated_at = new Date().toISOString();
+        saveHolidayShiftToFirestore(s).catch((e) =>
+          console.error('[Firestore] Save shift error:', e)
+        );
 
         const creditTx = this.leaveTransactions.find(
           (t) => t.reference_id === s.id && t.transaction_type === 'holiday_credit'
@@ -2010,11 +2170,14 @@ class HRDatabase {
           if (creditBal) {
             creditBal.allocated_days = Math.max(0, creditBal.allocated_days - 1);
             creditBal.updated_at = new Date().toISOString();
+            saveLeaveBalanceToFirestore(creditBal).catch((e) =>
+              console.error('[Firestore] Save balance error:', e)
+            );
           }
 
           const rem = creditBal ? creditBal.allocated_days - creditBal.used_days : 0;
 
-          this.leaveTransactions.unshift({
+          const revTx: LeaveTransaction = {
             id: 'tx-rev-' + Math.random().toString(36).substring(2, 9),
             employee_id: employeeId,
             employee_name: employee.full_name,
@@ -2030,7 +2193,11 @@ class HRDatabase {
             performed_by_id: adminUser.id,
             performed_by_name: adminUser.full_name,
             created_at: new Date().toISOString(),
-          });
+          };
+          this.leaveTransactions.unshift(revTx);
+          saveLeaveTransactionToFirestore(revTx).catch((e) =>
+            console.error('[Firestore] Save transaction error:', e)
+          );
         }
       }
     }
@@ -2045,7 +2212,7 @@ class HRDatabase {
       details: `Resolved holiday conflict for ${employee.full_name} on ${holidayDate} by keeping ${resolution === 'keep_shift' ? 'Working Shift' : 'Leave'}.`,
     });
 
-    this.notifications.unshift({
+    const conflictNotif: NotificationItem = {
       id: 'notif-' + Math.random().toString(36).substring(2, 9),
       user_id: employeeId,
       title: 'Holiday Schedule Conflict Resolved',
@@ -2053,8 +2220,12 @@ class HRDatabase {
       type: 'system',
       read: false,
       created_at: new Date().toISOString(),
-      link_tab: resolution === 'keep_shift' ? 'holidays' : 'history',
-    });
+      link_tab: resolution === 'keep_shift' ? 'holidays' : 'leave',
+    };
+    this.notifications.unshift(conflictNotif);
+    saveNotificationToFirestore(conflictNotif).catch((e) =>
+      console.error('[Firestore] Save notification error:', e)
+    );
 
     return { success: true };
   }
@@ -2104,6 +2275,9 @@ class HRDatabase {
 
     balance.allocated_days = Math.max(0, balance.allocated_days + amount);
     balance.updated_at = new Date().toISOString();
+    saveLeaveBalanceToFirestore(balance).catch((e) =>
+      console.error('[Firestore] Save balance error:', e)
+    );
 
     const remaining = balance.allocated_days - balance.used_days;
 
@@ -2123,6 +2297,9 @@ class HRDatabase {
     };
 
     this.leaveTransactions.unshift(transaction);
+    saveLeaveTransactionToFirestore(transaction).catch((e) =>
+      console.error('[Firestore] Save transaction error:', e)
+    );
 
     this.logAudit({
       action: 'Leave balance adjusted',
@@ -2134,7 +2311,7 @@ class HRDatabase {
       details: `Adjusted ${leaveType} balance for ${employee.full_name} by ${amount >= 0 ? '+' : ''}${amount} days. Reason: "${reason.trim()}". New allocated balance: ${balance.allocated_days} days.`,
     });
 
-    this.notifications.unshift({
+    const notifItem: NotificationItem = {
       id: 'notif-' + Math.random().toString(36).substring(2, 9),
       user_id: employeeId,
       title: 'Leave Balance Adjusted',
@@ -2143,7 +2320,11 @@ class HRDatabase {
       read: false,
       created_at: new Date().toISOString(),
       link_tab: 'leave',
-    });
+    };
+    this.notifications.unshift(notifItem);
+    saveNotificationToFirestore(notifItem).catch((e) =>
+      console.error('[Firestore] Save notification error:', e)
+    );
 
     return { success: true, transaction, balance };
   }
@@ -2406,24 +2587,44 @@ class HRDatabase {
       timestamp: new Date().toISOString(),
     };
     this.auditLogs.unshift(log);
+    saveAuditLogToFirestore(log).catch((e) =>
+      console.error('[Firestore] Save audit log error:', e)
+    );
   }
 
   // --- NOTIFICATIONS ---
   public getNotifications(userId: string): NotificationItem[] {
     return this.notifications
       .filter((n) => n.user_id === userId)
+      .map((n) => ({
+        ...n,
+        link_tab:
+          n.link_tab === 'requests'
+            ? 'leave-requests'
+            : n.link_tab === 'history'
+            ? 'leave'
+            : n.link_tab,
+      }))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }
 
   public markNotificationRead(notifId: string, userId: string) {
     const notif = this.notifications.find((n) => n.id === notifId && n.user_id === userId);
-    if (notif) notif.read = true;
+    if (notif) {
+      notif.read = true;
+      saveNotificationToFirestore(notif).catch((e) =>
+        console.error('[Firestore] Save notification error:', e)
+      );
+    }
   }
 
   public markAllNotificationsRead(userId: string) {
     for (const n of this.notifications) {
       if (n.user_id === userId) {
         n.read = true;
+        saveNotificationToFirestore(n).catch((e) =>
+          console.error('[Firestore] Save notification error:', e)
+        );
       }
     }
   }
@@ -2454,6 +2655,9 @@ class HRDatabase {
       uploaded_by_name: doc.uploaded_by_name,
     };
     this.employeeDocuments.unshift(newDoc);
+    saveEmployeeDocumentToFirestore(newDoc).catch((e) =>
+      console.error('[Firestore] Save employee document error:', e)
+    );
     return newDoc;
   }
 
@@ -2462,7 +2666,13 @@ class HRDatabase {
     this.employeeDocuments = this.employeeDocuments.filter(
       (d) => !(d.id === docId && d.employee_id === employeeId)
     );
-    return this.employeeDocuments.length < prevLen;
+    if (this.employeeDocuments.length < prevLen) {
+      deleteEmployeeDocumentFromFirestore(docId).catch((e) =>
+        console.error('[Firestore] Delete employee document error:', e)
+      );
+      return true;
+    }
+    return false;
   }
 
   private companySettings: Record<string, any> = {
@@ -2492,6 +2702,9 @@ class HRDatabase {
       ...updates,
       updated_at: new Date().toISOString(),
     };
+    saveCompanySettingsToFirestore(this.companySettings).catch((e) =>
+      console.error('[Firestore] Save company settings error:', e)
+    );
     return { ...this.companySettings };
   }
 }

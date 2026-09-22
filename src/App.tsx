@@ -72,13 +72,25 @@ const MainApp: React.FC = () => {
 
   const isAdmin = user.role === 'admin';
 
+  const handleTabChange = (targetTab: string) => {
+    let normalized = targetTab;
+    if (normalized === 'requests' || normalized === 'admin-requests') {
+      normalized = isAdmin ? 'leave-requests' : 'leave';
+    } else if (normalized === 'history' || normalized === 'my-leaves') {
+      normalized = isAdmin ? 'leave-requests' : 'leave';
+    } else if (normalized === 'dashboard') {
+      normalized = isAdmin ? 'admin-dashboard' : 'dashboard';
+    }
+    setCurrentTab(normalized);
+  };
+
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans antialiased">
       {/* Top Navigation Header */}
       <Header
         onMenuToggle={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
         currentTab={currentTab}
-        onTabChange={(tab) => setCurrentTab(tab)}
+        onTabChange={handleTabChange}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
       />
 
@@ -86,7 +98,7 @@ const MainApp: React.FC = () => {
         {/* Navigation Sidebar */}
         <Sidebar
           currentTab={currentTab}
-          onTabChange={(tab) => setCurrentTab(tab)}
+          onTabChange={handleTabChange}
           isOpen={isMobileSidebarOpen}
           onClose={() => setIsMobileSidebarOpen(false)}
         />
@@ -96,38 +108,77 @@ const MainApp: React.FC = () => {
           {/* Employee Views */}
           {!isAdmin && (
             <>
-              {currentTab === 'dashboard' && (
-                <EmployeeDashboard onNavigateTab={(tab) => setCurrentTab(tab)} />
+              {(currentTab === 'dashboard' || currentTab === 'employee-dashboard') && (
+                <EmployeeDashboard onNavigateTab={handleTabChange} />
               )}
               {currentTab === 'profile' && <EmployeeProfile />}
-              {currentTab === 'leave' && <LeaveHistory />}
+              {(currentTab === 'leave' || currentTab === 'requests' || currentTab === 'history') && (
+                <LeaveHistory />
+              )}
               {currentTab === 'calendar' && <CompanyCalendar />}
               {currentTab === 'holidays' && <HolidaysView />}
               {currentTab === 'documents' && <DocumentsView />}
               {currentTab === 'notifications' && (
-                <NotificationsView onNavigateTab={(tab) => setCurrentTab(tab)} />
+                <NotificationsView onNavigateTab={handleTabChange} />
               )}
               {currentTab === 'settings' && <SettingsView />}
+              {/* Fallback for unrecognized tab */}
+              {![
+                'dashboard',
+                'employee-dashboard',
+                'profile',
+                'leave',
+                'requests',
+                'history',
+                'calendar',
+                'holidays',
+                'documents',
+                'notifications',
+                'settings',
+              ].includes(currentTab) && (
+                <EmployeeDashboard onNavigateTab={handleTabChange} />
+              )}
             </>
           )}
 
           {/* Admin Views */}
           {isAdmin && (
             <>
-              {currentTab === 'admin-dashboard' && (
-                <AdminDashboard onNavigateTab={(tab) => setCurrentTab(tab)} />
+              {(currentTab === 'admin-dashboard' || currentTab === 'dashboard') && (
+                <AdminDashboard onNavigateTab={handleTabChange} />
               )}
               {currentTab === 'employees' && <EmployeeManagement />}
-              {currentTab === 'leave-requests' && <AdminLeaveRequests />}
+              {(currentTab === 'leave-requests' || currentTab === 'requests' || currentTab === 'leave' || currentTab === 'history') && (
+                <AdminLeaveRequests />
+              )}
               {currentTab === 'calendar' && <CompanyCalendar />}
               {currentTab === 'holidays' && <HolidaysView />}
               {currentTab === 'documents' && <DocumentsView />}
               {currentTab === 'reports' && <ReportsView />}
               {currentTab === 'audit-logs' && <AuditLogsView />}
               {currentTab === 'notifications' && (
-                <NotificationsView onNavigateTab={(tab) => setCurrentTab(tab)} />
+                <NotificationsView onNavigateTab={handleTabChange} />
               )}
               {currentTab === 'settings' && <SettingsView />}
+              {/* Fallback for unrecognized tab */}
+              {![
+                'admin-dashboard',
+                'dashboard',
+                'employees',
+                'leave-requests',
+                'requests',
+                'leave',
+                'history',
+                'calendar',
+                'holidays',
+                'documents',
+                'reports',
+                'audit-logs',
+                'notifications',
+                'settings',
+              ].includes(currentTab) && (
+                <AdminDashboard onNavigateTab={handleTabChange} />
+              )}
             </>
           )}
         </main>
