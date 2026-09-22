@@ -1,0 +1,6 @@
+{
+  "name": "GO Destinations HR Hub",
+  "description": "Clean, professional internal HR portal for GO Destinations — leave management, employee directory, company holidays, and approvals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

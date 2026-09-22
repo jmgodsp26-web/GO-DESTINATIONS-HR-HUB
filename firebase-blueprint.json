@@ -1,0 +1,131 @@
+{
+  "entities": {
+    "Employee": {
+      "title": "Employee",
+      "description": "Employee profile and employment record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "first_name": { "type": "string" },
+        "last_name": { "type": "string" },
+        "full_name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "department": { "type": "string" },
+        "job_title": { "type": "string" },
+        "is_pc": { "type": "boolean" },
+        "role": { "type": "string", "enum": ["employee", "hr_admin"] },
+        "status": { "type": "string", "enum": ["Active", "Inactive"] },
+        "hire_date": { "type": "string" }
+      },
+      "required": ["id", "full_name", "email", "department", "job_title", "role"]
+    },
+    "LeaveBalance": {
+      "title": "LeaveBalance",
+      "description": "Annual leave allocation and consumption quota",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employee_id": { "type": "string" },
+        "leave_type": { "type": "string" },
+        "allocated_days": { "type": "number" },
+        "used_days": { "type": "number" },
+        "year": { "type": "number" }
+      },
+      "required": ["id", "employee_id", "leave_type", "allocated_days", "used_days", "year"]
+    },
+    "LeaveRequest": {
+      "title": "LeaveRequest",
+      "description": "Time off application submitted by an employee",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employee_id": { "type": "string" },
+        "leave_type": { "type": "string" },
+        "start_date": { "type": "string" },
+        "end_date": { "type": "string" },
+        "duration_days": { "type": "number" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "Approved", "Rejected"] },
+        "is_half_day": { "type": "boolean" },
+        "half_day_period": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "employee_id", "leave_type", "start_date", "end_date", "status"]
+    },
+    "Holiday": {
+      "title": "Holiday",
+      "description": "Official company and public holiday",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "date": { "type": "string" },
+        "type": { "type": "string" },
+        "year": { "type": "number" },
+        "required_pc_staff": { "type": "number" },
+        "required_non_pc_staff": { "type": "number" },
+        "is_work_day": { "type": "boolean" }
+      },
+      "required": ["id", "name", "date", "type", "year"]
+    },
+    "HolidayShiftRequest": {
+      "title": "HolidayShiftRequest",
+      "description": "Holiday shift assignment or volunteer record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "holiday_id": { "type": "string" },
+        "employee_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "Approved", "Rejected"] },
+        "source": { "type": "string", "enum": ["admin_assigned", "employee_requested"] },
+        "hours": { "type": "number" },
+        "start_time": { "type": "string" },
+        "end_time": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "holiday_id", "employee_id", "status"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Administrative actions audit log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "actor_id": { "type": "string" },
+        "actor_name": { "type": "string" },
+        "action": { "type": "string" },
+        "target_type": { "type": "string" },
+        "target_id": { "type": "string" },
+        "details": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "actor_id", "action"]
+    }
+  },
+  "firestore": {
+    "/employees/{employeeId}": {
+      "schema": "Employee",
+      "description": "Employee directory documents"
+    },
+    "/leave_balances/{balanceId}": {
+      "schema": "LeaveBalance",
+      "description": "Leave balance allowances and consumption"
+    },
+    "/leave_requests/{requestId}": {
+      "schema": "LeaveRequest",
+      "description": "Submitted leave applications"
+    },
+    "/holidays/{holidayId}": {
+      "schema": "Holiday",
+      "description": "Company calendar holidays"
+    },
+    "/holiday_shifts/{shiftId}": {
+      "schema": "HolidayShiftRequest",
+      "description": "Holiday coverage shifts"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "System audit logs"
+    }
+  }
+}
