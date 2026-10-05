@@ -16,6 +16,7 @@ import {
   Briefcase,
   ChevronRight,
   Filter,
+  Trash2,
 } from 'lucide-react';
 import {
   HolidayStaffingCoverage,
@@ -83,6 +84,14 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
     employeeId: '',
     employeeName: '',
   });
+
+  const [deletingShift, setDeletingShift] = useState<{
+    id: string;
+    name: string;
+    hours?: string;
+  } | null>(null);
+  const [isDeletingHolidayModalOpen, setIsDeletingHolidayModalOpen] = useState(false);
+  const [isDeletingHolidayProcessing, setIsDeletingHolidayProcessing] = useState(false);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionMessage, setActionMessage] = useState<{
@@ -221,6 +230,42 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
     }
   };
 
+  // Remove / Delete Shift Handler
+  const handleConfirmRemoveShift = async () => {
+    if (!deletingShift) return;
+    setIsProcessing(true);
+    try {
+      await api.deleteHolidayShift(deletingShift.id);
+      showToast(`Holiday shift for ${deletingShift.name} has been removed.`, 'success');
+      setDeletingShift(null);
+      onRefresh();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to remove shift.', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Delete Entire Holiday from Modal
+  const handleConfirmDeleteHolidayFromModal = async () => {
+    setIsDeletingHolidayProcessing(true);
+    try {
+      await api.deleteHoliday(holiday.id);
+      showGlobalToast({
+        type: 'info',
+        title: 'Holiday Deleted',
+        message: `"${holiday.name}" has been permanently removed from the holiday calendar.`,
+      });
+      setIsDeletingHolidayModalOpen(false);
+      onClose();
+      onRefresh();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete holiday.', 'error');
+    } finally {
+      setIsDeletingHolidayProcessing(false);
+    }
+  };
+
   // Export Staffing Report CSV
   const handleExportCSV = () => {
     const headers = [
@@ -343,6 +388,14 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
           </div>
 
           <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setIsDeletingHolidayModalOpen(true)}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-950/40 hover:bg-rose-800/60 text-rose-200 hover:text-white border border-rose-800/60 transition-colors cursor-pointer"
+              title="Delete this holiday"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span className="hidden sm:inline">Delete Holiday</span>
+            </button>
             <button
               id="btn-export-holiday-csv"
               onClick={handleExportCSV}
@@ -683,6 +736,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                           <th className="py-3 px-4">Working Hours</th>
                           <th className="py-3 px-4">Approval Status</th>
                           <th className="py-3 px-4">Approved By</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-medium">
@@ -743,6 +797,23 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                             </td>
                             <td className="py-3 px-4 text-slate-600">
                               {shift.approved_by_name || 'HR Manager'}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDeletingShift({
+                                    id: shift.id,
+                                    name: shift.employee_name,
+                                    hours: shift.working_hours,
+                                  })
+                                }
+                                className="inline-flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
+                                title="Remove Shift Assignment"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Remove</span>
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -878,7 +949,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                     </h5>
                   </div>
                   <span className="text-[11px] text-amber-800 font-medium">
-                    Employees volunteering / requested to work
+                    Employee coverage shift requests
                   </span>
                 </div>
 
@@ -953,6 +1024,21 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                           >
                             <X className="w-3.5 h-3.5" />
                             <span>Reject</span>
+                          </button>
+                          <button
+                            disabled={isProcessing}
+                            onClick={() =>
+                              setDeletingShift({
+                                id: shift.id,
+                                name: shift.employee_name,
+                                hours: shift.working_hours,
+                              })
+                            }
+                            className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 transition-colors flex items-center space-x-1 cursor-pointer"
+                            title="Delete Shift Request"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
                           </button>
                         </div>
                       </div>
@@ -1535,6 +1621,114 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Shift Confirmation Modal */}
+      {deletingShift && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
+              <div className="flex items-center space-x-2 text-rose-700">
+                <Trash2 className="w-5 h-5" />
+                <h3 className="text-sm font-bold">Remove Holiday Shift</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeletingShift(null)}
+                className="p-1 rounded text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Are you sure you want to remove the holiday working shift for{' '}
+                <strong className="text-slate-900 font-semibold">{deletingShift.name}</strong> on{' '}
+                <span className="font-semibold text-slate-800">{holiday.name}</span>?
+              </p>
+              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-500 space-y-1">
+                {deletingShift.hours && (
+                  <p><strong>Scheduled Hours:</strong> {deletingShift.hours}</p>
+                )}
+                <p className="text-rose-600 font-medium">
+                  ⚠️ This shift will be removed from holiday coverage and any accrued holiday shift credits will be reversed.
+                </p>
+              </div>
+              <div className="flex items-center justify-end space-x-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setDeletingShift(null)}
+                  disabled={isProcessing}
+                  className="px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmRemoveShift}
+                  disabled={isProcessing}
+                  className="px-3.5 py-2 text-xs font-semibold bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isProcessing ? 'Removing...' : 'Remove Shift'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Holiday Confirmation Modal (from inside Detail Modal) */}
+      {isDeletingHolidayModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
+              <div className="flex items-center space-x-2 text-rose-700">
+                <Trash2 className="w-5 h-5" />
+                <h3 className="text-sm font-bold">Delete Entire Holiday</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDeletingHolidayModalOpen(false)}
+                className="p-1 rounded text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Are you sure you want to permanently delete{' '}
+                <strong className="text-slate-900 font-semibold">{holiday.name}</strong> ({holiday.date})?
+              </p>
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-500 space-y-1">
+                <p><strong>Country / Scope:</strong> {holiday.country || 'Company-wide'} ({holiday.scope})</p>
+                <p><strong>Active Staff Assigned:</strong> {working_count} employee(s)</p>
+                <p className="text-rose-600 font-medium pt-1">
+                  ⚠️ This will permanently remove this holiday from the calendar, purge all associated shift coverage, and cannot be undone.
+                </p>
+              </div>
+              <div className="flex items-center justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsDeletingHolidayModalOpen(false)}
+                  disabled={isDeletingHolidayProcessing}
+                  className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteHolidayFromModal}
+                  disabled={isDeletingHolidayProcessing}
+                  className="px-4 py-2 text-xs font-semibold bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isDeletingHolidayProcessing ? 'Deleting...' : 'Delete Holiday'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

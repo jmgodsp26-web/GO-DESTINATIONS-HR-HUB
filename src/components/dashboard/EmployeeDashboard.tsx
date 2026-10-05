@@ -85,8 +85,10 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
         userLocation: userLoc,
       });
       setUpcomingHolidays(futureHols.slice(0, 4));
-    } catch (err) {
-      console.error('Failed to load employee dashboard data:', err);
+    } catch (err: any) {
+      if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
+        console.error('Failed to load employee dashboard data:', err);
+      }
     } finally {
       setIsLoading(false);
     }

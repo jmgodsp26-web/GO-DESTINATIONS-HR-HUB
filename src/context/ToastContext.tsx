@@ -11,9 +11,16 @@ export interface Toast {
   duration?: number;
 }
 
+export interface ToastInput {
+  type?: ToastType;
+  title?: string;
+  message?: string;
+  duration?: number;
+}
+
 interface ToastContextType {
   toasts: Toast[];
-  showToast: (toast: Omit<Toast, 'id'>) => void;
+  showToast: (toastOrTitle: ToastInput | string, typeOrMessage?: ToastType | string, message?: string) => void;
   removeToast: (id: string) => void;
   success: (title: string, message?: string) => void;
   error: (title: string, message?: string) => void;
@@ -30,16 +37,48 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const showToast = useCallback(
-    ({ type, title, message, duration = 4000 }: Omit<Toast, 'id'>) => {
+    (toastOrTitle: ToastInput | string, typeOrMessage?: ToastType | string, messageText?: string) => {
+      let finalType: ToastType = 'info';
+      let finalTitle = '';
+      let finalMessage: string | undefined = undefined;
+      let finalDuration = 4000;
+
+      if (typeof toastOrTitle === 'object' && toastOrTitle !== null) {
+        finalType = toastOrTitle.type || 'info';
+        finalTitle = toastOrTitle.title || (finalType === 'error' ? 'Notice' : 'Success');
+        finalMessage = toastOrTitle.message;
+        finalDuration = toastOrTitle.duration ?? 4000;
+      } else if (typeof toastOrTitle === 'string') {
+        if (typeOrMessage === 'success' || typeOrMessage === 'error' || typeOrMessage === 'info') {
+          finalType = typeOrMessage;
+          finalTitle = typeOrMessage === 'error' ? 'Notice' : 'Update';
+          finalMessage = toastOrTitle;
+        } else if (typeof typeOrMessage === 'string') {
+          finalTitle = toastOrTitle;
+          finalMessage = typeOrMessage;
+        } else {
+          finalTitle = toastOrTitle;
+        }
+        if (messageText) {
+          finalMessage = messageText;
+        }
+      }
+
       const id = Math.random().toString(36).substring(2, 9);
-      const newToast: Toast = { id, type, title, message, duration };
+      const newToast: Toast = {
+        id,
+        type: finalType,
+        title: finalTitle,
+        message: finalMessage,
+        duration: finalDuration,
+      };
 
       setToasts((prev) => [...prev, newToast]);
 
-      if (duration > 0) {
+      if (finalDuration > 0) {
         setTimeout(() => {
           removeToast(id);
-        }, duration);
+        }, finalDuration);
       }
     },
     [removeToast]

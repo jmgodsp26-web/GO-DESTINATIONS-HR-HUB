@@ -26,8 +26,10 @@ export const AuditLogsView: React.FC = () => {
     try {
       const data = await api.getAuditLogs();
       setLogs(data);
-    } catch (err) {
-      console.error('Failed to load audit logs:', err);
+    } catch (err: any) {
+      if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
+        console.error('Failed to load audit logs:', err);
+      }
     } finally {
       setIsLoading(false);
     }

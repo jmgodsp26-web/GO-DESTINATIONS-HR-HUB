@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import {
   collection,
   doc,
@@ -30,11 +32,16 @@ export interface PersistentData {
   notifications?: NotificationItem[];
   employeeDocuments?: EmployeeDocument[];
   companySettings?: Record<string, any>;
+  sessions?: [string, any][];
+  deletedEmployeeIds?: string[];
+  deletedHolidayIds?: string[];
+  deletedShiftIds?: string[];
 }
 
 // Collections mapping
 const COLLECTIONS = {
   EMPLOYEES: 'employees',
+  AUTH_CREDENTIALS: 'auth_credentials',
   LEAVE_BALANCES: 'leave_balances',
   LEAVE_REQUESTS: 'leave_requests',
   LEAVE_TRANSACTIONS: 'leave_transactions',
@@ -52,110 +59,100 @@ function cleanForFirestore<T>(data: T): T {
   return JSON.parse(JSON.stringify(data));
 }
 
-export async function saveEmployeeToFirestore(employee: UserProfile, credentials?: { email: string; passwordHash: string }) {
+export async function saveEmployeeToFirestore(employee: UserProfile): Promise<void> {
   const db = getFirestoreDb();
   if (!db) return;
-  try {
-    const dataToSave: any = { ...employee };
-    if (credentials) {
-      dataToSave._credentials = credentials;
-    }
-    await setDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id), cleanForFirestore(dataToSave));
-  } catch (err) {
-    console.error(`[Firestore] Failed to save employee ${employee.id}:`, err);
-  }
+  // Deep clone and strictly guarantee NO credentials or sensitive password hashes are ever in the employee profile
+  const dataToSave: any = { ...employee };
+  delete dataToSave._credentials;
+  delete dataToSave.password;
+  delete dataToSave.passwordHash;
+  await setDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id), cleanForFirestore(dataToSave));
 }
 
-export async function deleteEmployeeFromFirestore(employeeId: string) {
+export async function saveCredentialsToFirestore(
+  employeeId: string,
+  credentials: {
+    email: string;
+    passwordHash: string;
+    passwordCustomized?: boolean;
+    mustChangePassword?: boolean;
+  }
+): Promise<void> {
   const db = getFirestoreDb();
   if (!db) return;
-  try {
-    await deleteDoc(doc(db, COLLECTIONS.EMPLOYEES, employeeId));
-  } catch (err) {
-    console.error(`[Firestore] Failed to delete employee ${employeeId}:`, err);
-  }
+  await setDoc(doc(db, COLLECTIONS.AUTH_CREDENTIALS, employeeId), cleanForFirestore({
+    id: employeeId,
+    email: credentials.email.toLowerCase().trim(),
+    passwordHash: credentials.passwordHash,
+    passwordCustomized: Boolean(credentials.passwordCustomized),
+    mustChangePassword: Boolean(credentials.mustChangePassword),
+    updated_at: new Date().toISOString(),
+  }));
 }
 
-export async function saveLeaveBalanceToFirestore(balance: LeaveBalance) {
+export async function deleteEmployeeFromFirestore(employeeId: string): Promise<void> {
   const db = getFirestoreDb();
   if (!db) return;
-  try {
-    await setDoc(doc(db, COLLECTIONS.LEAVE_BALANCES, balance.id), cleanForFirestore(balance));
-  } catch (err) {
-    console.error(`[Firestore] Failed to save leave balance ${balance.id}:`, err);
-  }
+  await Promise.all([
+    deleteDoc(doc(db, COLLECTIONS.EMPLOYEES, employeeId)).catch(() => {}),
+    deleteDoc(doc(db, COLLECTIONS.AUTH_CREDENTIALS, employeeId)).catch(() => {}),
+  ]);
 }
 
-export async function saveLeaveRequestToFirestore(request: LeaveRequest) {
+export async function saveLeaveBalanceToFirestore(balance: LeaveBalance): Promise<void> {
   const db = getFirestoreDb();
   if (!db) return;
-  try {
-    await setDoc(doc(db, COLLECTIONS.LEAVE_REQUESTS, request.id), cleanForFirestore(request));
-  } catch (err) {
-    console.error(`[Firestore] Failed to save leave request ${request.id}:`, err);
-  }
+  await setDoc(doc(db, COLLECTIONS.LEAVE_BALANCES, balance.id), cleanForFirestore(balance));
 }
 
-export async function deleteLeaveRequestFromFirestore(requestId: string) {
+export async function deleteLeaveBalanceFromFirestore(balanceId: string): Promise<void> {
   const db = getFirestoreDb();
   if (!db) return;
-  try {
-    await deleteDoc(doc(db, COLLECTIONS.LEAVE_REQUESTS, requestId));
-  } catch (err) {
-    console.error(`[Firestore] Failed to delete leave request ${requestId}:`, err);
-  }
+  await deleteDoc(doc(db, COLLECTIONS.LEAVE_BALANCES, balanceId)).catch(() => {});
 }
 
-export async function saveLeaveTransactionToFirestore(tx: LeaveTransaction) {
+export async function saveLeaveRequestToFirestore(request: LeaveRequest): Promise<void> {
   const db = getFirestoreDb();
   if (!db) return;
-  try {
-    const cleanTx = cleanForFirestore(tx);
-    // Stored securely under settings namespace (fully authorized in Firestore rules)
-    await setDoc(doc(db, COLLECTIONS.SETTINGS, 'tx_' + tx.id), cleanTx);
-  } catch (err) {
-    console.error(`[Firestore] Failed to save leave transaction ${tx.id}:`, err);
-  }
+  await setDoc(doc(db, COLLECTIONS.LEAVE_REQUESTS, request.id), cleanForFirestore(request));
 }
 
-export async function saveHolidayToFirestore(holiday: Holiday) {
+export async function deleteLeaveRequestFromFirestore(requestId: string): Promise<void> {
   const db = getFirestoreDb();
   if (!db) return;
-  try {
-    await setDoc(doc(db, COLLECTIONS.HOLIDAYS, holiday.id), cleanForFirestore(holiday));
-  } catch (err) {
-    console.error(`[Firestore] Failed to save holiday ${holiday.id}:`, err);
-  }
+  await deleteDoc(doc(db, COLLECTIONS.LEAVE_REQUESTS, requestId));
 }
 
-export async function deleteHolidayFromFirestore(holidayId: string) {
+export async function saveLeaveTransactionToFirestore(tx: LeaveTransaction): Promise<void> {
   const db = getFirestoreDb();
   if (!db) return;
-  try {
-    await deleteDoc(doc(db, COLLECTIONS.HOLIDAYS, holidayId));
-  } catch (err) {
-    console.error(`[Firestore] Failed to delete holiday ${holidayId}:`, err);
-  }
+  const cleanTx = cleanForFirestore(tx);
+  await setDoc(doc(db, COLLECTIONS.SETTINGS, 'tx_' + tx.id), cleanTx);
 }
 
-export async function saveHolidayShiftToFirestore(shift: HolidayShiftRequest) {
+export async function saveHolidayToFirestore(holiday: Holiday): Promise<void> {
   const db = getFirestoreDb();
   if (!db) return;
-  try {
-    await setDoc(doc(db, COLLECTIONS.HOLIDAY_SHIFTS, shift.id), cleanForFirestore(shift));
-  } catch (err) {
-    console.error(`[Firestore] Failed to save holiday shift ${shift.id}:`, err);
-  }
+  await setDoc(doc(db, COLLECTIONS.HOLIDAYS, holiday.id), cleanForFirestore(holiday));
 }
 
-export async function deleteHolidayShiftFromFirestore(shiftId: string) {
+export async function deleteHolidayFromFirestore(holidayId: string): Promise<void> {
   const db = getFirestoreDb();
   if (!db) return;
-  try {
-    await deleteDoc(doc(db, COLLECTIONS.HOLIDAY_SHIFTS, shiftId));
-  } catch (err) {
-    console.error(`[Firestore] Failed to delete holiday shift ${shiftId}:`, err);
-  }
+  await deleteDoc(doc(db, COLLECTIONS.HOLIDAYS, holidayId));
+}
+
+export async function saveHolidayShiftToFirestore(shift: HolidayShiftRequest): Promise<void> {
+  const db = getFirestoreDb();
+  if (!db) return;
+  await setDoc(doc(db, COLLECTIONS.HOLIDAY_SHIFTS, shift.id), cleanForFirestore(shift));
+}
+
+export async function deleteHolidayShiftFromFirestore(shiftId: string): Promise<void> {
+  const db = getFirestoreDb();
+  if (!db) return;
+  await deleteDoc(doc(db, COLLECTIONS.HOLIDAY_SHIFTS, shiftId));
 }
 
 export async function saveAuditLogToFirestore(log: AuditLog) {
@@ -222,6 +219,25 @@ export async function saveCompanySettingsToFirestore(settings: Record<string, an
   }
 }
 
+export async function saveDeletedRecordsToFirestore(
+  deletedEmployeeIds: string[],
+  deletedHolidayIds: string[],
+  deletedShiftIds: string[] = []
+) {
+  const db = getFirestoreDb();
+  if (!db) return;
+  try {
+    await setDoc(doc(db, COLLECTIONS.SETTINGS, 'deleted_records'), {
+      deleted_employee_ids: cleanForFirestore(deletedEmployeeIds),
+      deleted_holiday_ids: cleanForFirestore(deletedHolidayIds),
+      deleted_shift_ids: cleanForFirestore(deletedShiftIds),
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('[Firestore] Failed to save deleted records tombstone:', err);
+  }
+}
+
 export async function loadDataFromFirestore(): Promise<PersistentData | null> {
   const db = getFirestoreDb();
   if (!db) return null;
@@ -230,6 +246,7 @@ export async function loadDataFromFirestore(): Promise<PersistentData | null> {
     console.log('[Firestore] Fetching collections from cloud database...');
     const [
       empSnap,
+      credSnap,
       balSnap,
       reqSnap,
       holSnap,
@@ -238,6 +255,7 @@ export async function loadDataFromFirestore(): Promise<PersistentData | null> {
       settingSnap,
     ] = await Promise.all([
       getDocs(collection(db, COLLECTIONS.EMPLOYEES)).catch(() => ({ forEach: () => {} })),
+      getDocs(collection(db, COLLECTIONS.AUTH_CREDENTIALS)).catch(() => ({ forEach: () => {} })),
       getDocs(collection(db, COLLECTIONS.LEAVE_BALANCES)).catch(() => ({ forEach: () => {} })),
       getDocs(collection(db, COLLECTIONS.LEAVE_REQUESTS)).catch(() => ({ forEach: () => {} })),
       getDocs(collection(db, COLLECTIONS.HOLIDAYS)).catch(() => ({ forEach: () => {} })),
@@ -246,25 +264,58 @@ export async function loadDataFromFirestore(): Promise<PersistentData | null> {
       getDocs(collection(db, COLLECTIONS.SETTINGS)).catch(() => ({ forEach: () => {} })),
     ]);
 
+    const credentialsMap = new Map<string, any>();
+    (credSnap as any).forEach((doc: any) => {
+      credentialsMap.set(doc.id, doc.data());
+    });
+
     const employees: UserProfile[] = [];
     const users: any[] = [];
-    empSnap.forEach((doc: any) => {
+    (empSnap as any).forEach((doc: any) => {
       const data = doc.data() as any;
-      let credentials = { email: data.email, passwordHash: '' };
-      if (data._credentials) {
+      const storedCred = credentialsMap.get(data.id) || credentialsMap.get(doc.id);
+
+      let credentials = {
+        email: data.email,
+        passwordHash: '',
+        passwordCustomized: false,
+        mustChangePassword: true,
+      };
+
+      if (storedCred) {
+        credentials = {
+          email: storedCred.email || data.email,
+          passwordHash: storedCred.passwordHash || '',
+          passwordCustomized: Boolean(storedCred.passwordCustomized),
+          mustChangePassword: Boolean(storedCred.mustChangePassword),
+        };
+      } else if (data._credentials) {
+        // Migrate legacy credentials embedded inside employee profile
         credentials = {
           email: data._credentials.email || data.email,
           passwordHash: data._credentials.passwordHash || '',
+          passwordCustomized: Boolean(data._credentials.passwordCustomized),
+          mustChangePassword:
+            data._credentials.mustChangePassword !== undefined
+              ? Boolean(data._credentials.mustChangePassword)
+              : (data._credentials.passwordHash === 'Welcome2026!' || !data._credentials.passwordCustomized),
         };
+        // Persist to separate auth_credentials collection and purge from employee record
+        saveCredentialsToFirestore(data.id, credentials).catch(() => {});
         delete data._credentials;
+        saveEmployeeToFirestore(data).catch(() => {});
       }
       const profile = { ...data } as UserProfile;
       delete (profile as any)._credentials;
+      delete (profile as any).password;
+      delete (profile as any).passwordHash;
 
       users.push({
         id: data.id,
         email: credentials.email,
         passwordHash: credentials.passwordHash,
+        passwordCustomized: credentials.passwordCustomized,
+        mustChangePassword: credentials.mustChangePassword,
         profile,
       });
       employees.push(profile);
@@ -290,9 +341,23 @@ export async function loadDataFromFirestore(): Promise<PersistentData | null> {
     const employeeDocuments: EmployeeDocument[] = [];
 
     let companySettings: Record<string, any> | undefined = undefined;
+    const deletedEmployeeIds: string[] = [];
+    const deletedHolidayIds: string[] = [];
+    const deletedShiftIds: string[] = [];
     settingSnap.forEach((doc: any) => {
       if (doc.id === 'company_settings') {
         companySettings = doc.data();
+      } else if (doc.id === 'deleted_records') {
+        const d = doc.data();
+        if (Array.isArray(d?.deleted_employee_ids)) {
+          deletedEmployeeIds.push(...d.deleted_employee_ids);
+        }
+        if (Array.isArray(d?.deleted_holiday_ids)) {
+          deletedHolidayIds.push(...d.deleted_holiday_ids);
+        }
+        if (Array.isArray(d?.deleted_shift_ids)) {
+          deletedShiftIds.push(...d.deleted_shift_ids);
+        }
       } else if (doc.id.startsWith('tx_')) {
         leaveTransactions.push(doc.data() as LeaveTransaction);
       } else if (doc.id.startsWith('notif_')) {
@@ -314,7 +379,7 @@ export async function loadDataFromFirestore(): Promise<PersistentData | null> {
     );
 
     console.log(
-      `[Firestore] Loaded: ${employees.length} employees, ${leaveBalances.length} balances, ${leaveRequests.length} leave requests, ${uniqueTransactions.length} transactions, ${holidays.length} holidays, ${holidayShifts.length} shifts, ${uniqueNotifications.length} notifications, ${uniqueDocuments.length} docs`
+      `[Firestore] Loaded: ${employees.length} employees, ${leaveBalances.length} balances, ${leaveRequests.length} leave requests, ${uniqueTransactions.length} transactions, ${holidays.length} holidays, ${holidayShifts.length} shifts, ${uniqueNotifications.length} notifications, ${uniqueDocuments.length} docs, ${deletedEmployeeIds.length} deleted emp tombstones, ${deletedHolidayIds.length} deleted holiday tombstones, ${deletedShiftIds.length} deleted shift tombstones`
     );
 
     return {
@@ -329,6 +394,9 @@ export async function loadDataFromFirestore(): Promise<PersistentData | null> {
       notifications: uniqueNotifications,
       employeeDocuments: uniqueDocuments,
       companySettings,
+      deletedEmployeeIds,
+      deletedHolidayIds,
+      deletedShiftIds,
     };
   } catch (err) {
     console.error('[Firestore] Error loading data from Firestore:', err);
@@ -350,7 +418,10 @@ export async function seedInitialFirestoreData(initialData: {
     const promises: Promise<any>[] = [];
 
     for (const emp of initialData.employees) {
-      promises.push(saveEmployeeToFirestore(emp.profile, emp.credentials));
+      promises.push(saveEmployeeToFirestore(emp.profile));
+      if (emp.credentials) {
+        promises.push(saveCredentialsToFirestore(emp.profile.id, emp.credentials));
+      }
     }
     for (const bal of initialData.leaveBalances) {
       promises.push(saveLeaveBalanceToFirestore(bal));
@@ -364,5 +435,36 @@ export async function seedInitialFirestoreData(initialData: {
     console.log('[Firestore] Master data successfully synced to cloud Firestore!');
   } catch (err) {
     console.error('[Firestore] Error during master data seeding:', err);
+  }
+}
+
+const DATA_DIR = path.resolve(process.cwd(), 'data');
+const STORE_PATH = path.join(DATA_DIR, 'hr_hub_store.json');
+const TEMP_PATH = path.join(DATA_DIR, 'hr_hub_store.tmp');
+
+export function saveStateToDisk(data: PersistentData): void {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    const payload = JSON.stringify(data, null, 2);
+    fs.writeFileSync(TEMP_PATH, payload, 'utf8');
+    fs.renameSync(TEMP_PATH, STORE_PATH);
+  } catch (err) {
+    console.error('[Persistence] Fatal error writing authoritative state to disk:', err);
+    throw new Error('Database persistence failure. Operation aborted to protect data integrity.');
+  }
+}
+
+export function loadStateFromDisk(): PersistentData | null {
+  try {
+    if (!fs.existsSync(STORE_PATH)) return null;
+    const raw = fs.readFileSync(STORE_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    console.log(`[Persistence] Hydrated authoritative database from local disk storage (${STORE_PATH}).`);
+    return data;
+  } catch (err) {
+    console.error('[Persistence] Error loading authoritative state from disk:', err);
+    return null;
   }
 }

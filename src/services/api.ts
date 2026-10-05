@@ -51,6 +51,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    if (response.status === 401) {
+      setStoredToken(null);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:expired', { detail: { message: data.error } }));
+      }
+    }
     throw new Error(data.error || 'An unexpected error occurred. Please try again.');
   }
 
@@ -80,6 +86,13 @@ export const api = {
     } finally {
       setStoredToken(null);
     }
+  },
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    return request<{ success: boolean; message: string }>('/api/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    });
   },
 
   // Profile & Balances
@@ -185,7 +198,7 @@ export const api = {
     });
   },
 
-  async updateEmployee(id: string, updates: Partial<UserProfile>): Promise<UserProfile> {
+  async updateEmployee(id: string, updates: Partial<UserProfile> & { password?: string }): Promise<UserProfile> {
     return request<UserProfile>(`/api/employees/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(updates),
@@ -327,6 +340,18 @@ export const api = {
     });
   },
 
+  async deleteHolidayShift(requestId: string): Promise<{ success: boolean }> {
+    return request<{ success: boolean }>(`/api/holiday-shifts/${requestId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async cancelLeaveRequest(requestId: string): Promise<LeaveRequest> {
+    return request<LeaveRequest>(`/api/leave-requests/${requestId}/cancel`, {
+      method: 'POST',
+    });
+  },
+
   async getAllHolidayCoverage(filters?: {
     upcoming_only?: boolean;
     country?: string;
@@ -377,6 +402,18 @@ export const api = {
 
   async markAllNotificationsRead(): Promise<void> {
     await request('/api/notifications/mark-all-read', { method: 'POST' });
+  },
+
+  async deleteNotification(id: string): Promise<{ success: boolean }> {
+    return request<{ success: boolean }>(`/api/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async clearNotifications(): Promise<{ success: boolean }> {
+    return request<{ success: boolean }>('/api/notifications', {
+      method: 'DELETE',
+    });
   },
 
   // Employee Documents

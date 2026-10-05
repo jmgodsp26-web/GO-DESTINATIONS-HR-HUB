@@ -6,6 +6,7 @@ import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { CommandPalette } from './components/common/CommandPalette';
 import { LoginPage } from './components/auth/LoginPage';
+import { FirstTimePasswordModal } from './components/auth/FirstTimePasswordModal';
 import { EmployeeDashboard } from './components/dashboard/EmployeeDashboard';
 import { EmployeeProfile } from './components/profile/EmployeeProfile';
 import { LeaveHistory } from './components/leave/LeaveHistory';
@@ -86,6 +87,9 @@ const MainApp: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans antialiased">
+      {/* First-Time Password Setup Modal for Initial Onboarding Sign-In */}
+      <FirstTimePasswordModal />
+
       {/* Top Navigation Header */}
       <Header
         onMenuToggle={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}

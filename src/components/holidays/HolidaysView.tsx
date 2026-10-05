@@ -33,6 +33,7 @@ import {
   Building2,
   RotateCcw,
   Sparkles,
+  Users,
 } from 'lucide-react';
 
 export const HolidaysView: React.FC = () => {
@@ -61,6 +62,16 @@ export const HolidaysView: React.FC = () => {
   // Admin Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [editingHoliday, setEditingHoliday] = useState<Holiday | null>(null);
+  const [deletingHoliday, setDeletingHoliday] = useState<Holiday | null>(null);
+  const [isDeletingHoliday, setIsDeletingHoliday] = useState<boolean>(false);
+  const [isAssignShiftOpen, setIsAssignShiftOpen] = useState<boolean>(false);
+  const [assignShiftForm, setAssignShiftForm] = useState({
+    employee_id: '',
+    holiday_id: '',
+    working_hours: '9:00 AM – 5:00 PM',
+    status: 'Approved' as 'Approved' | 'Pending',
+    admin_note: '',
+  });
 
   // Form fields for Add/Edit
   const [formData, setFormData] = useState({
@@ -93,8 +104,10 @@ export const HolidaysView: React.FC = () => {
         const updated = covRes.find((c) => c.holiday.id === selectedCoverage.holiday.id);
         if (updated) setSelectedCoverage(updated);
       }
-    } catch (err) {
-      console.error('Failed to load holidays & coverage:', err);
+    } catch (err: any) {
+      if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
+        console.error('Failed to load holidays & coverage:', err);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -325,15 +338,28 @@ export const HolidaysView: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to permanently delete "${name}"?`)) return;
+  const handleOpenDelete = (holiday: Holiday) => {
+    setDeletingHoliday(holiday);
+  };
+
+  const handleConfirmDeleteHoliday = async () => {
+    if (!deletingHoliday) return;
+    const targetId = deletingHoliday.id;
+    const targetName = deletingHoliday.name;
+    setIsDeletingHoliday(true);
     try {
-      await api.deleteHoliday(id);
+      await api.deleteHoliday(targetId);
       showToast({
         type: 'info',
         title: 'Holiday Removed',
-        message: `"${name}" removed from the holiday calendar.`,
+        message: `"${targetName}" was permanently removed from the holiday calendar.`,
       });
+      setDeletingHoliday(null);
+      setHolidays((prev) => prev.filter((h) => h.id !== targetId));
+      setCoverageList((prev) => prev.filter((c) => c.holiday.id !== targetId));
+      if (selectedCoverage?.holiday.id === targetId) {
+        setSelectedCoverage(null);
+      }
       await loadData();
     } catch (err: any) {
       showToast({
@@ -341,6 +367,53 @@ export const HolidaysView: React.FC = () => {
         title: 'Deletion Failed',
         message: err.message || 'Failed to delete holiday.',
       });
+    } finally {
+      setIsDeletingHoliday(false);
+    }
+  };
+
+  const handleAssignShiftSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignShiftForm.employee_id || !assignShiftForm.holiday_id) {
+      showToast({
+        type: 'error',
+        title: 'Missing Details',
+        message: 'Please select both an employee and a holiday.',
+      });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await api.assignHolidayShift({
+        employee_id: assignShiftForm.employee_id,
+        holiday_id: assignShiftForm.holiday_id,
+        working_hours: assignShiftForm.working_hours,
+        status: assignShiftForm.status,
+        admin_note: assignShiftForm.admin_note || 'Scheduled by Administrator',
+      });
+      const emp = employees.find((e) => e.id === assignShiftForm.employee_id);
+      showToast({
+        type: 'success',
+        title: 'Shift Scheduled',
+        message: `Holiday shift assigned to ${emp?.full_name || 'employee'} successfully.`,
+      });
+      setIsAssignShiftOpen(false);
+      setAssignShiftForm({
+        employee_id: '',
+        holiday_id: '',
+        working_hours: '9:00 AM – 5:00 PM',
+        status: 'Approved',
+        admin_note: '',
+      });
+      await loadData();
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Assignment Failed',
+        message: err.message || 'Failed to assign holiday shift.',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -350,35 +423,60 @@ export const HolidaysView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-slate-900">Global Holiday Calendar</h1>
+            <h1 className="text-xl font-bold text-slate-900">
+              {isAdmin ? 'Holidays & Staff Coverage' : 'Global Holiday Calendar'}
+            </h1>
             <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
               Multi-Country
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Configure country-specific, regional, and company-wide closures, staff coverage, and holiday shift volunteering.
+            {isAdmin
+              ? 'Configure country-specific, regional, and company-wide closures, staffing coverage, and team rosters.'
+              : 'Configure country-specific, regional, and company-wide closures, staff coverage, and holiday shift volunteering.'}
           </p>
         </div>
 
         <div className="flex items-center space-x-2">
-          <button
-            type="button"
-            onClick={() => setShiftRequestHolidayId(filteredHolidays[0]?.id || holidays[0]?.id || '')}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-semibold text-xs transition-colors shadow-2xs cursor-pointer"
-          >
-            <Clock className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Volunteer for Holiday Shift</span>
-          </button>
-
-          {isAdmin && (
+          {!isAdmin && (
             <button
               type="button"
-              onClick={handleOpenAdd}
-              className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 bg-[#3A5D83] hover:bg-[#2F4D6D] text-white rounded-xl font-semibold text-xs transition-colors shadow-xs cursor-pointer"
+              onClick={() => setShiftRequestHolidayId(filteredHolidays[0]?.id || holidays[0]?.id || '')}
+              className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-semibold text-xs transition-colors shadow-2xs cursor-pointer"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>Add Holiday</span>
+              <Clock className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Volunteer for Holiday Shift</span>
             </button>
+          )}
+
+          {isAdmin && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setAssignShiftForm({
+                    employee_id: employees[0]?.id || '',
+                    holiday_id: filteredHolidays[0]?.id || holidays[0]?.id || '',
+                    working_hours: '9:00 AM – 5:00 PM',
+                    status: 'Approved',
+                    admin_note: '',
+                  });
+                  setIsAssignShiftOpen(true);
+                }}
+                className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-semibold text-xs transition-colors shadow-2xs cursor-pointer"
+              >
+                <Users className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Assign Staff Shift</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenAdd}
+                className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 bg-[#3A5D83] hover:bg-[#2F4D6D] text-white rounded-xl font-semibold text-xs transition-colors shadow-xs cursor-pointer"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Add Holiday</span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -744,7 +842,18 @@ export const HolidaysView: React.FC = () => {
 
                   {/* Actions & Roster Button */}
                   <div className="flex items-center space-x-2 self-end lg:self-center shrink-0">
-                    {coverage && (
+                    {!isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setShiftRequestHolidayId(holiday.id)}
+                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-colors shadow-2xs cursor-pointer"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Volunteer</span>
+                      </button>
+                    )}
+
+                    {isAdmin && coverage && (
                       <button
                         type="button"
                         onClick={() => setSelectedCoverage(coverage)}
@@ -782,7 +891,7 @@ export const HolidaysView: React.FC = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDelete(holiday.id, holiday.name)}
+                          onClick={() => handleOpenDelete(holiday)}
                           className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                           title="Delete Holiday"
                         >
@@ -808,8 +917,8 @@ export const HolidaysView: React.FC = () => {
         />
       )}
 
-      {/* Volunteer / Request Shift Modal */}
-      {shiftRequestHolidayId && (
+      {/* Volunteer / Request Shift Modal (Employees only) */}
+      {!isAdmin && shiftRequestHolidayId && (
         <HolidayShiftRequestModal
           holidays={holidays}
           initialHolidayId={shiftRequestHolidayId}
@@ -1146,10 +1255,211 @@ export const HolidaysView: React.FC = () => {
                 />
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-3">
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const holToDelete = editingHoliday;
+                      setEditingHoliday(null);
+                      setDeletingHoliday(holToDelete);
+                    }}
+                    className="px-3 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Holiday</span>
+                  </button>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditingHoliday(null)}
+                    disabled={isSubmitting}
+                    className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#2F4D6D] rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Saving...' : 'Update Holiday'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Holiday Confirmation Modal */}
+      {deletingHoliday && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
+              <div className="flex items-center space-x-2 text-rose-700">
+                <Trash2 className="w-5 h-5" />
+                <h3 className="text-sm font-bold">Delete Holiday</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeletingHoliday(null)}
+                className="p-1 rounded text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Are you sure you want to permanently delete{' '}
+                <strong className="text-slate-900 font-semibold">{deletingHoliday.name}</strong> on{' '}
+                <span className="font-semibold text-slate-800">{deletingHoliday.date}</span>?
+              </p>
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-500 space-y-1">
+                <p><strong>Country / Scope:</strong> {deletingHoliday.country || 'Company-wide'} ({deletingHoliday.scope})</p>
+                <p><strong>Type:</strong> {deletingHoliday.holiday_type}</p>
+                <p className="text-rose-600 font-medium pt-1">
+                  ⚠️ This will permanently remove this holiday from company calendars and purge associated staffing coverage records.
+                </p>
+              </div>
+              <div className="flex items-center justify-end space-x-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setEditingHoliday(null)}
+                  onClick={() => setDeletingHoliday(null)}
+                  disabled={isDeletingHoliday}
+                  className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteHoliday}
+                  disabled={isDeletingHoliday}
+                  className="px-4 py-2 text-xs font-semibold bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isDeletingHoliday ? 'Deleting...' : 'Delete Holiday'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Assign Staff Holiday Shift Modal */}
+      {isAssignShiftOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+              <div className="flex items-center space-x-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Assign Staff Holiday Shift
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Roster an employee for coverage on an upcoming company holiday.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAssignShiftOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAssignShiftSubmit} className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Assign Employee *
+                </label>
+                <select
+                  value={assignShiftForm.employee_id}
+                  onChange={(e) => setAssignShiftForm({ ...assignShiftForm, employee_id: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 p-2.5 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  required
+                >
+                  <option value="" disabled>-- Select Employee --</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.full_name} ({emp.employee_id}) • {emp.department} {emp.role === 'admin' ? '[Admin]' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Select Holiday *
+                </label>
+                <select
+                  value={assignShiftForm.holiday_id}
+                  onChange={(e) => setAssignShiftForm({ ...assignShiftForm, holiday_id: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 p-2.5 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  required
+                >
+                  <option value="" disabled>-- Select Holiday --</option>
+                  {holidays
+                    .filter((h) => h.is_active !== false)
+                    .map((h) => (
+                      <option key={h.id} value={h.id}>
+                        {h.name} ({h.date}) • {h.country || 'Company-wide'}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Working Hours
+                  </label>
+                  <input
+                    type="text"
+                    value={assignShiftForm.working_hours}
+                    onChange={(e) => setAssignShiftForm({ ...assignShiftForm, working_hours: e.target.value })}
+                    placeholder="e.g. 9:00 AM – 5:00 PM"
+                    className="w-full rounded-xl border border-slate-200 p-2.5 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Coverage Status
+                  </label>
+                  <select
+                    value={assignShiftForm.status}
+                    onChange={(e) => setAssignShiftForm({ ...assignShiftForm, status: e.target.value as any })}
+                    className="w-full rounded-xl border border-slate-200 p-2.5 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  >
+                    <option value="Approved">Approved (Rostered)</option>
+                    <option value="Pending">Pending Review</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Administrator Notes (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={assignShiftForm.admin_note}
+                  onChange={(e) => setAssignShiftForm({ ...assignShiftForm, admin_note: e.target.value })}
+                  placeholder="e.g. Scheduled for vital operational staffing"
+                  className="w-full rounded-xl border border-slate-200 p-2.5 bg-white text-slate-900 font-medium resize-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end space-x-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAssignShiftOpen(false)}
                   disabled={isSubmitting}
                   className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
                 >
@@ -1158,9 +1468,10 @@ export const HolidaysView: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#2F4D6D] rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] hover:bg-[#2F4D6D] text-white rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
                 >
-                  {isSubmitting ? 'Saving...' : 'Update Holiday'}
+                  <Users className="w-3.5 h-3.5" />
+                  <span>{isSubmitting ? 'Assigning...' : 'Assign Staff Shift'}</span>
                 </button>
               </div>
             </form>

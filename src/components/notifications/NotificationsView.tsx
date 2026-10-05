@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { api } from '../../services/api';
 import {
   Bell,
   CheckCircle2,
@@ -19,7 +20,7 @@ interface NotificationsViewProps {
 }
 
 export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigateTab }) => {
-  const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead, user } =
+  const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead, refreshNotifications, user } =
     useAuth();
   const { showToast } = useToast();
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'leaves'>('all');
@@ -46,6 +47,34 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
     });
   };
 
+  const handleDeleteNotification = async (notifId: string) => {
+    try {
+      await api.deleteNotification(notifId);
+      await refreshNotifications();
+      showToast({
+        type: 'info',
+        title: 'Notification Dismissed',
+        message: 'Notification removed.',
+      });
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await api.clearNotifications();
+      await refreshNotifications();
+      showToast({
+        type: 'info',
+        title: 'Cleared Notifications',
+        message: 'All notifications have been removed.',
+      });
+    } catch {
+      // ignore
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Header */}
@@ -66,16 +95,29 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
           </div>
         </div>
 
-        {unreadCount > 0 && (
-          <button
-            type="button"
-            onClick={handleMarkAllRead}
-            className="flex items-center space-x-1.5 px-3.5 py-2 bg-white hover:bg-[#3A5D83]/5 text-[#3A5D83] font-semibold border border-[#3A5D83]/30 rounded-xl text-xs transition-colors shadow-2xs self-start sm:self-auto"
-          >
-            <Check className="w-4 h-4" />
-            <span>Mark All as Read ({unreadCount})</span>
-          </button>
-        )}
+        <div className="flex items-center space-x-2">
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={handleMarkAllRead}
+              className="flex items-center space-x-1.5 px-3.5 py-2 bg-white hover:bg-[#3A5D83]/5 text-[#3A5D83] font-semibold border border-[#3A5D83]/30 rounded-xl text-xs transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
+            >
+              <Check className="w-4 h-4" />
+              <span>Mark All Read ({unreadCount})</span>
+            </button>
+          )}
+          {notifList.length > 0 && (
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="flex items-center space-x-1.5 px-3.5 py-2 bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 font-semibold border border-slate-200 rounded-xl text-xs transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
+              title="Clear all notifications"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Clear All</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs Filter Bar */}
@@ -208,12 +250,20 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
                             : notif.link_tab;
                         onNavigateTab(targetTab);
                       }}
-                      className="flex items-center space-x-1 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors"
+                      className="flex items-center space-x-1 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                     >
                       <span>View</span>
                       <ArrowRight className="w-3 h-3" />
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteNotification(notif.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                    title="Delete Notification"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             );

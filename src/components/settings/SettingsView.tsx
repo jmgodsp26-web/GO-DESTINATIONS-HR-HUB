@@ -10,6 +10,10 @@ import {
   CalendarCheck,
   Bell,
   Save,
+  Lock,
+  KeyRound,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
@@ -36,6 +40,47 @@ export const SettingsView: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Password Change State
+  const [currentPassword, setCurrentPassword] = useState<string>('');
+  const [newPassword, setNewPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState<boolean>(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    if (!newPassword || newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters long.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New password and confirmation do not match.');
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      await api.changePassword(currentPassword, newPassword);
+      setPasswordSuccess('Password successfully updated!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      showToast({
+        type: 'success',
+        title: 'Password Updated',
+        message: 'Your account password has been updated securely.',
+      });
+    } catch (err: any) {
+      setPasswordError(err.message || 'Failed to update password. Please check your current password.');
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
 
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
@@ -321,6 +366,87 @@ export const SettingsView: React.FC = () => {
                 className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
               />
             </label>
+          </div>
+        </div>
+
+        {/* Section 4: Account Security & Password */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
+          <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
+            <Lock className="w-4 h-4 text-[#3A5D83]" />
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">Account Security &amp; Password</h2>
+              <p className="text-[11px] text-slate-500">Update your personal password for signing in to the HR portal</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {passwordError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center space-x-2 text-xs text-rose-700 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                <span>{passwordError}</span>
+              </div>
+            )}
+
+            {passwordSuccess && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-xs text-emerald-700 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>{passwordSuccess}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83] font-mono"
+                />
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Default is Welcome2026! if not changed</span>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83] font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat new password"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83] font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="pt-1 flex justify-end">
+              <button
+                type="button"
+                onClick={handlePasswordChange}
+                disabled={isUpdatingPassword || !newPassword}
+                className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#2F4D6D] disabled:opacity-50 transition-colors shadow-2xs"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>{isUpdatingPassword ? 'Updating...' : 'Update Password'}</span>
+              </button>
+            </div>
           </div>
         </div>
 

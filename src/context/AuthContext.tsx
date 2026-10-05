@@ -6,6 +6,7 @@ interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
   error: string | null;
+  mustChangePassword: boolean;
   notifications: NotificationItem[];
   unreadCount: number;
   login: (identifier: string, passwordHash?: string) => Promise<void>;
@@ -15,6 +16,8 @@ interface AuthContextType {
   refreshNotifications: () => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
+  completeFirstTimePasswordChange: (newPassword: string) => Promise<void>;
+  dismissFirstTimePasswordChange: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [mustChangePassword, setMustChangePassword] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const refreshNotifications = useCallback(async () => {
@@ -65,6 +69,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [refreshUser]);
 
+  // Instantly handle session expiry without unhandled promise rejections
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      setUser(null);
+      setMustChangePassword(false);
+      setNotifications([]);
+      setIsLoading(false);
+    };
+    window.addEventListener('auth:expired', handleAuthExpired);
+    return () => window.removeEventListener('auth:expired', handleAuthExpired);
+  }, []);
+
   // Periodic polling to keep notification counter badge real-time
   useEffect(() => {
     if (!user) return;
@@ -75,18 +91,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, refreshNotifications]);
 
   const login = async (identifier: string, passwordHash?: string) => {
-    setIsLoading(true);
     setError(null);
     try {
       const res = await api.login(identifier, passwordHash);
       setUser(res.user);
+      if (res.mustChangePassword) {
+        setMustChangePassword(true);
+      } else {
+        setMustChangePassword(false);
+      }
       await refreshNotifications();
     } catch (err: any) {
       setError(err.message || 'Login failed.');
       throw err;
-    } finally {
-      setIsLoading(false);
     }
+  };
+
+  const completeFirstTimePasswordChange = async (newPassword: string) => {
+    try {
+      await api.changePassword('Welcome2026!', newPassword);
+      setMustChangePassword(false);
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  const dismissFirstTimePasswordChange = () => {
+    setMustChangePassword(false);
   };
 
   const switchUser = async (identifier: string, password?: string) => {
@@ -95,6 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await api.login(identifier, password || '');
       setUser(res.user);
+      setMustChangePassword(Boolean(res.mustChangePassword));
       await refreshNotifications();
     } catch (err: any) {
       setError(err.message || 'Failed to switch user.');
@@ -108,6 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await api.logout();
       setUser(null);
+      setMustChangePassword(false);
       setNotifications([]);
     } finally {
       setIsLoading(false);
@@ -142,6 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isLoading,
         error,
+        mustChangePassword,
         notifications,
         unreadCount,
         login,
@@ -151,6 +185,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshNotifications,
         markNotificationRead,
         markAllNotificationsRead,
+        completeFirstTimePasswordChange,
+        dismissFirstTimePasswordChange,
       }}
     >
       {children}

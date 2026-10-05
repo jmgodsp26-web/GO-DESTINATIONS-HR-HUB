@@ -25,10 +25,13 @@ import {
   X,
   Calendar,
   ExternalLink,
+  Trash2,
 } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
 
 export const LeaveHistory: React.FC = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [transactions, setTransactions] = useState<LeaveTransaction[]>([]);
@@ -37,6 +40,8 @@ export const LeaveHistory: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
+  const [cancellingRequest, setCancellingRequest] = useState<LeaveRequest | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -49,12 +54,38 @@ export const LeaveHistory: React.FC = () => {
       setBalances(balRes);
       setRequests(reqRes);
       setTransactions(txRes);
-    } catch (err) {
-      console.error('Failed to load leave history:', err);
+    } catch (err: any) {
+      if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
+        console.error('Failed to load leave history:', err);
+      }
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  const handleConfirmCancelLeave = async () => {
+    if (!cancellingRequest) return;
+    setIsCancelling(true);
+    try {
+      await api.cancelLeaveRequest(cancellingRequest.id);
+      showToast({
+        type: 'info',
+        title: 'Leave Request Cancelled',
+        message: 'Your leave application has been cancelled and any reserved days have been restored.',
+      });
+      setCancellingRequest(null);
+      setSelectedRequest(null);
+      await loadData();
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Cancellation Failed',
+        message: err.message || 'Could not cancel leave request.',
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -648,14 +679,83 @@ export const LeaveHistory: React.FC = () => {
               )}
             </div>
 
-            <div className="p-4 bg-slate-50 border-t border-slate-200 text-right">
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              {selectedRequest.status === 'Pending' ? (
+                <button
+                  type="button"
+                  onClick={() => setCancellingRequest(selectedRequest)}
+                  className="px-3 py-1.5 text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Cancel Leave Request</span>
+                </button>
+              ) : (
+                <div />
+              )}
               <button
                 type="button"
                 onClick={() => setSelectedRequest(null)}
-                className="px-4 py-2 text-xs font-semibold bg-slate-800 text-white rounded-xl hover:bg-slate-900 transition-colors"
+                className="px-4 py-2 text-xs font-semibold bg-slate-800 text-white rounded-xl hover:bg-slate-900 transition-colors cursor-pointer"
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Leave Request Confirmation Modal */}
+      {cancellingRequest && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
+              <div className="flex items-center space-x-2 text-rose-700">
+                <Trash2 className="w-5 h-5" />
+                <h3 className="text-sm font-bold">Cancel Leave Request</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCancellingRequest(null)}
+                className="p-1 rounded text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Are you sure you want to cancel your pending{' '}
+                <strong className="text-slate-900 font-semibold">{cancellingRequest.leave_type}</strong> application for{' '}
+                <span className="font-semibold text-slate-800">
+                  {cancellingRequest.start_date === cancellingRequest.end_date
+                    ? cancellingRequest.start_date
+                    : `${cancellingRequest.start_date} → ${cancellingRequest.end_date}`}
+                </span>?
+              </p>
+              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-500 space-y-1">
+                <p><strong>Allocated days:</strong> {cancellingRequest.total_days} day(s)</p>
+                <p className="text-emerald-700 font-medium">
+                  ✓ Any reserved balance days will be restored to your annual leave ledger immediately.
+                </p>
+              </div>
+              <div className="flex items-center justify-end space-x-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setCancellingRequest(null)}
+                  disabled={isCancelling}
+                  className="px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  Keep Request
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCancelLeave}
+                  disabled={isCancelling}
+                  className="px-3.5 py-2 text-xs font-semibold bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isCancelling ? 'Cancelling...' : 'Confirm Cancellation'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

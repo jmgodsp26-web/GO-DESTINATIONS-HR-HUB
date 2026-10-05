@@ -1,7 +1,27 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getFirestore, Firestore, doc, getDocFromServer, setLogLevel } from 'firebase/firestore';
 import fs from 'fs';
 import path from 'path';
+
+// Silence internal verbose/idle grpc transport logs from Firestore SDK
+try {
+  setLogLevel('silent');
+} catch (_) {}
+
+// Filter benign internal gRPC idle stream cleanup notices from console.error
+const origConsoleError = console.error;
+console.error = (...args: any[]) => {
+  const text = args
+    .map((a) => (typeof a === 'string' ? a : a?.message || String(a || '')))
+    .join(' ');
+  if (
+    text.includes('Disconnecting idle stream') ||
+    text.includes('Timed out waiting for new targets')
+  ) {
+    return;
+  }
+  origConsoleError.apply(console, args);
+};
 
 let appInstance: FirebaseApp | null = null;
 let dbInstance: Firestore | null = null;

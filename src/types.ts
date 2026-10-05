@@ -18,7 +18,7 @@ export type UserRole = 'employee' | 'admin';
 
 export type EmployeeStatus = 'active' | 'disabled';
 
-export type LeaveStatus = 'Pending' | 'Approved' | 'Rejected';
+export type LeaveStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
 
 export type LeaveTransactionType =
   | 'initial_allocation'
@@ -105,6 +105,7 @@ export interface LeaveRequest {
   status: LeaveStatus;
   admin_note?: string;
   submitted_at: string;
+  updated_at?: string;
   reviewed_at?: string;
   reviewed_by?: string;
   reviewed_by_name?: string;
@@ -244,6 +245,7 @@ export interface CalendarEvent {
 export interface AuthResponse {
   token: string;
   user: UserProfile;
+  mustChangePassword?: boolean;
 }
 
 export interface EmployeeDocument {

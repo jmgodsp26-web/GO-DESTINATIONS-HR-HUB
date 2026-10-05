@@ -34,8 +34,10 @@ export const EmployeeProfile: React.FC = () => {
         ]);
         setBalances(bal);
         setDocuments(docs || []);
-      } catch (err) {
-        console.error('Failed to load profile data:', err);
+      } catch (err: any) {
+        if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
+          console.error('Failed to load profile data:', err);
+        }
       } finally {
         setIsLoading(false);
       }

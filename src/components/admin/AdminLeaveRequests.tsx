@@ -58,8 +58,10 @@ export const AdminLeaveRequests: React.FC = () => {
       ]);
       setRequests(reqRes);
       setEmployees(empRes);
-    } catch (err) {
-      console.error('Failed to load leave requests:', err);
+    } catch (err: any) {
+      if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
+        console.error('Failed to load leave requests:', err);
+      }
     } finally {
       setIsLoading(false);
     }

@@ -236,8 +236,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {
             id: 'act-vol-shift',
             category: 'Actions' as const,
-            title: 'Request Holiday Shift Coverage',
-            subtitle: 'Volunteer for public holiday coverage with compensatory credit',
+            title:
+              user?.role === 'admin'
+                ? 'Assign Holiday Shift Coverage'
+                : 'Request Holiday Shift Coverage',
+            subtitle:
+              user?.role === 'admin'
+                ? 'Schedule and assign employee holiday shift coverage'
+                : 'Volunteer for public holiday coverage with compensatory credit',
             icon: Sun,
             action: () => {
               onHolidayShift();

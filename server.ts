@@ -110,17 +110,36 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
     const { email, identifier, password } = req.body;
     const loginIdentifier = (identifier || email || '').trim();
     if (!loginIdentifier) {
-      return res.status(400).json({ error: 'Name or email is required.' });
+      return res.status(400).json({ error: 'Work email address or employee ID is required.' });
     }
 
     const authResult = db.authenticate(loginIdentifier, password);
-    if (!authResult) {
-      return res.status(401).json({ error: 'Invalid name, email, or credentials.' });
-    }
-
     res.json(authResult);
   } catch (error: any) {
-    res.status(400).json({ error: error.message || 'Authentication failed.' });
+    const msg = error.message || 'Authentication failed.';
+    const status = msg.includes('disabled') ? 403 : 401;
+    res.status(status).json({ error: msg });
+  }
+});
+
+// Self-service password reset is disabled for compliance and security
+app.post('/api/auth/reset-password', (_req: Request, res: Response) => {
+  return res.status(403).json({
+    error: 'Self-service password reset is disabled for security compliance. Please contact your HR administrator for a verified credential reset.',
+  });
+});
+
+// Admin-controlled credential reset with mandatory temporary password
+app.post('/api/admin/employees/:id/reset-password', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { temporary_password } = req.body;
+    if (!temporary_password || typeof temporary_password !== 'string' || temporary_password.trim().length < 8) {
+      return res.status(400).json({ error: 'Temporary password must be at least 8 characters long.' });
+    }
+    db.adminResetPassword(req.params.id, temporary_password.trim(), req.user!);
+    res.json({ success: true, message: 'Temporary password generated and existing sessions revoked successfully.' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message || 'Failed to reset password.' });
   }
 });
 
@@ -135,6 +154,19 @@ app.post('/api/auth/logout', (req: Request, res: Response) => {
     db.logout(token);
   }
   res.json({ success: true });
+});
+
+app.post('/api/auth/change-password', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { current_password, new_password } = req.body;
+    if (!new_password || typeof new_password !== 'string' || new_password.trim().length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters long.' });
+    }
+    db.changePassword(req.user!.id, current_password || '', new_password.trim());
+    res.json({ success: true, message: 'Password updated successfully. Please use your new password next time.' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message || 'Failed to update password.' });
+  }
 });
 
 // 2. Profile & Leave Balances
@@ -233,13 +265,42 @@ app.patch('/api/leave-requests/:id/review', adminOnlyMiddleware, (req: Authentic
   }
 });
 
+app.patch('/api/leave-requests/:id/cancel', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const cancelled = db.cancelLeaveRequest(req.params.id, req.user!);
+    res.json(cancelled);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message || 'Failed to cancel leave request.' });
+  }
+});
+
+app.delete('/api/leave-requests/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const cancelled = db.cancelLeaveRequest(req.params.id, req.user!);
+    res.json(cancelled);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message || 'Failed to cancel leave request.' });
+  }
+});
+
 // 4. Employee Management
 app.get('/api/employees', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const employees = db.getAllEmployees();
     if (req.user?.role !== 'admin') {
+      // Data Minimization: Redact sensitive PII (phone, birthday, date of birth, hire date, private ledgers)
       const sanitized = employees.map((e) => ({
-        ...e,
+        id: e.id,
+        user_id: e.id,
+        employee_id: e.employee_id,
+        full_name: e.full_name,
+        email: e.email,
+        department: e.department,
+        job_title: e.job_title,
+        avatar_url: e.avatar_url,
+        status: e.status,
+        country: e.country,
+        is_pc: e.is_pc,
         leave_balances: [],
       }));
       return res.json(sanitized);
@@ -268,9 +329,9 @@ app.patch('/api/employees/:id', adminOnlyMiddleware, (req: AuthenticatedRequest,
   }
 });
 
-app.delete('/api/employees/:id', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+app.delete('/api/employees/:id', adminOnlyMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    db.deleteEmployee(req.params.id, req.user!);
+    await db.deleteEmployee(req.params.id, req.user!);
     res.json({ success: true });
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to delete employee.' });
@@ -333,9 +394,9 @@ app.patch('/api/holidays/:id/toggle-active', adminOnlyMiddleware, (req: Authenti
   }
 });
 
-app.delete('/api/holidays/:id', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+app.delete('/api/holidays/:id', adminOnlyMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    db.deleteHoliday(req.params.id, req.user!);
+    await db.deleteHoliday(req.params.id, req.user!);
     res.json({ success: true });
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to delete holiday.' });
@@ -346,8 +407,12 @@ app.delete('/api/holidays/:id', adminOnlyMiddleware, (req: AuthenticatedRequest,
 app.get('/api/holiday-shifts', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { holiday_id, holiday_date, status, employee_id } = req.query;
-    // Non-admin can only filter their own if employee_id is specified, or view shifts for a holiday
-    const targetEmployeeId = req.user?.role === 'admin' ? (employee_id as string) : undefined;
+    // Strict server-side authorization: Standard employees can only access their own shifts
+    const targetEmployeeId =
+      req.user?.role === 'admin'
+        ? (employee_id as string | undefined)
+        : req.user!.id;
+
     const shifts = db.getHolidayShifts({
       holiday_id: holiday_id as string,
       holiday_date: holiday_date as string,
@@ -486,6 +551,24 @@ app.post('/api/notifications/mark-all-read', authMiddleware, (req: Authenticated
   }
 });
 
+app.delete('/api/notifications/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const success = db.deleteNotification(req.params.id, req.user!.id);
+    res.json({ success });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/notifications', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const success = db.clearNotifications(req.user!.id);
+    res.json({ success });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // 9. Employee Documents
 // Admin get all documents for an employee
 app.get('/api/admin/employees/:id/documents', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
@@ -510,12 +593,16 @@ app.get('/api/my-documents', authMiddleware, (req: AuthenticatedRequest, res: Re
 app.post('/api/admin/employees/:id/documents', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { name, category, file_size, file_data } = req.body;
-    if (!name) {
+    if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({ error: 'Document name is required.' });
+    }
+    // Enforce 450KB payload limit to prevent Firestore 1MB document corruption
+    if (file_data && typeof file_data === 'string' && file_data.length > 600000) {
+      return res.status(400).json({ error: 'Document file size exceeds the allowed limit (450 KB). Please compress or link via cloud storage.' });
     }
     const newDoc = db.addEmployeeDocument({
       employee_id: req.params.id,
-      name,
+      name: name.trim(),
       category: category || 'Contract',
       file_size: file_size || '1.2 MB',
       file_data,
@@ -523,7 +610,7 @@ app.post('/api/admin/employees/:id/documents', adminOnlyMiddleware, (req: Authen
     });
     res.status(201).json(newDoc);
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ error: error.message || 'Failed to upload document.' });
   }
 });
 

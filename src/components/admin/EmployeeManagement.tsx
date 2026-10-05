@@ -54,6 +54,7 @@ export const EmployeeManagement: React.FC = () => {
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [editingEmployee, setEditingEmployee] = useState<UserProfile | null>(null);
+  const [editPassword, setEditPassword] = useState<string>('');
   const [adjustingBalanceEmployee, setAdjustingBalanceEmployee] = useState<{
     employee: UserProfile;
     balances: LeaveBalance[];
@@ -104,8 +105,10 @@ export const EmployeeManagement: React.FC = () => {
     try {
       const data = await api.getAllEmployees();
       setEmployees(data);
-    } catch (err) {
-      console.error('Failed to load employees:', err);
+    } catch (err: any) {
+      if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
+        console.error('Failed to load employees:', err);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -181,7 +184,7 @@ export const EmployeeManagement: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await api.updateEmployee(editingEmployee.id, {
+      const payload: any = {
         full_name: editingEmployee.full_name,
         email: editingEmployee.email,
         phone: editingEmployee.phone,
@@ -197,13 +200,18 @@ export const EmployeeManagement: React.FC = () => {
         birthday: editingEmployee.date_of_birth || editingEmployee.birthday,
         role: editingEmployee.role,
         status: editingEmployee.status,
-      });
+      };
+      if (editPassword && editPassword.trim()) {
+        payload.password = editPassword.trim();
+      }
+      await api.updateEmployee(editingEmployee.id, payload);
       setEditingEmployee(null);
+      setEditPassword('');
       await loadEmployees();
       showToast({
         type: 'success',
         title: 'Profile Updated',
-        message: `${editingEmployee.full_name}'s record has been updated successfully.`,
+        message: `${editingEmployee.full_name}'s record ${editPassword.trim() ? '(and password) ' : ''}has been updated successfully.`,
       });
     } catch (err: any) {
       setFormError(err.message || 'Failed to update employee.');
@@ -245,14 +253,17 @@ export const EmployeeManagement: React.FC = () => {
     }
 
     setIsSubmitting(true);
+    const targetId = deletingEmployee.id;
+    const targetName = deletingEmployee.full_name;
     try {
-      await api.deleteEmployee(deletingEmployee.id);
+      await api.deleteEmployee(targetId);
       showToast({
         type: 'success',
         title: 'Employee Deleted',
-        message: `${deletingEmployee.full_name} has been removed from the system.`,
+        message: `${targetName} has been removed from the system.`,
       });
       setDeletingEmployee(null);
+      setEmployees((prev) => prev.filter((e) => e.id !== targetId));
       await loadEmployees();
     } catch (err: any) {
       showToast({
@@ -519,6 +530,7 @@ export const EmployeeManagement: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setEditingEmployee({ ...emp });
+                          setEditPassword('');
                           setFormError(null);
                         }}
                         className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors"
@@ -664,6 +676,7 @@ export const EmployeeManagement: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setEditingEmployee({ ...emp });
+                          setEditPassword('');
                           setFormError(null);
                         }}
                         className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"
@@ -1246,21 +1259,56 @@ export const EmployeeManagement: React.FC = () => {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setEditingEmployee(null)}
-                  className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#2F4D6D] disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Saving...' : 'Save Changes'}
-                </button>
+              {/* Password Reset Field */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Reset Account Password (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  placeholder="Leave blank to keep current password"
+                  className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-[#3A5D83] font-mono"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Type a new password (e.g. Welcome2026!) to immediately reset this employee's sign-in credentials.
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div>
+                  {editingEmployee.id !== currentAdmin?.id && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const empToDelete = editingEmployee;
+                        setEditingEmployee(null);
+                        setDeletingEmployee(empToDelete);
+                      }}
+                      className="px-3 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Employee</span>
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditingEmployee(null)}
+                    className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#2F4D6D] disabled:opacity-50 cursor-pointer"
+                  >
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -1405,7 +1453,22 @@ export const EmployeeManagement: React.FC = () => {
                 The employee can now open the login page, enter their email and password, and instantly access their leave portal dashboard.
               </div>
 
-              <div className="pt-2 flex justify-end">
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const info = `GO Destinations HR Portal Access:\nEmployee: ${createdEmployeeInfo.full_name} (${createdEmployeeInfo.employee_id})\nWork Email: ${createdEmployeeInfo.email}\nTemporary Password: ${createdEmployeeInfo.password}\nPortal URL: https://hr.godestinationservices.com/`;
+                    navigator.clipboard?.writeText(info);
+                    showToast({
+                      type: 'success',
+                      title: 'Credentials Copied!',
+                      message: 'Login instructions and password copied to clipboard.',
+                    });
+                  }}
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg border border-slate-200 transition-colors"
+                >
+                  Copy Login Credentials
+                </button>
                 <button
                   type="button"
                   onClick={() => setCreatedEmployeeInfo(null)}

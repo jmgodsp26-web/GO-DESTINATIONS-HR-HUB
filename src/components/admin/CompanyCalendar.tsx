@@ -34,8 +34,10 @@ export const CompanyCalendar: React.FC = () => {
     try {
       const data = await api.getCalendarEvents();
       setEvents(data);
-    } catch (err) {
-      console.error('Failed to load calendar events:', err);
+    } catch (err: any) {
+      if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
+        console.error('Failed to load calendar events:', err);
+      }
     } finally {
       setIsLoading(false);
     }

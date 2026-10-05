@@ -49,12 +49,14 @@ export const ReportsView: React.FC = () => {
       setRequests(reqData);
       setEmployees(empData);
     } catch (err: any) {
-      console.error('Failed to load report data:', err);
-      showToast({
-        type: 'error',
-        title: 'Error Loading Reports',
-        message: err.message || 'Could not fetch leave analytics.',
-      });
+      if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
+        console.error('Failed to load report data:', err);
+        showToast({
+          type: 'error',
+          title: 'Error Loading Reports',
+          message: err.message || 'Could not fetch leave analytics.',
+        });
+      }
     } finally {
       setIsLoading(false);
     }

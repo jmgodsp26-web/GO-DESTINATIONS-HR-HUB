@@ -30,7 +30,11 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
   useEffect(() => {
     api.getLeaveRequests()
       .then((res) => setUserLeaves(res || []))
-      .catch((err) => console.error('Failed to load user leaves for conflict check:', err));
+      .catch((err: any) => {
+        if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
+          console.error('Failed to load user leaves for conflict check:', err);
+        }
+      });
   }, []);
 
   const selectedHoliday = holidays.find((h) => h.id === selectedHolidayId);

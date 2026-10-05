@@ -100,12 +100,83 @@
         "details": { "type": "string" }
       },
       "required": ["id", "timestamp", "actor_id", "action"]
+    },
+    "AuthCredential": {
+      "title": "AuthCredential",
+      "description": "Secure authentication credentials mapping",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "passwordHash": { "type": "string" },
+        "passwordCustomized": { "type": "boolean" },
+        "mustChangePassword": { "type": "boolean" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["id", "email", "passwordHash"]
+    },
+    "LeaveTransaction": {
+      "title": "LeaveTransaction",
+      "description": "Audit record of leave deductions or restorations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employee_id": { "type": "string" },
+        "employee_name": { "type": "string" },
+        "leave_type": { "type": "string" },
+        "amount": { "type": "number" },
+        "balance_after": { "type": "number" },
+        "transaction_type": { "type": "string" }
+      },
+      "required": ["id", "employee_id", "amount", "transaction_type"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User system notification alerts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "user_id", "title", "message"]
+    },
+    "EmployeeDocument": {
+      "title": "EmployeeDocument",
+      "description": "Employee employment or identity document reference",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employee_id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "file_url": { "type": "string" },
+        "uploaded_at": { "type": "string" }
+      },
+      "required": ["id", "employee_id", "name"]
+    },
+    "AppSetting": {
+      "title": "AppSetting",
+      "description": "Application settings and configurations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "value": { "type": "string" }
+      },
+      "required": ["id"]
     }
   },
   "firestore": {
     "/employees/{employeeId}": {
       "schema": "Employee",
       "description": "Employee directory documents"
+    },
+    "/auth_credentials/{credentialId}": {
+      "schema": "AuthCredential",
+      "description": "Employee authentication credentials store"
     },
     "/leave_balances/{balanceId}": {
       "schema": "LeaveBalance",
@@ -114,6 +185,10 @@
     "/leave_requests/{requestId}": {
       "schema": "LeaveRequest",
       "description": "Submitted leave applications"
+    },
+    "/leave_transactions/{txId}": {
+      "schema": "LeaveTransaction",
+      "description": "Leave adjustments and deduction transactions"
     },
     "/holidays/{holidayId}": {
       "schema": "Holiday",
@@ -126,6 +201,18 @@
     "/audit_logs/{logId}": {
       "schema": "AuditLog",
       "description": "System audit logs"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "In-app notifications"
+    },
+    "/employee_documents/{docId}": {
+      "schema": "EmployeeDocument",
+      "description": "Employee HR records and documents"
+    },
+    "/settings/{settingId}": {
+      "schema": "AppSetting",
+      "description": "Global settings and preferences"
     }
   }
 }
