@@ -153,7 +153,7 @@ class HRDatabase {
       notifications: this.notifications,
       employeeDocuments: this.employeeDocuments,
       companySettings: this.companySettings,
-      sessions: Array.from(this.sessions.entries()).filter(([_, s]) => Date.now() < s.expiresAt),
+      // Sessions stay in memory; never persist reusable bearer tokens.
       deletedEmployeeIds: Array.from(this.deletedEmployeeIds),
       deletedHolidayIds: Array.from(this.deletedHolidayIds),
       deletedShiftIds: Array.from(this.deletedShiftIds),
@@ -172,15 +172,9 @@ class HRDatabase {
       this.deletedShiftIds = new Set(data.deletedShiftIds);
     }
     if (data.users && data.users.length > 0) {
-      this.users = data.users.filter((u) => !this.deletedEmployeeIds.has(u.id));
-    }
-    if (data.sessions && Array.isArray(data.sessions)) {
-      const now = Date.now();
-      for (const [token, session] of data.sessions) {
-        if (session && now < session.expiresAt && (now - session.lastActivityAt) < this.SESSION_IDLE_TTL) {
-          this.sessions.set(token, session);
-        }
-      }
+      this.users = data.users.filter((u) => !this.deletedEmployeeIds.has(u.id)).map((u) => ({
+        ...u, passwordHash: u.passwordHash && !/^\$2[ab]\$/.test(u.passwordHash) ? hashPassword(u.passwordHash) : u.passwordHash,
+      }));
     }
     if (data.leaveBalances) {
       this.leaveBalances = data.leaveBalances;
@@ -257,10 +251,11 @@ class HRDatabase {
           const matchingCloudUser = cloudUsers.find((cu) => cu.id === ce.id || cu.email === ce.email);
           const existingLocal = localUsersMap.get(ce.id);
 
-          const passwordHash =
+          const storedCloudPassword =
             matchingCloudUser?.passwordHash ||
             existingLocal?.passwordHash ||
-            hashPassword('Welcome2026!');
+            hashPassword(crypto.randomBytes(32).toString('hex'));
+          const passwordHash = /^\$2[ab]\$/.test(storedCloudPassword) ? storedCloudPassword : hashPassword(storedCloudPassword);
           const passwordCustomized =
             matchingCloudUser?.passwordCustomized ?? existingLocal?.passwordCustomized ?? false;
           const mustChangePassword =
@@ -475,6 +470,9 @@ class HRDatabase {
   }
 
   private seedInitialData() {
+    if (process.env.BOOTSTRAP_ADMIN_PASSWORD && process.env.BOOTSTRAP_ADMIN_PASSWORD.trim().length < 8) {
+      throw new Error('BOOTSTRAP_ADMIN_PASSWORD must be at least 8 characters.');
+    }
     // Authorized staff accounts (Admins & Employees)
     const rawStaff: Array<{
       id: string;
@@ -526,7 +524,9 @@ class HRDatabase {
     this.users = rawStaff.map((s) => ({
       id: s.id,
       email: s.email,
-      passwordHash: hashPassword('Welcome2026!'),
+      passwordHash: hashPassword(s.id === 'usr-isiah-dane' && process.env.BOOTSTRAP_ADMIN_PASSWORD ? process.env.BOOTSTRAP_ADMIN_PASSWORD : crypto.randomBytes(32).toString('hex')),
+      passwordCustomized: false,
+      mustChangePassword: true,
       profile: {
         id: s.id,
         user_id: s.id,
@@ -1020,29 +1020,7 @@ class HRDatabase {
 
     const user = this.users.find((u) => {
       const email = (u.email || '').toLowerCase();
-      const emailUser = email.split('@')[0];
-      const fullName = (u.profile.full_name || '').toLowerCase();
-      const nameParts = fullName.split(' ').filter(Boolean);
-      const id = (u.id || '').toLowerCase();
-      const empId = (u.profile.employee_id || '').toLowerCase();
-
-      const isAnnLoraine = u.id === 'usr-ann-loraine' || email.includes('ann.loraine');
-      const emailMatch =
-        email === cleanId ||
-        emailUser === cleanId ||
-        (isAnnLoraine && (cleanId === 'anne.loraine' || cleanId === 'anne.loraine@godestinations.com' || cleanId === 'anne' || cleanId === 'anne loraine')) ||
-        (u.id === 'usr-isiah-dane' && (cleanId === 'admin' || cleanId === 'administrator' || cleanId === 'hr' || cleanId === 'jmgo.dsp26@gmail.com' || cleanId.includes('jmgo') || cleanId.includes('geguera')));
-      const nameMatch =
-        fullName === cleanId ||
-        nameParts.includes(cleanId) ||
-        cleanId.includes(fullName) ||
-        (isAnnLoraine && (cleanId === 'anne loraine' || cleanId === 'anne' || cleanId.includes('anne'))) ||
-        (cleanId.includes('isiah') && u.id === 'usr-isiah-dane') ||
-        (cleanId.includes('geguera') && (u.id === 'usr-isiah-dane' || email.includes('geguera')));
-      const idMatch = id === cleanId;
-      const empIdMatch = empId && empId === cleanId;
-
-      return emailMatch || nameMatch || idMatch || empIdMatch;
+      return email === cleanId || (u.profile.employee_id || '').toLowerCase() === cleanId;
     });
 
     if (!user) {
@@ -1064,10 +1042,6 @@ class HRDatabase {
     let isMatch = false;
     if (storedPassword) {
       isMatch = verifyPassword(providedPassword, storedPassword);
-      // Also accept initial setup password Welcome2026! for onboarding & administrative recovery
-      if (!isMatch && providedPassword === 'Welcome2026!') {
-        isMatch = true;
-      }
       if (!isMatch) {
         throw new Error('Wrong password. Please try again or reset your password.');
       }
@@ -1082,16 +1056,7 @@ class HRDatabase {
         }).catch((e) => console.error('[Firestore] Upgrade password hash error:', e));
       }
     } else {
-      // Uninitialized account: set password
-      user.passwordHash = hashPassword(providedPassword || 'Welcome2026!');
-      user.passwordCustomized = false;
-      user.mustChangePassword = true;
-      saveCredentialsToFirestore(user.id, {
-        email: user.email,
-        passwordHash: user.passwordHash,
-        passwordCustomized: false,
-        mustChangePassword: true,
-      }).catch((e) => console.error('[Firestore] Save initialized password error:', e));
+      throw new Error('Account credentials require an HR administrator reset.');
     }
 
     // First time login detection
@@ -1110,6 +1075,11 @@ class HRDatabase {
     });
     this.persistAuthoritativeState();
     return { token, user: user.profile, mustChangePassword: isFirstTime };
+  }
+
+  public requiresPasswordChange(userId: string): boolean {
+    const user = this.users.find((u) => u.id === userId);
+    return Boolean(user && (user.mustChangePassword || !user.passwordCustomized));
   }
 
   public getUserByToken(token: string): UserProfile | null {
@@ -1224,7 +1194,9 @@ class HRDatabase {
     this.users.push({
       id: newId,
       email: data.email || '',
-      passwordHash: data.password || '',
+      passwordHash: hashPassword(data.password || crypto.randomBytes(32).toString('hex')),
+      passwordCustomized: false,
+      mustChangePassword: true,
       profile,
     });
 
@@ -1284,7 +1256,7 @@ class HRDatabase {
     );
     saveCredentialsToFirestore(newId, {
       email: data.email || '',
-      passwordHash: hashPassword(data.password || 'Welcome2026!'),
+      passwordHash: this.users.find((u) => u.id === newId)!.passwordHash,
       passwordCustomized: false,
       mustChangePassword: true,
     }).catch((e) => console.error('[Firestore] Save credentials error:', e));
@@ -1387,7 +1359,7 @@ class HRDatabase {
 
     // Verify current password using cryptographic comparison
     const isMatch = verifyPassword(cleanCurrent, storedPass);
-    if (!isMatch && cleanCurrent !== 'Welcome2026!') {
+    if (!isMatch && !(this.requiresPasswordChange(userId) && !cleanCurrent)) {
       throw new Error('Current password does not match our records.');
     }
 

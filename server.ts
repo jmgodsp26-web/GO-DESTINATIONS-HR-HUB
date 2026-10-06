@@ -14,7 +14,7 @@ export interface AuthenticatedRequest extends Request {
 }
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT || 3000);
 
 // Enable trust proxy for Cloud Run and reverse proxy environments (nginx)
 app.set('trust proxy', 1);
@@ -78,6 +78,10 @@ function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunc
 
   if (user.status === 'disabled') {
     return res.status(403).json({ error: 'Account disabled. Please contact HR administrator.' });
+  }
+
+  if (db.requiresPasswordChange(user.id) && !['/api/auth/me', '/api/auth/change-password'].includes(req.path)) {
+    return res.status(403).json({ error: 'Please change your temporary password before continuing.', mustChangePassword: true });
   }
 
   req.user = user;
@@ -144,7 +148,7 @@ app.post('/api/admin/employees/:id/reset-password', adminOnlyMiddleware, (req: A
 });
 
 app.get('/api/auth/me', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
-  res.json({ user: req.user });
+  res.json({ user: req.user, mustChangePassword: db.requiresPasswordChange(req.user!.id) });
 });
 
 app.post('/api/auth/logout', (req: Request, res: Response) => {

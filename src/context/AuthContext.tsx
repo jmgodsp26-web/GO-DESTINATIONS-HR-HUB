@@ -17,7 +17,6 @@ interface AuthContextType {
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
   completeFirstTimePasswordChange: (newPassword: string) => Promise<void>;
-  dismissFirstTimePasswordChange: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,7 +49,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await api.getMe();
       setUser(res.user);
-      await refreshNotifications();
+      setMustChangePassword(Boolean(res.mustChangePassword));
+      if (!res.mustChangePassword) await refreshNotifications();
     } catch {
       setStoredToken(null);
       setUser(null);
@@ -83,12 +83,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Periodic polling to keep notification counter badge real-time
   useEffect(() => {
-    if (!user) return;
+    if (!user || mustChangePassword) return;
     const interval = setInterval(() => {
       refreshNotifications();
     }, 10000);
     return () => clearInterval(interval);
-  }, [user, refreshNotifications]);
+  }, [user, mustChangePassword, refreshNotifications]);
 
   const login = async (identifier: string, passwordHash?: string) => {
     setError(null);
@@ -100,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setMustChangePassword(false);
       }
-      await refreshNotifications();
+      if (!res.mustChangePassword) await refreshNotifications();
     } catch (err: any) {
       setError(err.message || 'Login failed.');
       throw err;
@@ -109,15 +109,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const completeFirstTimePasswordChange = async (newPassword: string) => {
     try {
-      await api.changePassword('Welcome2026!', newPassword);
+      await api.changePassword('', newPassword);
       setMustChangePassword(false);
     } catch (err: any) {
       throw err;
     }
-  };
-
-  const dismissFirstTimePasswordChange = () => {
-    setMustChangePassword(false);
   };
 
   const switchUser = async (identifier: string, password?: string) => {
@@ -127,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await api.login(identifier, password || '');
       setUser(res.user);
       setMustChangePassword(Boolean(res.mustChangePassword));
-      await refreshNotifications();
+      if (!res.mustChangePassword) await refreshNotifications();
     } catch (err: any) {
       setError(err.message || 'Failed to switch user.');
     } finally {
@@ -186,7 +182,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         markNotificationRead,
         markAllNotificationsRead,
         completeFirstTimePasswordChange,
-        dismissFirstTimePasswordChange,
       }}
     >
       {children}

@@ -19,16 +19,18 @@ import {
 } from '../types';
 
 const TOKEN_KEY = 'hr_portal_auth_token';
+// Discard tokens left by the previous persistent-storage implementation.
+try { localStorage.removeItem(TOKEN_KEY); } catch { /* Storage may be restricted. */ }
 
 export function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return sessionStorage.getItem(TOKEN_KEY);
 }
 
 export function setStoredToken(token: string | null) {
   if (token) {
-    localStorage.setItem(TOKEN_KEY, token);
+    sessionStorage.setItem(TOKEN_KEY, token);
   } else {
-    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
   }
 }
 
@@ -74,8 +76,8 @@ export const api = {
     return res;
   },
 
-  async getMe(): Promise<{ user: UserProfile }> {
-    return request<{ user: UserProfile }>('/api/auth/me');
+  async getMe(): Promise<{ user: UserProfile; mustChangePassword: boolean }> {
+    return request<{ user: UserProfile; mustChangePassword: boolean }>('/api/auth/me');
   },
 
   async logout(): Promise<void> {
@@ -89,10 +91,13 @@ export const api = {
   },
 
   async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    return request<{ success: boolean; message: string }>('/api/auth/change-password', {
+    const result = await request<{ success: boolean; message: string }>('/api/auth/change-password', {
       method: 'POST',
       body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
     });
+    setStoredToken(null);
+    window.dispatchEvent(new CustomEvent('auth:expired'));
+    return result;
   },
 
   // Profile & Balances

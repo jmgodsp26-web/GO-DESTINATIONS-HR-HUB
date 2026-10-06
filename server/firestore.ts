@@ -1,93 +1,26 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore, doc, getDocFromServer, setLogLevel } from 'firebase/firestore';
-import fs from 'fs';
-import path from 'path';
+import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import fs from 'node:fs';
+import path from 'node:path';
 
-// Silence internal verbose/idle grpc transport logs from Firestore SDK
-try {
-  setLogLevel('silent');
-} catch (_) {}
-
-// Filter benign internal gRPC idle stream cleanup notices from console.error
-const origConsoleError = console.error;
-console.error = (...args: any[]) => {
-  const text = args
-    .map((a) => (typeof a === 'string' ? a : a?.message || String(a || '')))
-    .join(' ');
-  if (
-    text.includes('Disconnecting idle stream') ||
-    text.includes('Timed out waiting for new targets')
-  ) {
-    return;
-  }
-  origConsoleError.apply(console, args);
-};
-
-let appInstance: FirebaseApp | null = null;
 let dbInstance: Firestore | null = null;
-let configCache: any = null;
-
 export function getFirebaseConfig() {
-  if (configCache) return configCache;
-  try {
-    const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
-    if (fs.existsSync(configPath)) {
-      const raw = fs.readFileSync(configPath, 'utf8');
-      configCache = JSON.parse(raw);
-      return configCache;
-    }
-  } catch (err) {
-    console.error('Failed to read firebase-applet-config.json:', err);
-  }
-  return null;
+  const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
+  return fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath, 'utf8')) : null;
 }
-
 export function getFirestoreDb(): Firestore | null {
+  if (process.env.FIRESTORE_DISABLED === 'true') return null;
   if (dbInstance) return dbInstance;
-
   const config = getFirebaseConfig();
-  if (!config) {
-    console.warn('Firebase configuration not found. Running in fallback mode.');
-    return null;
-  }
-
-  try {
-    if (getApps().length === 0) {
-      appInstance = initializeApp({
-        apiKey: config.apiKey,
-        authDomain: config.authDomain,
-        projectId: config.projectId,
-        storageBucket: config.storageBucket,
-        messagingSenderId: config.messagingSenderId,
-        appId: config.appId,
-      });
-    } else {
-      appInstance = getApp();
-    }
-
-    const databaseId = config.firestoreDatabaseId || '(default)';
-    dbInstance = getFirestore(appInstance, databaseId);
-    console.log(`[Firestore] Connected successfully to project: ${config.projectId} (DB: ${databaseId})`);
-    return dbInstance;
-  } catch (err) {
-    console.error('[Firestore] Initialization error:', err);
-    return null;
-  }
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT || config?.projectId;
+  if (!projectId) return null;
+  const app = getApps()[0] || initializeApp({ credential: applicationDefault(), projectId });
+  dbInstance = getFirestore(app, config?.firestoreDatabaseId || '(default)');
+  return dbInstance;
 }
-
 export async function testFirestoreConnection(): Promise<boolean> {
   const db = getFirestoreDb();
   if (!db) return false;
-  try {
-    // Ping firestore server according to firebase-skill validation rule
-    await getDocFromServer(doc(db, '_connection_test', 'health'));
-    return true;
-  } catch (err: any) {
-    if (err?.code === 'unavailable' || err?.message?.includes('offline')) {
-      console.warn('[Firestore] Network or connection is offline:', err.message);
-      return false;
-    }
-    // Document not existing is still a successful network roundtrip
-    return true;
-  }
+  try { await db.doc('_connection_test/health').get(); return true; }
+  catch { return false; }
 }

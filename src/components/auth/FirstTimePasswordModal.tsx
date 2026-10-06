@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 export const FirstTimePasswordModal: React.FC = () => {
-  const { user, mustChangePassword, completeFirstTimePasswordChange, dismissFirstTimePasswordChange } = useAuth();
+  const { user, mustChangePassword, completeFirstTimePasswordChange } = useAuth();
   const { showToast } = useToast();
 
   const [newPassword, setNewPassword] = useState<string>('');
@@ -34,8 +34,8 @@ export const FirstTimePasswordModal: React.FC = () => {
     const cleanNew = newPassword.trim();
     const cleanConfirm = confirmPassword.trim();
 
-    if (!cleanNew || cleanNew.length < 6) {
-      setError('Your new password must be at least 6 characters long.');
+    if (!cleanNew || cleanNew.length < 8) {
+      setError('Your new password must be at least 8 characters long.');
       return;
     }
     if (cleanNew !== cleanConfirm) {
@@ -49,7 +49,7 @@ export const FirstTimePasswordModal: React.FC = () => {
       showToast({
         type: 'success',
         title: 'Password Secured!',
-        message: 'Your personal password has been saved. Welcome to your workspace!',
+        message: 'Your password has been saved. Please sign in again.',
       });
     } catch (err: any) {
       setError(err.message || 'Failed to update password. Please try again.');
@@ -58,7 +58,7 @@ export const FirstTimePasswordModal: React.FC = () => {
     }
   };
 
-  const hasMinLength = newPassword.length >= 6;
+  const hasMinLength = newPassword.length >= 8;
   const isMatching = newPassword.length > 0 && newPassword === confirmPassword;
 
   return (
@@ -105,7 +105,7 @@ export const FirstTimePasswordModal: React.FC = () => {
                   autoComplete="new-password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="At least 6 characters"
+                  placeholder="At least 8 characters"
                   className="block w-full pl-9 pr-10 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl bg-slate-50/70 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83] transition-all font-mono"
                 />
                 <button
@@ -152,7 +152,7 @@ export const FirstTimePasswordModal: React.FC = () => {
                   <CheckCircle2 className="w-3.5 h-3.5" />
                 </span>
                 <span className={hasMinLength ? 'text-emerald-700 font-medium' : 'text-slate-500'}>
-                  Minimum 6 characters
+                  Minimum 8 characters
                 </span>
               </div>
               <div className="flex items-center space-x-2">
@@ -178,19 +178,13 @@ export const FirstTimePasswordModal: React.FC = () => {
                   </span>
                 ) : (
                   <span className="flex items-center space-x-1.5">
-                    <span>Set Password &amp; Enter Portal</span>
+                    <span>Set Password &amp; Sign In Again</span>
                     <ArrowRight className="w-4 h-4" />
                   </span>
                 )}
               </button>
 
-              <button
-                type="button"
-                onClick={dismissFirstTimePasswordChange}
-                className="w-full text-center py-2 text-xs text-slate-500 hover:text-slate-700 cursor-pointer"
-              >
-                Remind Me Later
-              </button>
+
             </div>
           </form>
         </div>

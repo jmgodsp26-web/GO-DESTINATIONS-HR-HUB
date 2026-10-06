@@ -1,12 +1,12 @@
 import fs from 'fs';
 import path from 'path';
-import {
-  collection,
-  doc,
-  getDocs,
-  setDoc,
-  deleteDoc,
-} from 'firebase/firestore';
+import { Firestore, DocumentReference, CollectionReference } from 'firebase-admin/firestore';
+// Small adapters preserve the existing persistence call sites using trusted Admin SDK access.
+const doc = (db: Firestore, name: string, id: string) => db.collection(name).doc(id);
+const collection = (db: Firestore, name: string) => db.collection(name);
+const getDocs = (ref: CollectionReference) => ref.get();
+const setDoc = (ref: DocumentReference, data: any) => ref.set(data);
+const deleteDoc = (ref: DocumentReference) => ref.delete();
 import { getFirestoreDb } from './firestore.js';
 import {
   UserProfile,
@@ -438,17 +438,17 @@ export async function seedInitialFirestoreData(initialData: {
   }
 }
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const DATA_DIR = path.resolve(process.env.HR_DATA_DIR || path.join(process.cwd(), 'data'));
 const STORE_PATH = path.join(DATA_DIR, 'hr_hub_store.json');
 const TEMP_PATH = path.join(DATA_DIR, 'hr_hub_store.tmp');
 
 export function saveStateToDisk(data: PersistentData): void {
   try {
     if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+      fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
     }
     const payload = JSON.stringify(data, null, 2);
-    fs.writeFileSync(TEMP_PATH, payload, 'utf8');
+    fs.writeFileSync(TEMP_PATH, payload, { encoding: 'utf8', mode: 0o600 });
     fs.renameSync(TEMP_PATH, STORE_PATH);
   } catch (err) {
     console.error('[Persistence] Fatal error writing authoritative state to disk:', err);
