@@ -1,11 +1,14 @@
+import { workingDays } from '../../utils/workingDays';
+import { readUpload } from '../../utils/files';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { LeaveType, LeaveBalance, HalfDayPeriod } from '../../types';
+import { LeaveType, LeaveBalance, HalfDayPeriod, Holiday } from '../../types';
 import {
   OFFICIAL_LEAVE_TYPES,
   LEAVE_TYPE_MASTER_DATA,
   getLeaveTypeConfig,
+  LEAVE_TYPE_CONFIGS,
   isPaidLeaveType,
 } from '../../constants/masterData';
 import { api } from '../../services/api';
@@ -44,6 +47,19 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [reason, setReason] = useState<string>('');
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [workweek, setWorkweek] = useState('Monday to Friday');
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [holidaysReady, setHolidaysReady] = useState(false);
+  const [holidayError, setHolidayError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    setHolidaysReady(false);
+    setHolidayError(null);
+    Promise.all([api.getHolidays({is_active: true}), api.getSettings()]).then(([data, settings]) => { if (active) { setHolidays(data); setWorkweek(settings.workweek); setHolidaysReady(true); } }).catch(err => {if (active) setHolidayError(err.message || 'Could not load holidays. Close and reopen to try again.');});
+    return () => {active = false;};
+  }, [isOpen]);
   const [attachmentName, setAttachmentName] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +79,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
       setLeaveType('Vacation Leave');
       setReason('');
       setAttachmentName('');
+      setAttachmentFile(null);
       setError(null);
       setStep('form');
     }
@@ -70,21 +87,15 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
   if (!isOpen || !user) return null;
 
-  // Calculate calendar days
-  const calculateDays = (startStr: string, endStr: string, halfDay: boolean): number => {
-    if (!startStr) return 0;
-    if (halfDay) return 0.5;
-    if (!endStr) return 0;
-    const start = new Date(startStr);
-    const end = new Date(endStr);
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
-    const utcStart = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
-    const utcEnd = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
-    if (utcEnd < utcStart) return 0;
-    return Math.floor((utcEnd - utcStart) / (1000 * 60 * 60 * 24)) + 1;
-  };
-
-  const calculatedDays = calculateDays(startDate, isHalfDay ? startDate : endDate, isHalfDay);
+  let calculatedDays = 0;
+  let dateError: string | null = holidayError;
+  if (holidaysReady) {
+    try {
+      const eligible = workingDays(startDate, isHalfDay ? startDate : endDate, holidays, user.country, user.region, workweek);
+      calculatedDays = isHalfDay && eligible > 0 ? 0.5 : eligible;
+      if (!calculatedDays) dateError = 'Choose a working day; weekends and applicable holidays are excluded.';
+    } catch (err: any) { dateError = err.message; }
+  }
 
   // Find balance for selected leave type (Unpaid Leave does not deduct from paid balances)
   const isPaid = isPaidLeaveType(leaveType);
@@ -102,11 +113,14 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Attachment file size must be less than 5MB.');
+      if (file.size > 450000) {
+        setAttachmentName('');
+        setAttachmentFile(null);
+        setError('Attachment file size must be at most 450 KB.');
         return;
       }
       setAttachmentName(file.name);
+      setAttachmentFile(file);
       setError(null);
     }
   };
@@ -114,6 +128,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   const handleProceedToConfirm = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!holidaysReady || dateError) { setError(dateError || 'Please wait while holidays are loaded.'); return; }
 
     if (!startDate || (!isHalfDay && !endDate)) {
       setError('Please select valid leave dates.');
@@ -147,7 +162,8 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     setError(null);
 
     try {
-      await api.submitLeaveRequest({
+      const attachmentData = attachmentFile ? await readUpload(attachmentFile) : undefined;
+      const saved = await api.submitLeaveRequest({
         leave_type: leaveType,
         start_date: startDate,
         end_date: isHalfDay ? startDate : endDate,
@@ -155,13 +171,13 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         half_day_period: isHalfDay ? halfDayPeriod : undefined,
         reason: reason.trim(),
         attachment_name: attachmentName || undefined,
-        attachment_url: attachmentName ? 'https://example.com/attachments/' + attachmentName : undefined,
+        attachment_data: attachmentData,
       });
 
       showToast({
         type: 'success',
         title: 'Leave Request Submitted',
-        message: `Your ${leaveType} application (${calculatedDays} day(s)) has been submitted to HR.`,
+        message: `Your ${leaveType} application (${saved.total_days} day(s)) has been submitted to HR.`,
       });
 
       onSuccess();
@@ -197,10 +213,10 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         </div>
 
         {/* Error Alert */}
-        {error && (
+        {(error || dateError) && (
           <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-start space-x-2 text-xs text-rose-700">
             <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-            <span>{error}</span>
+            <span>{error || dateError}</span>
           </div>
         )}
 
@@ -218,7 +234,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 onChange={(e) => setLeaveType(e.target.value as LeaveType)}
                 className="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
-                {LEAVE_TYPE_MASTER_DATA.map((lt) => {
+                {[...LEAVE_TYPE_MASTER_DATA, LEAVE_TYPE_CONFIGS['Holiday Shift Credit']].map((lt) => {
                   const bal = balances.find((b) => b.leave_type === lt.name);
                   const rem = bal ? bal.allocated_days - bal.used_days : null;
                   return (
@@ -528,7 +544,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 />
                 <div className="flex items-center justify-center space-x-2 text-xs text-slate-600">
                   <Upload className="w-4 h-4 text-slate-400" />
-                  <span>{attachmentName ? attachmentName : 'Click or drag file to attach (Max 5MB)'}</span>
+                  <span>{attachmentName ? attachmentName : 'Click or drag file to attach (Max 450 KB)'}</span>
                 </div>
               </div>
               {attachmentName && (
@@ -536,7 +552,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                   <span className="truncate">{attachmentName}</span>
                   <button
                     type="button"
-                    onClick={() => setAttachmentName('')}
+                    onClick={() => {setAttachmentName(''); setAttachmentFile(null);}}
                     className="text-rose-500 hover:text-rose-700 font-medium ml-2"
                   >
                     Remove
@@ -557,6 +573,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               <button
                 type="submit"
                 id="submit-leave-review-btn"
+                disabled={!holidaysReady || !!dateError}
                 className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#2F4D6D] transition-colors flex items-center space-x-1.5"
               >
                 <span>Review Request</span>

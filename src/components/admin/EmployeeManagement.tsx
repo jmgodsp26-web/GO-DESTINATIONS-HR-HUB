@@ -62,6 +62,8 @@ export const EmployeeManagement: React.FC = () => {
   const [selectedDocsEmployee, setSelectedDocsEmployee] = useState<UserProfile | null>(null);
   const [deletingEmployee, setDeletingEmployee] = useState<UserProfile | null>(null);
 
+  const [policyReady, setPolicyReady] = useState(false);
+  const [policyDefaults, setPolicyDefaults] = useState({annual: 20, sick: 10});
   // Add Employee Form State
   const [newEmployee, setNewEmployee] = useState({
     full_name: '',
@@ -76,8 +78,8 @@ export const EmployeeManagement: React.FC = () => {
     date_joined: new Date().toISOString().split('T')[0],
     hire_date: new Date().toISOString().split('T')[0],
     date_of_birth: '',
-    annual_leave_days: 15,
-    sick_leave_days: 10,
+    annual_leave_days: policyDefaults.annual,
+    sick_leave_days: policyDefaults.sick,
     role: 'employee' as UserRole,
   });
 
@@ -116,6 +118,12 @@ export const EmployeeManagement: React.FC = () => {
 
   useEffect(() => {
     loadEmployees();
+    api.getSettings().then(settings => {
+      const defaults = {annual: settings.annual_leave_default, sick: settings.sick_leave_default};
+      setPolicyDefaults(defaults);
+      setPolicyReady(true);
+      setNewEmployee(old => ({...old, annual_leave_days: defaults.annual, sick_leave_days: defaults.sick}));
+    }).catch(() => setFormError('Could not load company leave defaults. Please reload before adding employees.'));
   }, [loadEmployees]);
 
   const departments = ['All', ...OFFICIAL_DEPARTMENTS];
@@ -142,6 +150,7 @@ export const EmployeeManagement: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      if (!policyReady) throw new Error('Please wait for company leave defaults to load.');
       if (newEmployee.password.trim().length < 12) throw new Error('Temporary password must be at least 12 characters.');
       const created = await api.createEmployee(newEmployee);
       setIsAddModalOpen(false);
@@ -165,8 +174,8 @@ export const EmployeeManagement: React.FC = () => {
         date_joined: new Date().toISOString().split('T')[0],
         hire_date: new Date().toISOString().split('T')[0],
         date_of_birth: '',
-        annual_leave_days: 15,
-        sick_leave_days: 10,
+        annual_leave_days: policyDefaults.annual,
+        sick_leave_days: policyDefaults.sick,
         role: 'employee',
       });
       await loadEmployees();
@@ -318,6 +327,7 @@ export const EmployeeManagement: React.FC = () => {
         <button
           type="button"
           id="add-employee-modal-btn"
+          disabled={!policyReady}
           onClick={() => {
             setFormError(null);
             setIsAddModalOpen(true);
@@ -407,7 +417,7 @@ export const EmployeeManagement: React.FC = () => {
                 const vacationBal = emp.leave_balances?.find((b) => b.leave_type === 'Vacation Leave') || emp.leave_balances?.find((b) => (b.leave_type as string) === 'Annual Leave');
                 const sickBal = emp.leave_balances?.find((b) => b.leave_type === 'Sick Leave');
 
-                const vacationRem = (vacationBal?.allocated_days ?? 15) - (vacationBal?.used_days ?? 0);
+                const vacationRem = (vacationBal?.allocated_days ?? policyDefaults.annual) - (vacationBal?.used_days ?? 0);
                 const sickRem = (sickBal?.allocated_days ?? 10) - (sickBal?.used_days ?? 0);
 
                 return (
@@ -465,7 +475,7 @@ export const EmployeeManagement: React.FC = () => {
                     {/* Vacation Leave balance */}
                     <td className="px-5 py-3.5">
                       <span className="font-bold text-slate-900 tabular-nums">{vacationRem}</span>
-                      <span className="text-[11px] text-slate-500"> / {vacationBal?.allocated_days ?? 15} days</span>
+                      <span className="text-[11px] text-slate-500"> / {vacationBal?.allocated_days ?? policyDefaults.annual} days</span>
                     </td>
 
                     {/* Sick Leave balance */}
@@ -518,7 +528,7 @@ export const EmployeeManagement: React.FC = () => {
                           });
                           setSelectedLeaveTypeToAdjust('Vacation Leave');
                           const curBal = emp.leave_balances?.find((b) => b.leave_type === 'Vacation Leave') || emp.leave_balances?.find((b) => (b.leave_type as string) === 'Annual Leave');
-                          setNewAllocatedDays(curBal?.allocated_days ?? 15);
+                          setNewAllocatedDays(curBal?.allocated_days ?? policyDefaults.annual);
                         }}
                         className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors"
                         title="Adjust Leave Balance"
@@ -585,7 +595,7 @@ export const EmployeeManagement: React.FC = () => {
             filteredEmployees.map((emp) => {
               const vacationBal = emp.leave_balances?.find((b) => b.leave_type === 'Vacation Leave') || emp.leave_balances?.find((b) => (b.leave_type as string) === 'Annual Leave');
               const sickBal = emp.leave_balances?.find((b) => b.leave_type === 'Sick Leave');
-              const vacationRem = (vacationBal?.allocated_days ?? 15) - (vacationBal?.used_days ?? 0);
+              const vacationRem = (vacationBal?.allocated_days ?? policyDefaults.annual) - (vacationBal?.used_days ?? 0);
               const sickRem = (sickBal?.allocated_days ?? 10) - (sickBal?.used_days ?? 0);
 
               return (
@@ -634,7 +644,7 @@ export const EmployeeManagement: React.FC = () => {
                     <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 flex justify-between items-center">
                       <span className="text-slate-500 text-[11px]">Vacation:</span>
                       <span className="font-bold text-slate-800 tabular-nums">
-                        {vacationRem} <span className="text-[10px] text-slate-400 font-normal">/ {vacationBal?.allocated_days ?? 15}d</span>
+                        {vacationRem} <span className="text-[10px] text-slate-400 font-normal">/ {vacationBal?.allocated_days ?? policyDefaults.annual}d</span>
                       </span>
                     </div>
                     <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 flex justify-between items-center">
@@ -666,7 +676,7 @@ export const EmployeeManagement: React.FC = () => {
                           });
                           setSelectedLeaveTypeToAdjust('Vacation Leave');
                           const curBal = emp.leave_balances?.find((b) => b.leave_type === 'Vacation Leave') || emp.leave_balances?.find((b) => (b.leave_type as string) === 'Annual Leave');
-                          setNewAllocatedDays(curBal?.allocated_days ?? 15);
+                          setNewAllocatedDays(curBal?.allocated_days ?? policyDefaults.annual);
                         }}
                         className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
                         title="Adjust Balances"
@@ -1349,7 +1359,7 @@ export const EmployeeManagement: React.FC = () => {
                     const type = e.target.value as LeaveType;
                     setSelectedLeaveTypeToAdjust(type);
                     const bal = adjustingBalanceEmployee.balances.find((b) => b.leave_type === type);
-                    setNewAllocatedDays(bal ? bal.allocated_days : (type === 'Vacation Leave' ? 15 : 10));
+                    setNewAllocatedDays(bal ? bal.allocated_days : (type === 'Vacation Leave' ? policyDefaults.annual : policyDefaults.sick));
                   }}
                   className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900"
                 >

@@ -1,3 +1,5 @@
+import { workingDays, holidayApplies } from '../src/utils/workingDays.js';
+import { decodeUpload } from './files.js';
 import {
   UserProfile,
   LeaveBalance,
@@ -18,6 +20,7 @@ import {
   isPaidLeaveType,
   OFFICIAL_DEPARTMENTS,
   LEAVE_TYPE_MASTER_DATA,
+  LEAVE_TYPE_CONFIGS,
 } from '../src/types.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -82,6 +85,8 @@ export class HRDatabase {
   private notifications: NotificationItem[] = [];
   private employeeDocuments: EmployeeDocument[] = [];
   private sessions: Map<string, SessionRecord> = new Map();
+  private nextEmployeeNumber = 100;
+  private leaveAttachments: {id: string; employee_id: string; name: string; data: string}[] = [];
   private deletedEmployeeIds: Set<string> = new Set();
   private deletedHolidayIds: Set<string> = new Set();
   private deletedShiftIds: Set<string> = new Set();
@@ -117,6 +122,8 @@ export class HRDatabase {
 
   public exportState(): PersistentData {
     return {
+      nextEmployeeNumber: this.nextEmployeeNumber,
+      leaveAttachments: this.leaveAttachments,
       users: this.users,
       employees: this.users.map((u) => u.profile),
       leaveBalances: this.leaveBalances,
@@ -137,6 +144,9 @@ export class HRDatabase {
   }
 
   private hydrateFromStore(data: PersistentData) {
+    this.leaveAttachments = data.leaveAttachments || [];
+    this.nextEmployeeNumber = Math.max(data.nextEmployeeNumber || 100, ...((data.users || []).map(u => Number(u.profile?.employee_id?.replace('HR-', '')) + 1).filter(Number.isFinite)));
+
     for (const [hash, session] of data.sessions || []) {
       if (Date.now() < session.expiresAt && Date.now() - session.lastActivityAt < this.SESSION_IDLE_TTL) this.sessions.set(hash, session);
     }
@@ -343,8 +353,11 @@ export class HRDatabase {
       throw new Error('An employee with this email already exists.');
     }
 
+    for (const allocation of [data.annual_leave_days, data.sick_leave_days]) {
+      if (allocation !== undefined && (typeof allocation !== 'number' || !Number.isFinite(allocation) || allocation < 0 || allocation > 366)) throw new Error('Leave allocation must be between 0 and 366 days.');
+    }
     const newId = 'usr-' + Math.random().toString(36).substring(2, 9);
-    const employeeId = 'HR-' + (100 + this.users.length).toString();
+    const employeeId = 'HR-' + this.nextEmployeeNumber++;
     const joined = data.hire_date || data.date_joined || new Date().toISOString().split('T')[0];
 
     const profile: UserProfile = {
@@ -383,7 +396,7 @@ export class HRDatabase {
       id: 'bal-' + Math.random().toString(36).substring(2, 9),
       employee_id: newId,
       leave_type: 'Vacation Leave',
-      allocated_days: data.annual_leave_days ?? 20,
+      allocated_days: data.annual_leave_days ?? this.companySettings.annual_leave_default,
       used_days: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -393,7 +406,7 @@ export class HRDatabase {
       id: 'bal-' + Math.random().toString(36).substring(2, 9),
       employee_id: newId,
       leave_type: 'Sick Leave',
-      allocated_days: data.sick_leave_days ?? 10,
+      allocated_days: data.sick_leave_days ?? this.companySettings.sick_leave_default,
       used_days: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -403,7 +416,7 @@ export class HRDatabase {
       id: 'bal-' + Math.random().toString(36).substring(2, 9),
       employee_id: newId,
       leave_type: 'Emergency Leave',
-      allocated_days: 5,
+      allocated_days: this.companySettings.casual_leave_default,
       used_days: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -613,13 +626,12 @@ export class HRDatabase {
     const removedRequests = this.leaveRequests.filter((r) => r.employee_id === employeeId);
     this.leaveRequests = this.leaveRequests.filter((r) => r.employee_id !== employeeId);
 
-    // 5. Remove associated shifts & documents
-    const removedShifts = this.holidayShifts.filter((s) => s.employee_id === employeeId);
-    this.holidayShifts = this.holidayShifts.filter((s) => s.employee_id !== employeeId);
-    for (const s of removedShifts) {
-      this.deletedShiftIds.add(s.id);
-    }
-    this.employeeDocuments = this.employeeDocuments.filter((d) => d.employee_id !== employeeId);
+    // 5. Remove associated shifts, documents and private attachments.
+    const removedShifts = this.holidayShifts.filter(s => s.employee_id === employeeId);
+    this.holidayShifts = this.holidayShifts.filter(s => s.employee_id !== employeeId);
+    for (const shift of removedShifts) this.deletedShiftIds.add(shift.id);
+    this.employeeDocuments = this.employeeDocuments.filter(d => d.employee_id !== employeeId);
+    this.leaveAttachments = this.leaveAttachments.filter(f => f.employee_id !== employeeId);
 
     // 6. Terminate all active sessions immediately
     this.revokeAllSessionsForUser(employeeId);
@@ -651,46 +663,17 @@ export class HRDatabase {
     allocatedDays: number,
     adminUser: UserProfile
   ): LeaveBalance {
-    let balance = this.leaveBalances.find(
-      (b) =>
-        b.employee_id === employeeId &&
-        (b.leave_type === leaveType ||
-          (leaveType === 'Vacation Leave' && (b.leave_type as string) === 'Annual Leave'))
-    );
-
-    const employee = this.getProfile(employeeId);
-    const employeeName = employee ? employee.full_name : employeeId;
-
-    if (!balance) {
-      balance = {
-        id: 'bal-' + Math.random().toString(36).substring(2, 9),
-        employee_id: employeeId,
-        leave_type: leaveType,
-        allocated_days: allocatedDays,
-        used_days: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      this.leaveBalances.push(balance);
-    } else {
-      balance.leave_type = leaveType;
-      balance.allocated_days = allocatedDays;
-      balance.updated_at = new Date().toISOString();
+    if (!Object.hasOwn(LEAVE_TYPE_CONFIGS, leaveType) || !Number.isFinite(allocatedDays) || allocatedDays < 0 || allocatedDays > 366) throw new Error('Enter a valid leave allocation between 0 and 366.');
+    const balance = this.leaveBalances.find(b => b.employee_id === employeeId && b.leave_type === leaveType);
+    if (balance && allocatedDays < balance.used_days) throw new Error('Allocation cannot be less than already used leave.');
+    if (balance?.allocated_days === allocatedDays) return balance;
+    if (!balance && allocatedDays === 0) {
+      if (!this.getProfile(employeeId)) throw new Error('Employee not found.');
+      const empty: LeaveBalance = {id: crypto.randomUUID(), employee_id: employeeId, leave_type: leaveType, allocated_days: 0, used_days: 0, created_at: new Date().toISOString(), updated_at: new Date().toISOString()};
+      this.leaveBalances.push(empty);
+      return empty;
     }
-
-    this.logAudit({
-      action: 'Leave balance changed',
-      user_id: adminUser.id,
-      user_name: adminUser.full_name,
-      user_role: adminUser.role,
-      target_type: 'leave_balance',
-      target_id: balance.id,
-      details: `Adjusted ${leaveType} allocation to ${allocatedDays} days for ${employeeName}.`,
-    });
-
-    // Cloud Firestore persistence
-
-    return balance;
+    return this.manualBalanceAdjustment(employeeId, leaveType, allocatedDays - (balance?.allocated_days || 0), 'Updated leave allocation', adminUser).balance;
   }
 
   // --- LEAVE REQUESTS METHODS ---
@@ -729,55 +712,7 @@ export class HRDatabase {
     employeeCountry?: string,
     employeeRegion?: string
   ): number {
-    const startParts = (startDateStr || '').split('-').map(Number);
-    const endParts = (endDateStr || '').split('-').map(Number);
-
-    if (startParts.length !== 3 || endParts.length !== 3) {
-      throw new Error('Please select valid leave dates (YYYY-MM-DD).');
-    }
-
-    const startUtc = Date.UTC(startParts[0], startParts[1] - 1, startParts[2]);
-    const endUtc = Date.UTC(endParts[0], endParts[1] - 1, endParts[2]);
-
-    if (isNaN(startUtc) || isNaN(endUtc)) {
-      throw new Error('Please select valid leave dates.');
-    }
-
-    if (endUtc < startUtc) {
-      throw new Error('End date cannot be earlier than start date.');
-    }
-
-    // Retrieve active applicable holidays for employee's country
-    const holidays = this.getHolidays({
-      country: employeeCountry,
-      is_active: true,
-    });
-    const holidayDates = new Set(holidays.map((h) => h.date));
-
-    let workingDays = 0;
-    let currUtc = startUtc;
-    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-
-    while (currUtc <= endUtc) {
-      const d = new Date(currUtc);
-      const dayOfWeek = d.getUTCDay(); // 0 is Sunday, 6 is Saturday
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-
-      const yyyy = d.getUTCFullYear();
-      const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-      const dd = String(d.getUTCDate()).padStart(2, '0');
-      const dateStr = `${yyyy}-${mm}-${dd}`;
-
-      const isHoliday = holidayDates.has(dateStr);
-
-      if (!isWeekend && !isHoliday) {
-        workingDays += 1;
-      }
-
-      currUtc += ONE_DAY_MS;
-    }
-
-    return workingDays;
+    return workingDays(startDateStr, endDateStr, this.holidays, employeeCountry, employeeRegion, this.companySettings.workweek);
   }
 
   public calculateDurationInDays(startDateStr: string, endDateStr: string): number {
@@ -795,20 +730,25 @@ export class HRDatabase {
       half_day_period?: 'morning' | 'afternoon';
       attachment_name?: string;
       attachment_url?: string;
+      attachment_data?: string;
     }
   ): LeaveRequest {
     if (!data.leave_type || !data.start_date || !data.reason?.trim()) {
       throw new Error('Please fill in all required fields.');
     }
 
+    if (!Object.hasOwn(LEAVE_TYPE_CONFIGS, data.leave_type)) throw new Error('Select a valid leave type.');
+    if (data.is_half_day !== undefined && typeof data.is_half_day !== 'boolean') throw new Error('Invalid half-day selection.');
+    if (data.is_half_day && data.half_day_period !== undefined && !['morning', 'afternoon'].includes(data.half_day_period)) throw new Error('Choose morning or afternoon.');
+    if (data.attachment_data) decodeUpload(data.attachment_data);
+    if (data.attachment_name && !data.attachment_data) throw new Error('Please upload the supporting attachment again.');
     const isHalfDay = Boolean(data.is_half_day);
     const halfDayPeriod = isHalfDay ? (data.half_day_period || 'morning') : undefined;
     const startDate = data.start_date;
     const endDate = isHalfDay ? data.start_date : (data.end_date || data.start_date);
 
-    const calculatedWorkingDays = isHalfDay
-      ? 0.5
-      : this.calculateWorkingDays(startDate, endDate, user.country, user.region);
+    const eligibleDays = this.calculateWorkingDays(startDate, endDate, user.country, user.region);
+    const calculatedWorkingDays = isHalfDay && eligibleDays > 0 ? 0.5 : eligibleDays;
 
     if (calculatedWorkingDays === 0) {
       throw new Error('The selected date range does not contain any working days (weekends or public holidays).');
@@ -850,6 +790,8 @@ export class HRDatabase {
       }
     }
 
+    const attachmentId = data.attachment_data ? crypto.randomUUID() : undefined;
+    if (attachmentId) this.leaveAttachments.push({id: attachmentId, employee_id: user.id, name: (data.attachment_name || 'attachment').slice(0, 200), data: data.attachment_data!});
     const newRequest: LeaveRequest = {
       id: 'req-' + Math.random().toString(36).substring(2, 9),
       employee_id: user.id,
@@ -865,7 +807,7 @@ export class HRDatabase {
       half_day_period: halfDayPeriod,
       reason: data.reason.trim(),
       attachment_name: data.attachment_name,
-      attachment_url: data.attachment_url,
+      attachment_url: attachmentId ? '/api/leave-attachments/' + attachmentId : undefined,
       status: 'Pending',
       submitted_at: new Date().toISOString(),
     };
@@ -1299,6 +1241,7 @@ export class HRDatabase {
     const index = this.holidays.findIndex((h) => h.id === id);
     if (index === -1) throw new Error('Holiday not found');
     const removed = this.holidays[index];
+    this.assertCreditCanBeReversed(this.holidayShifts.filter(s => s.holiday_id === id || s.holiday_date === removed.date));
     this.holidays.splice(index, 1);
     this.deletedHolidayIds.add(id);
 
@@ -1306,12 +1249,12 @@ export class HRDatabase {
     const removedShifts = this.holidayShifts.filter(
       (s) => s.holiday_id === id || s.holiday_date === removed.date
     );
-    this.holidayShifts = this.holidayShifts.filter(
-      (s) => s.holiday_id !== id && s.holiday_date !== removed.date
-    );
     for (const s of removedShifts) {
+      this.cancelHolidayShiftRequest(s.id, adminUser);
       this.deletedShiftIds.add(s.id);
     }
+
+    this.holidayShifts = this.holidayShifts.filter(s => s.holiday_id !== id && s.holiday_date !== removed.date);
 
     this.logAudit({
       action: 'Holiday deleted',
@@ -1440,6 +1383,7 @@ export class HRDatabase {
     );
 
     if (shift) {
+      if (status !== 'Approved') this.assertCreditCanBeReversed([shift]);
       shift.working_hours = data.working_hours || '9:00 AM – 5:00 PM';
       shift.status = status;
       shift.admin_note = data.admin_note;
@@ -1472,11 +1416,14 @@ export class HRDatabase {
       this.holidayShifts.unshift(shift);
     }
 
+    if (status !== 'Approved' && this.outstandingHolidayCredit(shift.id) > 0) {
+      shift.status = 'Approved';
+      this.reviewHolidayShiftRequest(shift.id, 'Rejected', adminUser);
+    }
+    shift.status = status;
     // Award holiday work credit if Approved and not already credited
     if (status === 'Approved') {
-      const existingCredit = this.leaveTransactions.find(
-        (t) => t.reference_id === shift!.id && t.transaction_type === 'holiday_credit'
-      );
+      const existingCredit = this.outstandingHolidayCredit(shift!.id);
       if (!existingCredit) {
         let creditBal = this.leaveBalances.find(
           (b) => b.employee_id === employee.id && b.leave_type === 'Holiday Shift Credit'
@@ -1493,7 +1440,7 @@ export class HRDatabase {
           };
           this.leaveBalances.push(creditBal);
         }
-        creditBal.allocated_days += 1;
+        creditBal.allocated_days += this.companySettings.holiday_credit_rate;
         creditBal.updated_at = new Date().toISOString();
 
         const remaining = creditBal.allocated_days - creditBal.used_days;
@@ -1503,7 +1450,7 @@ export class HRDatabase {
           employee_id: employee.id,
           employee_name: employee.full_name,
           leave_type: 'Holiday Shift Credit',
-          amount: 1,
+          amount: this.companySettings.holiday_credit_rate,
           balance_after: remaining,
           transaction_type: 'holiday_credit',
           reference_type: 'holiday_shift',
@@ -1534,7 +1481,7 @@ export class HRDatabase {
       id: 'notif-' + Math.random().toString(36).substring(2, 9),
       user_id: employee.id,
       title: 'Holiday Shift Scheduled',
-      message: `You are scheduled to work on ${holiday.name} (${holiday.date}) from ${shift.working_hours}. +1 Holiday Work Credit awarded.`,
+      message: `You are scheduled to work on ${holiday.name} (${holiday.date}) from ${shift.working_hours}. ${this.companySettings.holiday_credit_rate} Holiday Work Credit awarded.`,
       type: 'system',
       read: false,
       created_at: new Date().toISOString(),
@@ -1556,6 +1503,7 @@ export class HRDatabase {
       throw new Error('Holiday shift request not found.');
     }
 
+    if (action === 'Rejected') this.assertCreditCanBeReversed([shift]);
     const previousStatus = shift.status;
     shift.status = action;
     shift.admin_note = adminNote || undefined;
@@ -1570,9 +1518,7 @@ export class HRDatabase {
       shift.approved_at = new Date().toISOString();
 
       // DUPLICATE CREDIT CHECK
-      const existingCredit = this.leaveTransactions.find(
-        (t) => t.reference_id === shift.id && t.transaction_type === 'holiday_credit'
-      );
+      const existingCredit = this.outstandingHolidayCredit(shift.id);
 
       if (!existingCredit) {
         let creditBal = this.leaveBalances.find(
@@ -1591,7 +1537,7 @@ export class HRDatabase {
           this.leaveBalances.push(creditBal);
         }
 
-        creditBal.allocated_days += 1;
+        creditBal.allocated_days += this.companySettings.holiday_credit_rate;
         creditBal.updated_at = new Date().toISOString();
 
         const currentRemaining = creditBal.allocated_days - creditBal.used_days;
@@ -1601,7 +1547,7 @@ export class HRDatabase {
           employee_id: shift.employee_id,
           employee_name: employeeName,
           leave_type: 'Holiday Shift Credit',
-          amount: 1,
+          amount: this.companySettings.holiday_credit_rate,
           balance_after: currentRemaining,
           transaction_type: 'holiday_credit',
           reference_type: 'holiday_shift',
@@ -1624,14 +1570,14 @@ export class HRDatabase {
         user_role: adminUser.role,
         target_type: 'leave_request',
         target_id: shift.id,
-        details: `Approved holiday shift for ${shift.employee_name} on ${shift.holiday_name} (${shift.holiday_date}). +1 Holiday Work Credit awarded.`,
+        details: `Approved holiday shift for ${shift.employee_name} on ${shift.holiday_name} (${shift.holiday_date}). ${this.companySettings.holiday_credit_rate} Holiday Work Credit awarded.`,
       });
 
       const approvedNotif: NotificationItem = {
         id: 'notif-' + Math.random().toString(36).substring(2, 9),
         user_id: shift.employee_id,
         title: 'Holiday Shift Approved',
-        message: `Your shift request for ${shift.holiday_name} (${shift.holiday_date}) was approved by ${adminUser.full_name}. +1 Holiday Work Credit has been added to your ledger.`,
+        message: `Your shift request for ${shift.holiday_name} (${shift.holiday_date}) was approved by ${adminUser.full_name}. ${this.companySettings.holiday_credit_rate} Holiday Work Credit has been added to your ledger.`,
         type: 'leave_approved',
         read: false,
         created_at: new Date().toISOString(),
@@ -1643,15 +1589,13 @@ export class HRDatabase {
 
       // If previously approved, reverse credit
       if (previousStatus === 'Approved') {
-        const creditTx = this.leaveTransactions.find(
-          (t) => t.reference_id === shift.id && t.transaction_type === 'holiday_credit'
-        );
+        const creditTx = this.outstandingHolidayCredit(shift.id);
         if (creditTx) {
           const creditBal = this.leaveBalances.find(
             (b) => b.employee_id === shift.employee_id && b.leave_type === 'Holiday Shift Credit'
           );
           if (creditBal) {
-            creditBal.allocated_days = Math.max(0, creditBal.allocated_days - 1);
+            creditBal.allocated_days = creditBal.allocated_days - creditTx;
             creditBal.updated_at = new Date().toISOString();
 
           }
@@ -1663,7 +1607,7 @@ export class HRDatabase {
             employee_id: shift.employee_id,
             employee_name: employeeName,
             leave_type: 'Holiday Shift Credit',
-            amount: -1,
+            amount: -creditTx,
             balance_after: currentRemaining,
             transaction_type: 'holiday_credit_reversal',
             reference_type: 'holiday_shift',
@@ -1714,18 +1658,17 @@ export class HRDatabase {
       throw new Error('Unauthorized to cancel this shift.');
     }
 
+    this.assertCreditCanBeReversed([shift]);
     const wasApproved = shift.status === 'Approved';
 
     if (wasApproved) {
-      const creditTx = this.leaveTransactions.find(
-        (t) => t.reference_id === shift.id && t.transaction_type === 'holiday_credit'
-      );
+      const creditTx = this.outstandingHolidayCredit(shift.id);
       if (creditTx) {
         const creditBal = this.leaveBalances.find(
           (b) => b.employee_id === shift.employee_id && b.leave_type === 'Holiday Shift Credit'
         );
         if (creditBal) {
-          creditBal.allocated_days = Math.max(0, creditBal.allocated_days - 1);
+          creditBal.allocated_days = creditBal.allocated_days - creditTx;
           creditBal.updated_at = new Date().toISOString();
 
         }
@@ -1737,7 +1680,7 @@ export class HRDatabase {
           employee_id: shift.employee_id,
           employee_name: shift.employee_name,
           leave_type: 'Holiday Shift Credit',
-          amount: -1,
+          amount: -creditTx,
           balance_after: currentRemaining,
           transaction_type: 'holiday_credit_reversal',
           reference_type: 'holiday_shift',
@@ -1800,6 +1743,8 @@ export class HRDatabase {
         r.end_date >= holidayDate
     );
 
+    if (!['keep_shift', 'keep_leave'].includes(resolution)) throw new Error('Choose a valid conflict resolution.');
+    if (resolution === 'keep_leave') this.assertCreditCanBeReversed(shifts);
     if (resolution === 'keep_shift') {
       // Cancel the approved leave on this date, restore deducted balance
       for (const l of leaves) {
@@ -1844,9 +1789,7 @@ export class HRDatabase {
       // Ensure shift has holiday credit
       for (const s of shifts) {
 
-        const existingCredit = this.leaveTransactions.find(
-          (t) => t.reference_id === s.id && t.transaction_type === 'holiday_credit'
-        );
+        const existingCredit = this.outstandingHolidayCredit(s.id);
         if (!existingCredit) {
           let creditBal = this.leaveBalances.find(
             (b) => b.employee_id === employeeId && b.leave_type === 'Holiday Shift Credit'
@@ -1863,7 +1806,7 @@ export class HRDatabase {
             };
             this.leaveBalances.push(creditBal);
           }
-          creditBal.allocated_days += 1;
+          creditBal.allocated_days += this.companySettings.holiday_credit_rate;
           creditBal.updated_at = new Date().toISOString();
 
           const creditTx: LeaveTransaction = {
@@ -1871,7 +1814,7 @@ export class HRDatabase {
             employee_id: employeeId,
             employee_name: employee.full_name,
             leave_type: 'Holiday Shift Credit',
-            amount: 1,
+            amount: this.companySettings.holiday_credit_rate,
             balance_after: creditBal.allocated_days - creditBal.used_days,
             transaction_type: 'holiday_credit',
             reference_type: 'holiday_shift',
@@ -1894,15 +1837,13 @@ export class HRDatabase {
         s.admin_note = 'Cancelled by Admin in favor of approved leave request.';
         s.updated_at = new Date().toISOString();
 
-        const creditTx = this.leaveTransactions.find(
-          (t) => t.reference_id === s.id && t.transaction_type === 'holiday_credit'
-        );
+        const creditTx = this.outstandingHolidayCredit(s.id);
         if (creditTx) {
           const creditBal = this.leaveBalances.find(
             (b) => b.employee_id === employeeId && b.leave_type === 'Holiday Shift Credit'
           );
           if (creditBal) {
-            creditBal.allocated_days = Math.max(0, creditBal.allocated_days - 1);
+            creditBal.allocated_days = creditBal.allocated_days - creditTx;
             creditBal.updated_at = new Date().toISOString();
 
           }
@@ -1914,7 +1855,7 @@ export class HRDatabase {
             employee_id: employeeId,
             employee_name: employee.full_name,
             leave_type: 'Holiday Shift Credit',
-            amount: -1,
+            amount: -creditTx,
             balance_after: rem,
             transaction_type: 'holiday_credit_reversal',
             reference_type: 'holiday_shift',
@@ -1957,6 +1898,25 @@ export class HRDatabase {
     return { success: true };
   }
 
+  private assertCreditCanBeReversed(shifts: HolidayShiftRequest[]) {
+    const totals = new Map<string, number>();
+    for (const shift of shifts) totals.set(shift.employee_id, (totals.get(shift.employee_id) || 0) + this.outstandingHolidayCredit(shift.id));
+    for (const [employee, amount] of totals) {
+      const balance = this.leaveBalances.find(b => b.employee_id === employee && b.leave_type === 'Holiday Shift Credit');
+      if (amount > 0 && (!balance || balance.allocated_days - balance.used_days < amount)) throw new Error('This holiday credit has already been used. Cancel the approved credit leave before reversing the shift.');
+    }
+  }
+
+  private outstandingHolidayCredit(shiftId: string): number {
+    return this.leaveTransactions.filter(t => t.reference_id === shiftId && ['holiday_credit', 'holiday_credit_reversal'].includes(t.transaction_type)).reduce((sum, t) => sum + t.amount, 0);
+  }
+
+  public getLeaveAttachment(id: string, user: UserProfile) {
+    const file = this.leaveAttachments.find(f => f.id === id);
+    if (!file || (user.role !== 'admin' && file.employee_id !== user.id)) throw new Error('Attachment not found.');
+    return {...decodeUpload(file.data), name: file.name};
+  }
+
   // --- LEAVE TRANSACTIONS & MANUAL ADJUSTMENTS ---
   public getLeaveTransactions(employeeId?: string): LeaveTransaction[] {
     if (employeeId) {
@@ -1978,8 +1938,9 @@ export class HRDatabase {
   ): { success: boolean; transaction: LeaveTransaction; balance: LeaveBalance } {
     const employee = this.getProfile(employeeId);
     if (!employee) throw new Error('Employee not found.');
+    if (!Object.hasOwn(LEAVE_TYPE_CONFIGS, leaveType)) throw new Error('Select a valid leave type.');
     if (!reason || !reason.trim()) throw new Error('Please provide a reason for the manual balance adjustment.');
-    if (typeof amount !== 'number' || isNaN(amount) || amount === 0) {
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount === 0) {
       throw new Error('Please enter a valid non-zero adjustment amount.');
     }
 
@@ -2000,7 +1961,9 @@ export class HRDatabase {
       this.leaveBalances.push(balance);
     }
 
-    balance.allocated_days = Math.max(0, balance.allocated_days + amount);
+    const previousAllocation = balance.allocated_days;
+    balance.allocated_days = Math.max(balance.used_days, balance.allocated_days + amount);
+    amount = balance.allocated_days - previousAllocation;
     balance.updated_at = new Date().toISOString();
 
     const remaining = balance.allocated_days - balance.used_days;
@@ -2226,12 +2189,7 @@ export class HRDatabase {
     for (const h of this.holidays) {
       if (!h.is_active) continue;
       if (user.role !== 'admin') {
-        const isApplicable =
-          h.scope === 'Company-wide' ||
-          h.country?.toLowerCase() === 'company-wide' ||
-          h.country?.toLowerCase() === 'global' ||
-          h.country?.toLowerCase() === 'all' ||
-          (user.country && h.country?.toLowerCase() === user.country.toLowerCase());
+        const isApplicable = holidayApplies(h, user.country, user.region);
         if (!isApplicable) continue;
       }
 
@@ -2424,7 +2382,7 @@ export class HRDatabase {
     casual_leave_default: 5,
     holiday_credit_rate: 1.0,
     require_medical_cert_days: 2,
-    email_notifications_enabled: true,
+    email_notifications_enabled: false,
     browser_notifications_enabled: true,
     leave_approval_digest: 'daily',
     supabase_configured: false,
@@ -2432,17 +2390,22 @@ export class HRDatabase {
   };
 
   public getCompanySettings(): Record<string, any> {
-    return { ...this.companySettings };
+    return { ...this.companySettings, email_notifications_enabled: false };
   }
 
   public updateCompanySettings(updates: Record<string, any>): Record<string, any> {
+    if ('workweek' in updates) workingDays('2026-01-01', '2026-01-01', [], undefined, undefined, updates.workweek);
+    for (const key of ['annual_leave_default', 'sick_leave_default', 'casual_leave_default', 'holiday_credit_rate', 'require_medical_cert_days']) {
+      if (key in updates && (typeof updates[key] !== 'number' || !Number.isFinite(updates[key]) || updates[key] < 0 || updates[key] > 366)) throw new Error('Enter a valid policy value between 0 and 366.');
+    }
     this.companySettings = {
       ...this.companySettings,
       ...updates,
+      email_notifications_enabled: false,
       updated_at: new Date().toISOString(),
     };
 
-    return { ...this.companySettings };
+    return { ...this.companySettings, email_notifications_enabled: false };
   }
 }
 

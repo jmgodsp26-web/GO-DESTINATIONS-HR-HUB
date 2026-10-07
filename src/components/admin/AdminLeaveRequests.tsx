@@ -627,6 +627,7 @@ export const AdminLeaveRequests: React.FC = () => {
                   <div className="flex items-center space-x-1.5 text-indigo-600 pt-1">
                     <Paperclip className="w-3.5 h-3.5" />
                     <span>Attached Document: {selectedRequest.attachment_name}</span>
+                    {selectedRequest.attachment_url?.startsWith('/api/leave-attachments/') ? <a href={selectedRequest.attachment_url} className="underline font-semibold">Download</a> : <span className="text-slate-500">File not available</span>}
                   </div>
                 )}
               </div>
