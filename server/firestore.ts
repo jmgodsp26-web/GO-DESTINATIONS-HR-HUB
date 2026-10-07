@@ -15,7 +15,7 @@ export function getFirestoreDb(): Firestore | null {
   const projectId = process.env.GOOGLE_CLOUD_PROJECT || config?.projectId;
   if (!projectId) return null;
   const app = getApps()[0] || initializeApp({ credential: applicationDefault(), projectId });
-  dbInstance = getFirestore(app, config?.firestoreDatabaseId || '(default)');
+  dbInstance = getFirestore(app, process.env.FIRESTORE_DATABASE_ID || config?.firestoreDatabaseId || '(default)');
   return dbInstance;
 }
 export async function testFirestoreConnection(): Promise<boolean> {

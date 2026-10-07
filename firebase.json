@@ -1,0 +1,8 @@
+{
+  "firestore": [{ "database": "hr-hub", "rules": "firestore.rules" }],
+  "hosting": {
+    "public": "hosting-public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{ "source": "**", "run": { "serviceId": "hr-hub", "region": "us-central1" } }]
+  }
+}

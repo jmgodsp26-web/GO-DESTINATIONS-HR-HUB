@@ -34,8 +34,8 @@ export const FirstTimePasswordModal: React.FC = () => {
     const cleanNew = newPassword.trim();
     const cleanConfirm = confirmPassword.trim();
 
-    if (!cleanNew || cleanNew.length < 8) {
-      setError('Your new password must be at least 8 characters long.');
+    if (!cleanNew || cleanNew.length < 12) {
+      setError('Your new password must be at least 12 characters long.');
       return;
     }
     if (cleanNew !== cleanConfirm) {
@@ -58,7 +58,7 @@ export const FirstTimePasswordModal: React.FC = () => {
     }
   };
 
-  const hasMinLength = newPassword.length >= 8;
+  const hasMinLength = newPassword.length >= 12;
   const isMatching = newPassword.length > 0 && newPassword === confirmPassword;
 
   return (
@@ -105,7 +105,7 @@ export const FirstTimePasswordModal: React.FC = () => {
                   autoComplete="new-password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="At least 8 characters"
+                  placeholder="At least 12 characters"
                   className="block w-full pl-9 pr-10 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl bg-slate-50/70 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83] transition-all font-mono"
                 />
                 <button
@@ -152,7 +152,7 @@ export const FirstTimePasswordModal: React.FC = () => {
                   <CheckCircle2 className="w-3.5 h-3.5" />
                 </span>
                 <span className={hasMinLength ? 'text-emerald-700 font-medium' : 'text-slate-500'}>
-                  Minimum 8 characters
+                  Minimum 12 characters
                 </span>
               </div>
               <div className="flex items-center space-x-2">

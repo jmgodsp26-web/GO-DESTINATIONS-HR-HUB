@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { UserProfile, NotificationItem } from '../types';
-import { api, setStoredToken, getStoredToken } from '../services/api';
+import { api } from '../services/api';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -29,7 +29,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const refreshNotifications = useCallback(async () => {
-    if (!getStoredToken()) return;
     try {
       const items = await api.getNotifications();
       setNotifications(items);
@@ -39,20 +38,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const refreshUser = useCallback(async () => {
-    const token = getStoredToken();
-    if (!token) {
-      setUser(null);
-      setIsLoading(false);
-      return;
-    }
-
     try {
       const res = await api.getMe();
       setUser(res.user);
       setMustChangePassword(Boolean(res.mustChangePassword));
       if (!res.mustChangePassword) await refreshNotifications();
     } catch {
-      setStoredToken(null);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -60,13 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [refreshNotifications]);
 
   useEffect(() => {
-    const token = getStoredToken();
-    if (!token) {
-      setUser(null);
-      setIsLoading(false);
-    } else {
-      refreshUser();
-    }
+    refreshUser();
   }, [refreshUser]);
 
   // Instantly handle session expiry without unhandled promise rejections

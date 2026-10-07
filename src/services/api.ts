@@ -18,35 +18,18 @@ import {
   HolidayStaffingCoverage,
 } from '../types';
 
-const TOKEN_KEY = 'hr_portal_auth_token';
-// Discard tokens left by the previous persistent-storage implementation.
-try { localStorage.removeItem(TOKEN_KEY); } catch { /* Storage may be restricted. */ }
-
-export function getStoredToken(): string | null {
-  return sessionStorage.getItem(TOKEN_KEY);
-}
-
-export function setStoredToken(token: string | null) {
-  if (token) {
-    sessionStorage.setItem(TOKEN_KEY, token);
-  } else {
-    sessionStorage.removeItem(TOKEN_KEY);
-  }
-}
+// Authentication credentials live only in the server-issued HttpOnly cookie.
+try { localStorage.removeItem('hr_portal_auth_token'); sessionStorage.removeItem('hr_portal_auth_token'); } catch {}
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = getStoredToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
   const response = await fetch(endpoint, {
     ...options,
+    credentials: 'same-origin',
     headers,
   });
 
@@ -54,7 +37,6 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (!response.ok) {
     if (response.status === 401) {
-      setStoredToken(null);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('auth:expired', { detail: { message: data.error } }));
       }
@@ -72,7 +54,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ identifier, email: identifier, password: passwordHash || '' }),
     });
-    setStoredToken(res.token);
     return res;
   },
 
@@ -81,13 +62,7 @@ export const api = {
   },
 
   async logout(): Promise<void> {
-    try {
-      await request('/api/auth/logout', { method: 'POST' });
-    } catch {
-      // ignore
-    } finally {
-      setStoredToken(null);
-    }
+    await request('/api/auth/logout', { method: 'POST' });
   },
 
   async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
@@ -95,7 +70,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
     });
-    setStoredToken(null);
     window.dispatchEvent(new CustomEvent('auth:expired'));
     return result;
   },

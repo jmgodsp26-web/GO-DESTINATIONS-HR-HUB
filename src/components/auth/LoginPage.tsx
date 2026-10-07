@@ -58,7 +58,7 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     const cleanId = identifier.trim();
     if (!cleanId) {
-      setError('Please enter your work email address or employee ID.');
+      setError('Please enter your company email address.');
       return;
     }
     if (!password || !password.trim()) {
@@ -171,7 +171,7 @@ export const LoginPage: React.FC = () => {
                 htmlFor="identifier"
                 className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5"
               >
-                Work Email or Employee ID
+                Company Email
               </label>
               <div className="relative group focus-within:ring-4 focus-within:ring-[#3A5D83]/10 rounded-xl transition-all">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#3A5D83] transition-colors">
@@ -180,13 +180,13 @@ export const LoginPage: React.FC = () => {
                 <input
                   id="identifier"
                   name="identifier"
-                  type="text"
+                  type="email"
                   autoComplete="username"
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   className="block w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl bg-slate-50/60 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#3A5D83] transition-all"
-                  placeholder="name@godestinations.com or HR-001"
+                  placeholder="name@company.com"
                 />
               </div>
             </div>
@@ -370,8 +370,7 @@ export const LoginPage: React.FC = () => {
                     Please contact your designated HR Administrator to request a verified temporary access password:
                   </p>
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 font-medium text-slate-800">
-                    <div>• <strong>Isiah Dane</strong> (Lead HR Admin — <span className="font-mono text-slate-600">igeguera@gmail.com</span>)</div>
-                    <div>• <strong>Ann Loraine</strong> (HR Director — <span className="font-mono text-slate-600">ann.loraine@godestinations.com</span>)</div>
+                    <div>Contact your company HR administrator through your internal company directory.</div>
                   </div>
                   <p className="text-slate-500 text-[11px] pt-1">
                     Your HR Administrator will issue a temporary credential that requires you to choose a new private password upon signing in.
@@ -399,28 +398,24 @@ export const LoginPage: React.FC = () => {
                     <span>Initial Onboarding Password</span>
                   </p>
                   <p className="text-slate-600">
-                    When you are added to the company portal, an initial password is automatically provisioned for your account:
+                    When you are added to the company portal, HR will give you a unique temporary password for your account.
                   </p>
                   <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 font-mono font-bold text-slate-900 text-xs inline-block">
-                    Welcome2026!
+                    Provided privately by HR
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
                   <p className="font-semibold text-slate-900">Signing in:</p>
                   <ul className="list-disc list-inside space-y-1 text-slate-600 pl-1">
-                    <li>Enter your work email address or Employee ID.</li>
-                    <li>Enter your password (or <span className="font-mono text-slate-800">Welcome2026!</span> if first time).</li>
+                    <li>Enter your company email address.</li>
+                    <li>Enter the temporary password provided by HR.</li>
                     <li>You will be prompted to set your personal password right after logging in.</li>
                   </ul>
                 </div>
 
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-slate-700 text-[11px] leading-relaxed">
-                  <strong>Need administrator assistance?</strong> You can also contact HR at{' '}
-                  <span className="font-medium text-[#3A5D83] underline">
-                    hr-operations@godestinations.com
-                  </span>
-                  {' '}or ask your administrator to reset your password in Employee Management.
+                  <strong>Need administrator assistance?</strong> Ask your company HR administrator to reset your password in Employee Management.
                 </div>
 
                 <div className="pt-2 flex justify-end">
