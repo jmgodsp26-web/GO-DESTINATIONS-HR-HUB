@@ -603,7 +603,7 @@ export const LeaveHistory: React.FC = () => {
                     <span className="font-medium text-indigo-900 truncate">
                       {selectedRequest.attachment_name}
                     </span>
-                    <span className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">Attached</span>
+                    {selectedRequest.attachment_url?.startsWith('/api/leave-attachments/') ? <a href={selectedRequest.attachment_url} className="text-xs font-semibold text-indigo-700 underline">Download</a> : <span className="text-xs text-slate-500">File not available</span>}
                   </div>
                 </div>
               )}

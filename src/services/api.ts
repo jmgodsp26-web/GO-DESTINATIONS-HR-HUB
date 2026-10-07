@@ -130,6 +130,7 @@ export const api = {
     half_day_period?: HalfDayPeriod;
     attachment_name?: string;
     attachment_url?: string;
+    attachment_data?: string;
   }): Promise<LeaveRequest> {
     return request<LeaveRequest>('/api/leave-requests', {
       method: 'POST',

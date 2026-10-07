@@ -1,3 +1,4 @@
+import { csvRow } from '../../utils/csv';
 import React, { useState } from 'react';
 import {
   X,
@@ -291,27 +292,10 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
         approvedBy = emp.leave_request.reviewed_by_name || 'Admin';
       }
 
-      return [
-        emp.employee_id,
-        `"${emp.employee_name}"`,
-        emp.employee_email,
-        `"${emp.department}"`,
-        `"${emp.job_title}"`,
-        emp.is_pc ? 'YES (PC)' : 'NO',
-        `"${emp.status_label}"`,
-        `"${details}"`,
-        `"${approvedBy}"`,
-      ].join(',');
+      return csvRow([emp.employee_id, emp.employee_name, emp.employee_email, emp.department, emp.job_title, emp.is_pc ? 'YES (PC)' : 'NO', emp.status_label, details, approvedBy]);
     });
-
-    const csvContent =
-      `data:text/csv;charset=utf-8,` +
-      `"HOLIDAY STAFFING REPORT: ${holiday.name} (${holiday.date})"\n` +
-      `"Generated on: ${new Date().toLocaleString()}"\n` +
-      `"Total Staff: ${total_employees} | Working: ${working_count} | On Leave: ${leave_count} | Pending: ${total_pending_count} | PCs: ${pcs_working_count}/${pcs_required}"\n\n` +
-      [headers.join(','), ...rows].join('\n');
-
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [csvRow([`HOLIDAY STAFFING REPORT: ${holiday.name} (${holiday.date})`]), csvRow(headers), ...rows].join('\r\n');
+    const encodedUri = URL.createObjectURL(new Blob([csvContent], {type: 'text/csv;charset=utf-8'}));
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
     link.setAttribute(
@@ -320,6 +304,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
     );
     document.body.appendChild(link);
     link.click();
+    URL.revokeObjectURL(encodedUri);
     document.body.removeChild(link);
     showToast('Holiday staffing report downloaded successfully.');
   };

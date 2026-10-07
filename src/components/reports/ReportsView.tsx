@@ -1,3 +1,4 @@
+import { csvRow } from '../../utils/csv';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -197,23 +198,8 @@ export const ReportsView: React.FC = () => {
         'Admin Note',
       ];
 
-      const rows = filteredRequests.map((r) => [
-        `"${r.id}"`,
-        `"${r.employee_id}"`,
-        `"${r.employee_name.replace(/"/g, '""')}"`,
-        `"${r.employee_department.replace(/"/g, '""')}"`,
-        `"${r.leave_type}"`,
-        `"${r.start_date}"`,
-        `"${r.end_date}"`,
-        r.total_days,
-        r.is_half_day ? 'Yes' : 'No',
-        `"${(r.reason || '').replace(/"/g, '""')}"`,
-        `"${r.status}"`,
-        `"${r.submitted_at}"`,
-        `"${(r.admin_note || '').replace(/"/g, '""')}"`,
-      ]);
-
-      const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+      const rows = filteredRequests.map(r => [r.id, r.employee_id, r.employee_name, r.employee_department, r.leave_type, r.start_date, r.end_date, r.total_days, r.is_half_day ? 'Yes' : 'No', r.reason, r.status, r.submitted_at, r.admin_note]);
+      const csvContent = [headers, ...rows].map(csvRow).join('\r\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');

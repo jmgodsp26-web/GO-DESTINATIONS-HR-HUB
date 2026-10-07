@@ -4,6 +4,8 @@ import { getFirestoreDb } from './firestore.js';
 import { HRDatabase } from './db.js';
 
 export interface PersistentData {
+  nextEmployeeNumber?: number;
+  leaveAttachments?: any[];
   users?: any[];
   employees: any[];
   leaveBalances: any[];
@@ -22,13 +24,13 @@ export interface PersistentData {
 }
 // A new namespace deliberately leaves the former project's collections untouched.
 const PREFIX = 'hr_v2_';
-const TABLES = ['users', 'leaveBalances', 'leaveRequests', 'leaveTransactions', 'holidays', 'holidayShifts', 'auditLogs', 'notifications', 'employeeDocuments', 'sessions'] as const;
+const TABLES = ['users', 'leaveAttachments', 'leaveBalances', 'leaveRequests', 'leaveTransactions', 'holidays', 'holidayShifts', 'auditLogs', 'notifications', 'employeeDocuments', 'sessions'] as const;
 const clean = (value: any) => JSON.parse(JSON.stringify(value));
 const rows = (data: PersistentData, table: typeof TABLES[number]): Map<string, any> => new Map(
   table === 'sessions' ? (data.sessions || []).map(([id, value]) => [id, value]) : ((data as any)[table] || []).map((row: any) => [row.id, row])
 );
 function metadata(data: PersistentData) {
-  return clean({ companySettings: data.companySettings || {}, deletedEmployeeIds: data.deletedEmployeeIds || [], deletedHolidayIds: data.deletedHolidayIds || [], deletedShiftIds: data.deletedShiftIds || [] });
+  return clean({ nextEmployeeNumber: data.nextEmployeeNumber, companySettings: data.companySettings || {}, deletedEmployeeIds: data.deletedEmployeeIds || [], deletedHolidayIds: data.deletedHolidayIds || [], deletedShiftIds: data.deletedShiftIds || [] });
 }
 
 // Test-only file persistence exercises restarts without cloud credentials. Never enabled in production.

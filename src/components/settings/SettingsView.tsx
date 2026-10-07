@@ -32,7 +32,7 @@ export const SettingsView: React.FC = () => {
     casual_leave_default: 5,
     holiday_credit_rate: 1.0,
     require_medical_cert_days: 2,
-    email_notifications_enabled: true,
+    email_notifications_enabled: false,
     browser_notifications_enabled: true,
     leave_approval_digest: 'daily',
     supabase_configured: false,
@@ -307,7 +307,7 @@ export const SettingsView: React.FC = () => {
 
             <div>
               <label className="block font-semibold text-slate-700 mb-1">
-                Medical Certificate Requirement Threshold
+                Medical Certificate Review Guideline
               </label>
               <div className="flex items-center space-x-2">
                 <input
@@ -319,7 +319,7 @@ export const SettingsView: React.FC = () => {
                   }
                   className="w-24 rounded-xl border border-slate-200 px-3 py-2 bg-white text-slate-900 font-bold tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100"
                 />
-                <span className="text-slate-500 font-medium">consecutive days absent requires doctor's note</span>
+                <span className="text-slate-500 font-medium">working days: HR should review the supporting doctor's note</span>
               </div>
             </div>
           </div>
@@ -337,12 +337,13 @@ export const SettingsView: React.FC = () => {
               <div>
                 <p className="font-semibold text-slate-900">Email Notifications</p>
                 <p className="text-slate-500 text-[11px] mt-0.5">
-                  Receive instant email digests when leave requests are submitted, approved, or rejected.
+                  Email delivery is not available yet. Leave updates are shown in your in-app notifications.
                 </p>
               </div>
               <input
                 type="checkbox"
-                checked={settings.email_notifications_enabled}
+                checked={false}
+                disabled
                 onChange={(e) =>
                   setSettings({ ...settings, email_notifications_enabled: e.target.checked })
                 }

@@ -1,3 +1,4 @@
+import { readUpload } from '../../utils/files';
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, EmployeeDocument } from '../../types';
 import { api } from '../../services/api';
@@ -60,19 +61,21 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
     fetchDocuments();
   }, [employee.id]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
-      if (!docName) {
-        setDocName(file.name.replace(/\.[^/.]+$/, ''));
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFileBase64(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+  const readSequence = useRef(0);
+  const selectFile = async (file: File) => {
+    const sequence = ++readSequence.current;
+    setFileBase64(''); setSelectedFile(file); setError(null);
+    try {
+      const data = await readUpload(file);
+      if (sequence !== readSequence.current) return;
+      setFileBase64(data);
+      if (!docName) setDocName(file.name.replace(/\.[^/.]+$/, ''));
+    } catch (err: any) {
+      if (sequence === readSequence.current) {setError(err.message); setSelectedFile(null);}
     }
+  };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) void selectFile(e.target.files[0]);
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -89,18 +92,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      setSelectedFile(file);
-      if (!docName) {
-        setDocName(file.name.replace(/\.[^/.]+$/, ''));
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFileBase64(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (e.dataTransfer.files?.[0]) void selectFile(e.dataTransfer.files[0]);
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -113,6 +105,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedFile || !fileBase64) {setError('Select a file and wait until it finishes loading.'); return;}
     if (!docName.trim()) {
       setError('Please provide a document title or name');
       return;
@@ -122,7 +115,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
       setUploading(true);
       setError(null);
 
-      const sizeStr = selectedFile ? formatFileSize(selectedFile.size) : '1.2 MB';
+      const sizeStr = selectedFile ? formatFileSize(selectedFile.size) : '0 Bytes';
       const ext = selectedFile ? selectedFile.name.split('.').pop() : 'pdf';
       const fullDocName = docName.includes('.') ? docName : `${docName}.${ext || 'pdf'}`;
 
@@ -295,7 +288,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
                   <p className="text-xs text-slate-700 font-medium">
                     <span className="text-indigo-600 font-semibold underline">Click to choose a file</span> or drag and drop here
                   </p>
-                  <p className="text-[11px] text-slate-400">PDF, Word (.doc, .docx), Images, or Excel files (up to 25MB)</p>
+                  <p className="text-[11px] text-slate-400">PDF, Word (.doc, .docx), Images, or Excel files (up to 450 KB)</p>
                 </div>
               )}
             </div>

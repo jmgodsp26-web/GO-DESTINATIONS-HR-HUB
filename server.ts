@@ -1,3 +1,5 @@
+import { visibleCoverage } from './server/coverage.js';
+import { decodeUpload } from './server/files.js';
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -304,6 +306,16 @@ apiRouter.get('/api/leave-requests', authMiddleware, (req: AuthenticatedRequest,
   }
 });
 
+apiRouter.get('/api/leave-attachments/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const file = db.getLeaveAttachment(req.params.id, req.user!);
+    res.setHeader('Content-Type', file.mime);
+    res.setHeader('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(file.name));
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(file.bytes);
+  } catch { res.status(404).json({error: 'Attachment not found.'}); }
+});
+
 apiRouter.post('/api/leave-requests', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const newRequest = db.submitLeaveRequest(req.user!, req.body);
@@ -536,7 +548,7 @@ apiRouter.get('/api/holiday-coverage', authMiddleware, (req: AuthenticatedReques
       country: country as string,
       is_active: true,
     });
-    const coverages = holidays.map((h) => db.getHolidayStaffingCoverage(h.id));
+    const coverages = holidays.map((h) => visibleCoverage(db.getHolidayStaffingCoverage(h.id), req.user!));
     res.json(coverages);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
@@ -545,7 +557,7 @@ apiRouter.get('/api/holiday-coverage', authMiddleware, (req: AuthenticatedReques
 
 apiRouter.get('/api/holiday-coverage/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
-    const coverage = db.getHolidayStaffingCoverage(req.params.id);
+    const coverage = visibleCoverage(db.getHolidayStaffingCoverage(req.params.id), req.user!);
     res.json(coverage);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
@@ -658,15 +670,13 @@ apiRouter.post('/api/admin/employees/:id/documents', adminOnlyMiddleware, (req: 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({ error: 'Document name is required.' });
     }
-    // Enforce 450KB payload limit to prevent Firestore 1MB document corruption
-    if (file_data && typeof file_data === 'string' && file_data.length > 600000) {
-      return res.status(400).json({ error: 'Document file size exceeds the allowed limit (450 KB). Please compress or link via cloud storage.' });
-    }
+    const uploaded = decodeUpload(file_data);
+    if (!db.getProfile(req.params.id)) return res.status(404).json({error: 'Employee not found.'});
     const newDoc = db.addEmployeeDocument({
       employee_id: req.params.id,
       name: name.trim(),
       category: category || 'Contract',
-      file_size: file_size || '1.2 MB',
+      file_size: `${uploaded.bytes.length} Bytes`,
       file_data,
       uploaded_by_name: req.user!.full_name,
     });
