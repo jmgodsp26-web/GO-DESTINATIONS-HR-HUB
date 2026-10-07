@@ -164,7 +164,7 @@ export const SettingsView: React.FC = () => {
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Section 1: Organization & Working Hours */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
             <Building className="w-4 h-4 text-indigo-600" />
             <h2 className="text-sm font-bold text-slate-900">Organization Profile &amp; Operating Hours</h2>
@@ -220,7 +220,7 @@ export const SettingsView: React.FC = () => {
         </div>
 
         {/* Section 2: Leave Policy & Allowances */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
             <CalendarCheck className="w-4 h-4 text-indigo-600" />
             <h2 className="text-sm font-bold text-slate-900">Standard Leave Entitlements &amp; Policy Rules</h2>
@@ -326,7 +326,7 @@ export const SettingsView: React.FC = () => {
         </div>
 
         {/* Section 3: Notification Preferences */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
             <Bell className="w-4 h-4 text-indigo-600" />
             <h2 className="text-sm font-bold text-slate-900">Alerts &amp; Notification Preferences</h2>
@@ -371,7 +371,7 @@ export const SettingsView: React.FC = () => {
         </div>
 
         {/* Section 4: Account Security & Password */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
             <Lock className="w-4 h-4 text-[#3A5D83]" />
             <div>
@@ -442,7 +442,7 @@ export const SettingsView: React.FC = () => {
                 type="button"
                 onClick={handlePasswordChange}
                 disabled={isUpdatingPassword || !newPassword}
-                className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#2F4D6D] disabled:opacity-50 transition-colors shadow-2xs"
+                className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#182E3F] disabled:opacity-50 transition-colors shadow-2xs"
               >
                 <KeyRound className="w-3.5 h-3.5" />
                 <span>{isUpdatingPassword ? 'Updating...' : 'Update Password'}</span>
@@ -465,7 +465,7 @@ export const SettingsView: React.FC = () => {
             <button
               type="submit"
               disabled={isSaving}
-              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#2F4D6D] shadow-xs transition-all disabled:opacity-50"
+              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#182E3F] shadow-xs transition-all disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               <span>{isSaving ? 'Saving...' : 'Save System Settings'}</span>

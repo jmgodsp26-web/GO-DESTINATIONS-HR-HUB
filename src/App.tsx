@@ -86,7 +86,7 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans antialiased">
+    <div className="go-app min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans antialiased">
       {/* First-Time Password Setup Modal for Initial Onboarding Sign-In */}
       <FirstTimePasswordModal />
 
@@ -98,7 +98,7 @@ const MainApp: React.FC = () => {
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
       />
 
-      <div className="flex-1 flex max-w-7xl w-full mx-auto">
+      <div className="go-workspace flex-1 flex w-full mx-auto">
         {/* Navigation Sidebar */}
         <Sidebar
           currentTab={currentTab}
@@ -108,7 +108,7 @@ const MainApp: React.FC = () => {
         />
 
         {/* Main Content Viewport */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
+        <main className="go-main flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
           {/* Employee Views */}
           {!isAdmin && (
             <>

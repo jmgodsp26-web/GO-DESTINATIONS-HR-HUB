@@ -471,7 +471,7 @@ export const HolidaysView: React.FC = () => {
               <button
                 type="button"
                 onClick={handleOpenAdd}
-                className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 bg-[#3A5D83] hover:bg-[#2F4D6D] text-white rounded-xl font-semibold text-xs transition-colors shadow-xs cursor-pointer"
+                className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-xl font-semibold text-xs transition-colors shadow-xs cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>Add Holiday</span>
@@ -523,7 +523,7 @@ export const HolidaysView: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Search input */}
           <div className="relative flex-1">
@@ -668,7 +668,7 @@ export const HolidaysView: React.FC = () => {
       </div>
 
       {/* Holidays List with Live Coverage Metrics */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="divide-y divide-slate-100">
           {isLoading ? (
             <div className="p-12 text-center text-xs text-slate-400">Loading holidays...</div>
@@ -933,7 +933,7 @@ export const HolidaysView: React.FC = () => {
       {/* Add Holiday Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <div className="flex items-center space-x-2">
                 <PlusCircle className="w-4 h-4 text-indigo-600" />
@@ -1095,7 +1095,7 @@ export const HolidaysView: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#2F4D6D] rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#182E3F] rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? 'Saving...' : 'Add Holiday'}
                 </button>
@@ -1108,7 +1108,7 @@ export const HolidaysView: React.FC = () => {
       {/* Edit Holiday Modal */}
       {editingHoliday && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <div className="flex items-center space-x-2">
                 <Edit2 className="w-4 h-4 text-indigo-600" />
@@ -1282,7 +1282,7 @@ export const HolidaysView: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-4 py-2 text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#2F4D6D] rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+                    className="px-4 py-2 text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#182E3F] rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
                   >
                     {isSubmitting ? 'Saving...' : 'Update Holiday'}
                   </button>
@@ -1296,7 +1296,7 @@ export const HolidaysView: React.FC = () => {
       {/* Delete Holiday Confirmation Modal */}
       {deletingHoliday && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+          <div className="go-surface bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
               <div className="flex items-center space-x-2 text-rose-700">
                 <Trash2 className="w-5 h-5" />
@@ -1350,7 +1350,7 @@ export const HolidaysView: React.FC = () => {
       {/* Admin Assign Staff Holiday Shift Modal */}
       {isAssignShiftOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
               <div className="flex items-center space-x-3">
                 <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center">
@@ -1468,7 +1468,7 @@ export const HolidaysView: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] hover:bg-[#2F4D6D] text-white rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
+                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
                 >
                   <Users className="w-3.5 h-3.5" />
                   <span>{isSubmitting ? 'Assigning...' : 'Assign Staff Shift'}</span>

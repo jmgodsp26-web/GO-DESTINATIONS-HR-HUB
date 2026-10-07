@@ -1,5 +1,5 @@
 import React from 'react';
-import logoImg from '../../assets/go_destinations_logo_1787243700153.jpg';
+import logoImg from '../../assets/go-website-logo.webp';
 
 interface GoDestinationsLogoProps {
   variant?: 'icon-only' | 'horizontal' | 'stacked';
@@ -53,29 +53,29 @@ export const GoDestinationsLogo: React.FC<GoDestinationsLogoProps> = ({
     <img
       src={logoImg}
       alt="GO Destinations"
-      className={`${img} rounded-full object-cover shrink-0 select-none shadow-2xs border border-slate-200/40`}
+      className={`${img} object-contain shrink-0 select-none `}
       referrerPolicy="no-referrer"
     />
   );
 
   if (variant === 'icon-only') {
-    return <div className={`inline-flex items-center justify-center ${className}`}>{LogoImageElement}</div>;
+    return <div className={`go-logo inline-flex items-center justify-center ${className}`}>{LogoImageElement}</div>;
   }
 
   if (variant === 'stacked') {
     return (
-      <div className={`flex flex-col items-center justify-center text-center ${className}`}>
+      <div className={`go-logo flex flex-col items-center justify-center text-center ${className}`}>
         <div className="relative mb-2">
           <img
             src={logoImg}
             alt="GO Destinations Logo"
-            className={`${stackedImg} rounded-full object-cover shadow-xs select-none border border-slate-200/60`}
+            className={`${stackedImg} object-contain select-none`}
             referrerPolicy="no-referrer"
           />
         </div>
         <div
           className={`font-extrabold tracking-tight select-none ${
-            darkBackground ? 'text-white' : 'text-[#365c84]'
+            darkBackground ? 'text-white' : 'text-[#3A5D83]'
           } ${size === 'xl' ? 'text-2xl' : size === 'lg' ? 'text-xl' : 'text-lg'}`}
           style={{ letterSpacing: '0.02em' }}
         >
@@ -87,7 +87,7 @@ export const GoDestinationsLogo: React.FC<GoDestinationsLogoProps> = ({
 
   // Default 'horizontal' variant
   return (
-    <div className={`flex items-center ${gap} ${className}`}>
+    <div className={`go-logo flex items-center ${gap} ${className}`}>
       {LogoImageElement}
       <div className="flex flex-col leading-tight">
         <div className="flex items-center space-x-1.5">
@@ -101,7 +101,7 @@ export const GoDestinationsLogo: React.FC<GoDestinationsLogoProps> = ({
         </div>
         <span
           className={`font-semibold tracking-wider uppercase ${
-            darkBackground ? 'text-slate-400' : 'text-[#365c84]'
+            darkBackground ? 'text-slate-400' : 'text-[#3A5D83]'
           } ${textSub}`}
         >
           HR Hub & Leave Portal

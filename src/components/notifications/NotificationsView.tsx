@@ -158,7 +158,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
       </div>
 
       {/* Notifications List */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs divide-y divide-slate-100 overflow-hidden">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs divide-y divide-slate-100 overflow-hidden">
         {filteredNotifications.length === 0 ? (
           <div className="py-16 text-center">
             <Bell className="w-10 h-10 text-slate-300 mx-auto mb-3" />

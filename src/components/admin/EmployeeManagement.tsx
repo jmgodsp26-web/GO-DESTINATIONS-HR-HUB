@@ -332,7 +332,7 @@ export const EmployeeManagement: React.FC = () => {
             setFormError(null);
             setIsAddModalOpen(true);
           }}
-          className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-[#3A5D83] hover:bg-[#2F4D6D] text-white rounded-lg font-semibold text-xs transition-colors shadow-xs"
+          className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-lg font-semibold text-xs transition-colors shadow-xs"
         >
           <UserPlus className="w-4 h-4" />
           <span>Add Employee</span>
@@ -340,7 +340,7 @@ export const EmployeeManagement: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -395,7 +395,7 @@ export const EmployeeManagement: React.FC = () => {
       </div>
 
       {/* Employees Table (Desktop) & Card Stack (Mobile) */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -512,7 +512,7 @@ export const EmployeeManagement: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setSelectedDocsEmployee(emp)}
-                        className="p-2 text-slate-500 hover:text-[#365c84] hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-2 text-slate-500 hover:text-[#3A5D83] hover:bg-slate-100 rounded-lg transition-colors"
                         title="Upload & View Employee Documents"
                       >
                         <FolderOpen className="w-4 h-4" />
@@ -1013,7 +1013,7 @@ export const EmployeeManagement: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#2F4D6D] disabled:opacity-50"
+                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] disabled:opacity-50"
                 >
                   {isSubmitting ? 'Creating...' : 'Create Employee'}
                 </button>
@@ -1315,7 +1315,7 @@ export const EmployeeManagement: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#2F4D6D] disabled:opacity-50 cursor-pointer"
+                    className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] disabled:opacity-50 cursor-pointer"
                   >
                     {isSubmitting ? 'Saving...' : 'Save Changes'}
                   </button>
@@ -1399,7 +1399,7 @@ export const EmployeeManagement: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#2F4D6D] disabled:opacity-50"
+                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] disabled:opacity-50"
                 >
                   {isSubmitting ? 'Updating...' : 'Update Balance'}
                 </button>
@@ -1483,7 +1483,7 @@ export const EmployeeManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setCreatedEmployeeInfo(null)}
-                  className="w-full sm:w-auto px-5 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#2F4D6D]"
+                  className="w-full sm:w-auto px-5 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F]"
                 >
                   Done & Close
                 </button>
@@ -1496,7 +1496,7 @@ export const EmployeeManagement: React.FC = () => {
       {/* 4. Delete Employee Confirmation Modal */}
       {deletingEmployee && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+          <div className="go-surface bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
               <div className="flex items-center space-x-2 text-rose-700">
                 <Trash2 className="w-5 h-5" />

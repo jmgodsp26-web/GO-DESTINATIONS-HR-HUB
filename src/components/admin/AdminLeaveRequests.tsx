@@ -179,7 +179,7 @@ export const AdminLeaveRequests: React.FC = () => {
       </div>
 
       {/* Filter Control Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs space-y-3">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           {/* 1. Status */}
           <div>
@@ -248,7 +248,7 @@ export const AdminLeaveRequests: React.FC = () => {
             <button
               type="button"
               onClick={clearFilters}
-              className="text-xs font-semibold text-[#3A5D83] hover:text-[#2F4D6D] flex items-center space-x-1"
+              className="text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] flex items-center space-x-1"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Filters</span>
@@ -258,7 +258,7 @@ export const AdminLeaveRequests: React.FC = () => {
       </div>
 
       {/* Requests Container (Desktop Table + Mobile Cards) */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         {/* Batch Actions Banner */}
         {selectedRequestIds.length > 0 && (
           <div className="bg-[#3A5D83]/10 border-b border-[#3A5D83]/20 px-5 py-3 flex flex-wrap items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1">
@@ -582,7 +582,7 @@ export const AdminLeaveRequests: React.FC = () => {
       {/* Review Modal */}
       {selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <h3 className="text-sm font-bold text-slate-900">
                 {reviewAction === 'Approved' ? 'Approve Leave Request' : 'Reject Leave Request'}

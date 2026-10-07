@@ -340,7 +340,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
     >
       <div
         id="holiday-detail-modal-card"
-        className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+        className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
       >
         {/* Header */}
         <div className="px-6 py-4.5 border-b border-slate-100 bg-slate-900 text-white flex items-center justify-between shrink-0">
@@ -392,7 +392,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
             <button
               id="btn-assign-holiday-shift-top"
               onClick={() => setIsAssignShiftOpen(true)}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#3A5D83] hover:bg-[#2F4D6D] text-white shadow-xs transition-colors"
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white shadow-xs transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Schedule Shift</span>
@@ -573,7 +573,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
               <div className="flex items-baseline space-x-1">
                 <span
                   className={`text-xl font-bold ${
-                    isPcCoverageMet ? 'text-emerald-700' : 'text-[#ED8F2B]'
+                    isPcCoverageMet ? 'text-emerald-700' : 'text-[#ED9027]'
                   }`}
                 >
                   {pcs_working_count}
@@ -641,12 +641,12 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
               onClick={() => setActiveTab('pending')}
               className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center space-x-2 ${
                 activeTab === 'pending'
-                  ? 'border-[#ED8F2B] text-[#ED8F2B]'
+                  ? 'border-[#ED9027] text-[#ED9027]'
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
               <span>PENDING REQUESTS</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ED8F2B]/15 text-[#ED8F2B]">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ED9027]/15 text-[#ED9027]">
                 {total_pending_count}
               </span>
             </button>
@@ -1532,7 +1532,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                 <button
                   type="submit"
                   disabled={isProcessing}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#3A5D83] hover:bg-[#2F4D6D] text-white shadow-xs transition-colors"
+                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white shadow-xs transition-colors"
                 >
                   Save Shift
                 </button>
@@ -1614,7 +1614,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
       {/* Delete Shift Confirmation Modal */}
       {deletingShift && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden">
+          <div className="go-surface bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
               <div className="flex items-center space-x-2 text-rose-700">
                 <Trash2 className="w-5 h-5" />
@@ -1669,7 +1669,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
       {/* Delete Holiday Confirmation Modal (from inside Detail Modal) */}
       {isDeletingHolidayModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+          <div className="go-surface bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
               <div className="flex items-center space-x-2 text-rose-700">
                 <Trash2 className="w-5 h-5" />

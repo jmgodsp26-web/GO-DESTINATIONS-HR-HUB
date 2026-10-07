@@ -211,7 +211,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150">
+      <div className="go-surface bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150">
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
           <div className="flex items-center space-x-3">
@@ -442,7 +442,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
       {/* Delete Document Confirmation Modal */}
       {deletingDoc && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden">
+          <div className="go-surface bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
               <div className="flex items-center space-x-2 text-rose-700">
                 <Trash2 className="w-5 h-5" />

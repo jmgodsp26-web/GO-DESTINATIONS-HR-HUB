@@ -136,7 +136,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
             type="button"
             onClick={handleRetry}
             disabled={isRetrying}
-            className="mt-4 inline-flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#2F4D6D] disabled:opacity-50 transition-colors shadow-2xs"
+            className="mt-4 inline-flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#182E3F] disabled:opacity-50 transition-colors shadow-2xs"
           >
             <RotateCcw
               className={`w-3.5 h-3.5 ${isRetrying ? 'animate-spin' : ''}`}
@@ -235,7 +235,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
               type="button"
               id="btn-quick-schedule-holiday-shift"
               onClick={() => onOpenScheduleShift()}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#3A5D83] hover:bg-[#2F4D6D] text-white shadow-2xs transition-colors"
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white shadow-2xs transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Schedule Shift</span>
@@ -383,7 +383,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                               className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold shrink-0 border ${
                                 isFullyCovered
                                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : 'bg-[#ED8F2B]/10 text-[#ED8F2B] border-[#ED8F2B]/30'
+                                  : 'bg-[#ED9027]/10 text-[#ED9027] border-[#ED9027]/30'
                               }`}
                             >
                               {isFullyCovered ? (
@@ -431,11 +431,11 @@ export const HolidayStaffingCoverageWidget: React.FC<
                                 {leave_count}
                               </span>
                             </div>
-                            <div className="bg-[#ED8F2B]/10 rounded-lg px-2.5 py-1.5 border border-[#ED8F2B]/20 flex items-center justify-between">
-                              <span className="text-[11px] font-medium text-[#ED8F2B]">
+                            <div className="bg-[#ED9027]/10 rounded-lg px-2.5 py-1.5 border border-[#ED9027]/20 flex items-center justify-between">
+                              <span className="text-[11px] font-medium text-[#ED9027]">
                                 Pending
                               </span>
-                              <span className="text-xs font-bold text-[#ED8F2B]">
+                              <span className="text-xs font-bold text-[#ED9027]">
                                 {pending_leave_count}
                               </span>
                             </div>
@@ -453,7 +453,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                                   className={
                                     isFullyCovered
                                       ? 'text-emerald-700'
-                                      : 'text-[#ED8F2B]'
+                                      : 'text-[#ED9027]'
                                   }
                                 >
                                   {pcs_working_count}
@@ -463,7 +463,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                             </div>
                             <div
                               className={`w-full h-2 rounded-full overflow-hidden ${
-                                isFullyCovered ? 'bg-emerald-100' : 'bg-[#ED8F2B]/20'
+                                isFullyCovered ? 'bg-emerald-100' : 'bg-[#ED9027]/20'
                               }`}
                               role="progressbar"
                               aria-valuenow={pcs_working_count}
@@ -475,7 +475,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                                 className={`h-full rounded-full transition-all duration-300 ${
                                   isFullyCovered
                                     ? 'bg-emerald-500'
-                                    : 'bg-[#ED8F2B]'
+                                    : 'bg-[#ED9027]'
                                 }`}
                                 style={{ width: `${progress}%` }}
                               />
@@ -487,7 +487,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                         <button
                           type="button"
                           onClick={() => setSelectedHolidayId(holiday.id)}
-                          className="w-full mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs sm:text-sm font-medium text-[#3A5D83] hover:text-[#2F4D6D] hover:underline transition group/btn text-left"
+                          className="w-full mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs sm:text-sm font-medium text-[#3A5D83] hover:text-[#182E3F] hover:underline transition group/btn text-left"
                         >
                           <span>View Roster &amp; Approvals</span>
                           <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
@@ -587,7 +587,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                                 className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border ${
                                   isFullyCovered
                                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                    : 'bg-[#ED8F2B]/10 text-[#ED8F2B] border-[#ED8F2B]/30'
+                                    : 'bg-[#ED9027]/10 text-[#ED9027] border-[#ED9027]/30'
                                 }`}
                               >
                                 {isFullyCovered
@@ -604,7 +604,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                             <td className="py-3 px-2 text-center font-bold text-slate-700">
                               {leave_count}
                             </td>
-                            <td className="py-3 px-2 text-center font-bold text-[#ED8F2B]">
+                            <td className="py-3 px-2 text-center font-bold text-[#ED9027]">
                               {pending_leave_count}
                             </td>
                             <td className="py-3 px-4">
@@ -618,14 +618,14 @@ export const HolidayStaffingCoverageWidget: React.FC<
                                   className={`w-full h-1.5 rounded-full overflow-hidden ${
                                     isFullyCovered
                                       ? 'bg-emerald-100'
-                                      : 'bg-[#ED8F2B]/20'
+                                      : 'bg-[#ED9027]/20'
                                   }`}
                                 >
                                   <div
                                     className={`h-full rounded-full ${
                                       isFullyCovered
                                         ? 'bg-emerald-500'
-                                        : 'bg-[#ED8F2B]'
+                                        : 'bg-[#ED9027]'
                                     }`}
                                     style={{ width: `${progress}%` }}
                                   />
@@ -636,7 +636,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                               <button
                                 type="button"
                                 onClick={() => setSelectedHolidayId(holiday.id)}
-                                className="inline-flex items-center space-x-1 text-xs font-semibold text-[#3A5D83] hover:text-[#2F4D6D] hover:underline transition-colors"
+                                className="inline-flex items-center space-x-1 text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] hover:underline transition-colors"
                               >
                                 <span>View Roster</span>
                                 <ArrowRight className="w-3 h-3" />
@@ -699,7 +699,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                             className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 ${
                               isFullyCovered
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-[#ED8F2B]/10 text-[#ED8F2B] border-[#ED8F2B]/30'
+                                : 'bg-[#ED9027]/10 text-[#ED9027] border-[#ED9027]/30'
                             }`}
                           >
                             {isFullyCovered
@@ -719,7 +719,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                           <span className="text-slate-700">
                             <strong>{leave_count}</strong> Leave
                           </span>
-                          <span className="text-[#ED8F2B]">
+                          <span className="text-[#ED9027]">
                             <strong>{pending_leave_count}</strong> Pending
                           </span>
                         </div>
@@ -734,12 +734,12 @@ export const HolidayStaffingCoverageWidget: React.FC<
                           </div>
                           <div
                             className={`w-full h-1.5 rounded-full overflow-hidden ${
-                              isFullyCovered ? 'bg-emerald-100' : 'bg-[#ED8F2B]/20'
+                              isFullyCovered ? 'bg-emerald-100' : 'bg-[#ED9027]/20'
                             }`}
                           >
                             <div
                               className={`h-full rounded-full ${
-                                isFullyCovered ? 'bg-emerald-500' : 'bg-[#ED8F2B]'
+                                isFullyCovered ? 'bg-emerald-500' : 'bg-[#ED9027]'
                               }`}
                               style={{ width: `${progress}%` }}
                             />
@@ -749,7 +749,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                         <button
                           type="button"
                           onClick={() => setSelectedHolidayId(holiday.id)}
-                          className="w-full pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[#3A5D83] hover:text-[#2F4D6D] transition-colors"
+                          className="w-full pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] transition-colors"
                         >
                           <span>View Roster &amp; Approvals</span>
                           <ChevronRight className="w-3.5 h-3.5" />
