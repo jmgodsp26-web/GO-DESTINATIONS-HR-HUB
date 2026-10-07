@@ -2,6 +2,22 @@
 
 Use company email + password. Employees must be added by HR. Keep the existing UI. Start with an empty employee database. These instructions deploy the code from GitHub; Google AI Studio is not required.
 
+## Easiest setup: guided Cloud Shell helper
+
+Sign in to Google Cloud with the HR project's owner account, select an active billing-enabled project, and open Cloud Shell using the terminal icon. Paste:
+
+```bash
+HR_SETUP_DIR="$(mktemp -d -t hr-hub-setup-XXXXXXXX)" && git clone --branch rebuild/company-email-hr-hub https://github.com/jmgodsp26-web/GO-DESTINATIONS-HR-HUB.git "$HR_SETUP_DIR" && bash "$HR_SETUP_DIR/scripts/easy-deploy.sh"
+```
+
+The helper asks for your project ID, administrator company email, and a hidden temporary password. It enables services, prepares Firestore, creates the runtime identity, configures build/database permissions, stores the bootstrap password in Secret Manager, builds the app, and prints the working HTTPS URL. No old database is deleted. If the `hr-hub` database already contains app records, they are kept, and its existing admin password remains authoritative.
+
+Use a dedicated HR project because the runtime Firestore grant is project-wide. Google Cloud charges apply. If permission is denied or billing is disabled, the helper stops with the error; it cannot bypass account restrictions. IAM grants may need a few minutes to propagate before a retry succeeds.
+
+Open the printed URL, sign in, choose your personal password, and sign in again. Run the cleanup command printed at the end after successful login. Then follow **step 7** below to connect your subdomain. The helper publishes the real app on Cloud Run; it does not use the sample-data design preview or automatically change GoDaddy DNS.
+
+The helper has been checked locally with mocked Google Cloud commands. Actual cloud deployment requires your authorized Google Cloud account.
+
 ## 1. Choose an active project
 
 Open https://console.cloud.google.com/ and select your intended HR project. It must be active, have billing enabled, and allow you to deploy/manage IAM. If it is suspended, resolve the suspension first; redeploying cannot fix a suspended project. Do not assume the earlier My Maps suspension belongs to this HR project.
