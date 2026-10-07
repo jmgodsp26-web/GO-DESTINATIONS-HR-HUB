@@ -93,7 +93,7 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
     >
       <div
         id="holiday-shift-request-modal-card"
-        className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 overflow-hidden animate-in zoom-in-95 duration-150"
+        className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 overflow-hidden animate-in zoom-in-95 duration-150"
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
@@ -245,7 +245,7 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#3A5D83] hover:bg-[#2F4D6D] text-white shadow-xs transition-colors"
+              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white shadow-xs transition-colors"
             >
               <Send className="w-3.5 h-3.5" />
               <span>{isSubmitting ? 'Submitting...' : 'Submit Shift Request'}</span>

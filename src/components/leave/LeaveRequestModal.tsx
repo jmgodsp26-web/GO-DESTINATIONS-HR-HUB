@@ -192,7 +192,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
+      <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
           <div className="flex items-center space-x-2">
@@ -574,7 +574,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 type="submit"
                 id="submit-leave-review-btn"
                 disabled={!holidaysReady || !!dateError}
-                className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#2F4D6D] transition-colors flex items-center space-x-1.5"
+                className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] transition-colors flex items-center space-x-1.5"
               >
                 <span>Review Request</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -647,7 +647,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 id="confirm-submit-leave-btn"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="px-5 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#2F4D6D] transition-colors flex items-center space-x-2 disabled:opacity-50"
+                className="px-5 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] transition-colors flex items-center space-x-2 disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <span>Submitting...</span>

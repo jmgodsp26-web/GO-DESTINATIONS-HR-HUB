@@ -1,83 +1,155 @@
 @import "tailwindcss";
 
+/* GO Branding Guidelines v2 (January 2024): exact web colors and Open Sans. */
+@theme {
+  --font-sans: 'Open Sans', Arial, sans-serif;
+  --color-indigo-50: #f4f6f9;
+  --color-indigo-100: #CFD7E1;
+  --color-indigo-200: #CFD7E1;
+  --color-indigo-300: #9EAFC1;
+  --color-indigo-400: #7087A3;
+  --color-indigo-500: #3A5D83;
+  --color-indigo-600: #3A5D83;
+  --color-indigo-700: #3A5D83;
+  --color-indigo-800: #182E3F;
+  --color-indigo-900: #182E3F;
+  --color-indigo-950: #182E3F;
+}
 @layer base {
   :root {
     --brand-primary: #3A5D83;
-    --brand-primary-hover: #2F4D6D;
-    --brand-secondary: #ED8F2B;
-    --brand-secondary-hover: #D97E20;
+    --brand-primary-hover: #182E3F;
+    --brand-secondary: #ED9027;
+    --brand-secondary-hover: #ED9027;
+    --go-ink: #182E3F;
+    --go-line: #CFD7E1;
   }
+  html { color-scheme: light; }
+  body { font-family: var(--font-sans); background: #f4f6f9; color: #182E3F; -webkit-font-smoothing: antialiased; }
+  button, input, select, textarea { font-family: inherit; }
+  button:not(:disabled), [role="button"] { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+}
+.tabular-nums { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 3px solid #3A5D83; outline-offset: 3px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #9EAFC1; border-radius: 999px; }
+button { transition: background-color .18s, border-color .18s, box-shadow .18s, transform .18s; }
+button:active:not(:disabled) { transform: translateY(1px); }
 
-  html {
-    color-scheme: light;
-  }
-  body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #f8fafc;
-    color: #0f172a;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-}
+/* The shared workspace: generous spacing, branded depth, restrained motion. */
+.go-app { background: #f4f6f9; }
+.go-workspace { max-width: 1600px; }
+.go-main { min-width: 0; padding: 32px; }
+.go-main > div { animation: go-arrive .3s ease-out; }
+.go-main h1 { font-size: clamp(24px, 2.3vw, 32px); font-weight: 800; letter-spacing: -.035em; color: #182E3F; line-height: 1.22; }
+.go-main h2 { letter-spacing: -.015em; }
+.go-main .go-surface { border-color: #CFD7E1; box-shadow: 0 3px 12px #182e3f04, 0 14px 36px #182e3f04; }
+.go-main > div > .go-surface, .go-main > div > div > .go-surface { border-radius: 22px; }
+.go-main table { font-size: 13px; }
+.go-main thead { background: #f4f6f9; }
+.go-main th { color: #3A5D83; font-weight: 700; }
+.go-main td { padding-top: 16px; padding-bottom: 16px; }
+.go-main input:not([type="checkbox"]):not([type="radio"]), .go-main select, .go-main textarea { border-color: #CFD7E1; border-radius: 12px; }
+.go-main input:focus, .go-main select:focus, .go-main textarea:focus { border-color: #3A5D83; }
+.go-header { background: #ffffffed; border-bottom-color: #CFD7E1; box-shadow: 0 3px 18px #182e3f05; }
+.go-header > div { height: 88px; }
+.go-header button { min-height: 38px; }
+.go-header .go-logo { min-width: 58px; }
+.go-logo img { width: 58px; height: auto; max-height: 76px; object-fit: contain; }
 
-/* Tabular numbers for dates, metrics, counts, and currency */
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
+/* Sidebar colors use the official deep ocean and denim blue, never black. */
+.go-sidebar { width: 252px; background: #182E3F; border: 0; }
+.go-sidebar-brand { padding: 18px 12px 22px; margin-bottom: 10px; }
+.go-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .18em; }
+.go-sidebar-brand .go-eyebrow { color: #9EAFC1; }
+.go-sidebar-brand p { color: white; font-weight: 700; font-size: 19px; line-height: 1.45; letter-spacing: -.02em; margin-top: 12px; }
+.go-sidebar-brand em { color: #F1C48E; font-style: normal; }
+.go-sidebar-rule { display: block; width: 30px; height: 3px; border-radius: 99px; background: #ED9027; margin-top: 18px; }
+.go-sidebar nav { gap: 22px; }
+.go-sidebar nav > div > div:first-child span { color: #9EAFC1; font-size: 10px; letter-spacing: .14em; }
+.go-sidebar .sidebar-menu-item { min-height: 42px; font-size: 12px; padding: 11px 12px; border-radius: 12px; }
+.go-sidebar .sidebar-menu-item:not(.bg-\[\#3A5D83\]) { color: #CFD7E1; }
+.go-sidebar .sidebar-menu-item svg { color: #9EAFC1; }
+.go-sidebar .sidebar-menu-item.bg-\[\#3A5D83\] { background: #3A5D83; color: white; box-shadow: inset 3px 0 #ED9027; }
+.go-sidebar .sidebar-menu-item.bg-\[\#3A5D83\] svg { color: white; }
+.go-sidebar .sidebar-menu-item:hover { background: #3a5d8366; }
+.go-sidebar > div:last-child { background: #182E3F; border-top-color: #3a5d8380; }
+.go-sidebar > div:last-child > div { background: #3a5d834d; border-color: #7087a350; }
 
-/* Refined minimal scrollbars */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
+/* Welcome panel is a recognizable GO composition, not a generic white card. */
+.go-main .go-welcome { background: #3A5D83; border: 0; padding: 32px; position: relative; box-shadow: 0 16px 32px #3a5d831c; }
+.go-welcome::before { content: ''; position: absolute; width: 330px; height: 330px; border: 1px solid #cfd7e133; border-radius: 50%; right: -80px; top: -205px; pointer-events: none; }
+.go-welcome::after { content: ''; position: absolute; width: 220px; height: 220px; border: 1px solid #cfd7e133; border-radius: 50%; right: -26px; top: -150px; pointer-events: none; }
+.go-main .go-welcome h1 { color: white; font-size: clamp(24px, 2.3vw, 32px); }
+.go-welcome p, .go-welcome .text-slate-500 { color: #CFD7E1; }
+.go-welcome .text-slate-700, .go-welcome .text-slate-400 { color: #CFD7E1; }
+.go-welcome button.bg-\[\#3A5D83\] { background: #ED9027; color: #182E3F; font-weight: 800; border: 1px solid transparent; box-shadow: 0 4px 12px #182e3f20; }
+.go-welcome button.bg-\[\#3A5D83\]:hover { background: #F1C48E; }
+.go-welcome button.bg-white { background: #fff; color: #182E3F; border-color: #fff; }
+.go-welcome .bg-purple-50 { background: #ffffff1a; color: white; border-color: #cfd7e144; }
+.go-welcome .bg-emerald-50 { background: #fff; }
+.go-welcome > div { position: relative; z-index: 1; }
+.go-dashboard > div:nth-of-type(2) .tabular-nums.font-extrabold { font-size: 38px; letter-spacing: -.05em; line-height: 1.2; }
+.go-dashboard .go-surface:not(.go-welcome) { transition: box-shadow .2s, border-color .2s; }
+.go-dashboard .go-surface:not(.go-welcome):hover { box-shadow: 0 8px 26px #182e3f0b; }
 
-/* Smooth micro-interaction button active feedback */
-button:active {
-  transform: scale(0.985);
+/* A full brand welcome for sign-in, with exactly the same form and handlers. */
+.go-login { padding: 32px; background: #f4f6f9; display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); gap: 6%; align-items: center; }
+.go-login > div[aria-hidden="true"] { display: none; }
+.go-login-story { align-self: stretch; min-height: calc(100vh - 64px); background: #3A5D83; border-radius: 32px; padding: 50px; color: white; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
+.go-login-story::after { content: ''; position: absolute; width: 560px; height: 560px; border: 1px solid #cfd7e14d; border-radius: 50%; left: -220px; bottom: -270px; box-shadow: 0 0 0 55px #cfd7e112, 0 0 0 110px #cfd7e10a; pointer-events: none; }
+.go-story-top { display: flex; align-items: center; gap: 18px; position: relative; z-index: 1; }
+.go-story-top .go-logo { background: white; padding: 12px; border-radius: 18px; }
+.go-story-top > span { font-weight: 700; letter-spacing: .13em; font-size: 12px; }
+.go-story-copy { position: relative; z-index: 1; margin: 80px 0; }
+.go-story-copy .go-eyebrow { color: #F1C48E; }
+.go-story-copy h2 { font-size: clamp(32px, 3.5vw, 54px); font-weight: 800; letter-spacing: -.055em; line-height: 1.17; margin-top: 24px; }
+.go-story-copy h2 em { color: #F8DEC1; font-style: normal; }
+.go-story-copy p { max-width: 390px; color: #CFD7E1; font-size: 15px; line-height: 1.9; margin-top: 28px; }
+.go-story-footer { display: flex; align-items: center; gap: 10px; font-size: 10px; letter-spacing: .13em; position: relative; z-index: 1; }
+.go-story-dot { height: 7px; width: 7px; background: #ED9027; border-radius: 50%; }
+.go-login-form { max-width: 440px; padding: 30px 0; }
+.go-login-form > div:first-child { text-align: left; margin-bottom: 28px; }
+.go-login-form h1 { font-size: 30px; color: #182E3F; font-weight: 800; }
+.go-login-form > .go-surface { padding: 36px; border-radius: 24px; border-color: #CFD7E1; box-shadow: 0 12px 48px #182e3f08; }
+.go-login-form input { min-height: 48px; }
+.go-login-form form button[type="submit"] { min-height: 48px; }
+@keyframes go-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes shimmer { to { transform: translateX(100%); } }
+.animate-shimmer { position: relative; overflow: hidden; }
+.animate-shimmer::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg,transparent,#ffffff80,transparent); animation: shimmer 2s infinite; }
+@media (min-width: 768px) { .go-sidebar { top: 88px; height: calc(100vh - 88px); } }
+@media (max-width: 1100px) { .go-main { padding: 24px; } .go-login-story { padding: 32px; } .go-login { gap: 4%; } }
+@media (max-width: 767px) {
+  .go-main { padding: 20px 14px; }
+  .go-main .go-welcome { padding: 24px 20px; border-radius: 20px; }
+  .go-header > div { padding-left: 14px; padding-right: 14px; }
+  .go-header .go-logo { display: none; }
+  .go-header .text-sm { font-size: 13px; }
+  .go-login { display: block; padding: 24px 16px; }
+  .go-login-story { min-height: auto; padding: 26px; border-radius: 24px; margin-bottom: 26px; }
+  .go-story-top { display: none; }
+  .go-story-copy { margin: 0; }
+  .go-story-copy h2 { font-size: 28px; margin-top: 12px; }
+  .go-story-copy p { display: none; }
+  .go-story-footer { margin-top: 24px; font-size: 8px; }
+  .go-login-form { padding: 0; }
+  .go-login-form > .go-surface { padding: 26px; }
+  .go-dashboard > div:nth-of-type(2) .tabular-nums.font-extrabold { font-size: 30px; }
 }
-
-/* Subtle focus ring style using HR Hub Blue */
-:focus-visible {
-  outline: 2px solid #3A5D83;
-  outline-offset: 2px;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
-
-/* Skeleton loader shimmer */
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.animate-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-
-.animate-shimmer::after {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  transform: translateX(-100%);
-  background-image: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0,
-    rgba(255, 255, 255, 0.4) 20%,
-    rgba(255, 255, 255, 0.6) 60%,
-    rgba(255, 255, 255, 0)
-  );
-  animation: shimmer 2s infinite;
-  content: '';
+/* Secondary copy stays readable; orange buttons use dark ink for contrast. */
+.go-main .text-xs { font-size: 13px; line-height: 1.6; }
+.go-main .text-slate-400 { color: #636466; }
+.go-main .go-welcome .text-slate-400 { color: #CFD7E1; }
+.go-sidebar .sidebar-menu-item { font-size: 13px; }
+.go-login-form .text-xs { font-size: 13px; line-height: 1.6; }
+@media (max-width: 767px) {
+  .go-header > div { gap: 8px; }
+  .go-header > div > div:last-child > .border-l { display: none; }
+  .go-sidebar .go-logo img { background: white; border-radius: 10px; padding: 6px; width: 70px; max-height: none; }
 }

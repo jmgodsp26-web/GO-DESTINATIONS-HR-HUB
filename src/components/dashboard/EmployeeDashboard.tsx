@@ -167,7 +167,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
     return (
       <div className="space-y-6">
         {/* Skeleton Welcome */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex items-center justify-between animate-pulse">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex items-center justify-between animate-pulse">
           <div className="flex items-center space-x-4">
             <div className="w-14 h-14 rounded-2xl bg-slate-200" />
             <div className="space-y-2">
@@ -181,7 +181,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
         {/* Skeleton Metric Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs animate-pulse space-y-3">
+            <div key={i} className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs animate-pulse space-y-3">
               <div className="h-3 bg-slate-200 rounded w-24" />
               <div className="h-7 bg-slate-200 rounded w-16" />
               <div className="h-2 bg-slate-200 rounded w-full" />
@@ -193,9 +193,9 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="go-dashboard space-y-6 animate-in fade-in duration-200">
       {/* 1. 2026 SaaS Workplace Command Center Hero */}
-      <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all">
+      <div className="go-welcome relative overflow-hidden go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
           <div className="flex items-start sm:items-center space-x-4">
             <div className="relative shrink-0">
@@ -248,7 +248,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
               type="button"
               id="dashboard-request-leave-btn"
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-[#3A5D83] hover:bg-[#2F4D6D] active:bg-[#253D57] text-white rounded-xl font-semibold text-xs transition-all shadow-xs min-h-[44px]"
+              className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-[#3A5D83] hover:bg-[#182E3F] active:bg-[#182E3F] text-white rounded-xl font-semibold text-xs transition-all shadow-xs min-h-[44px]"
             >
               <Plus className="w-4 h-4 shrink-0" />
               <span>Request Leave</span>
@@ -288,7 +288,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
           <button
             type="button"
             onClick={() => onNavigateTab('leave')}
-            className="text-xs font-semibold text-[#3A5D83] hover:text-[#2F4D6D] transition-colors flex items-center space-x-1"
+            className="text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] transition-colors flex items-center space-x-1"
           >
             <span>Full Balance Breakdown</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -297,7 +297,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
           {/* Card 1: Total Balance Available */}
-          <div className="bg-white rounded-2xl border border-indigo-100/90 bg-gradient-to-b from-indigo-50/30 to-white p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-indigo-200 transition-colors">
+          <div className="go-surface bg-white rounded-2xl border border-indigo-100/90 bg-gradient-to-b from-indigo-50/30 to-white p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-indigo-200 transition-colors">
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-indigo-900 tracking-wide">Total Balance</span>
@@ -322,7 +322,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
           </div>
 
           {/* Card 2: Vacation Leave */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-colors">
+          <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-colors">
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500">Vacation Leave</span>
@@ -353,7 +353,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
           </div>
 
           {/* Card 3: Sick Leave */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-colors">
+          <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-colors">
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500">Sick Leave</span>
@@ -491,7 +491,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
               <button
                 type="button"
                 onClick={() => setIsShiftModalOpen(true)}
-                className="px-3.5 py-2 bg-[#3A5D83] hover:bg-[#2F4D6D] text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs flex items-center space-x-1.5 min-h-[38px]"
+                className="px-3.5 py-2 bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs flex items-center space-x-1.5 min-h-[38px]"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Volunteer for Shift</span>
@@ -511,7 +511,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
       {/* 4. Two-Column Layout: Recent Leave Activity & Upcoming Schedule */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         {/* Left 2 Cols: Recent Leave Requests */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="lg:col-span-2 go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-200/70 flex items-center justify-between bg-slate-50/50">
             <div>
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
@@ -524,7 +524,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
             <button
               type="button"
               onClick={() => onNavigateTab('leave')}
-              className="text-xs font-semibold text-[#3A5D83] hover:text-[#2F4D6D] transition-colors flex items-center space-x-1"
+              className="text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] transition-colors flex items-center space-x-1"
             >
               <span>View All History</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -697,7 +697,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
         </div>
 
         {/* Right 1 Col: Upcoming Company Holidays Timeline */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 flex flex-col justify-between">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
               <div>
@@ -715,7 +715,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
               <button
                 type="button"
                 onClick={() => onNavigateTab('holidays')}
-                className="text-xs font-semibold text-[#3A5D83] hover:text-[#2F4D6D] transition-colors"
+                className="text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] transition-colors"
               >
                 All Holidays
               </button>
@@ -784,7 +784,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
       </div>
 
       {/* 5. Confidential HR Documents Vault */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-200/70 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
@@ -807,7 +807,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
           <button
             type="button"
             onClick={() => onNavigateTab('documents')}
-            className="text-xs font-semibold text-[#3A5D83] hover:text-[#2F4D6D] transition-colors flex items-center space-x-1"
+            className="text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] transition-colors flex items-center space-x-1"
           >
             <span>All Documents ({myDocuments.length})</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -858,7 +858,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                       <button
                         type="button"
                         onClick={() => handleDownloadDoc(doc)}
-                        className="inline-flex items-center space-x-1 text-xs font-semibold text-[#3A5D83] hover:text-[#2F4D6D] transition-colors"
+                        className="inline-flex items-center space-x-1 text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] transition-colors"
                       >
                         <Download className="w-3 h-3" />
                         <span>Download</span>

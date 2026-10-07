@@ -63,7 +63,7 @@ export const FirstTimePasswordModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200/90 overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="go-surface bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200/90 overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-[#3A5D83] to-[#263E58] p-6 text-white text-center relative">
           <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mx-auto mb-3 shadow-xs">
@@ -169,7 +169,7 @@ export const FirstTimePasswordModal: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting || !hasMinLength || !isMatching}
-                className="w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-white bg-[#3A5D83] hover:bg-[#2F4D6D] active:bg-[#263E58] shadow-xs disabled:opacity-50 transition-all min-h-[42px] cursor-pointer"
+                className="w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-white bg-[#3A5D83] hover:bg-[#182E3F] active:bg-[#263E58] shadow-xs disabled:opacity-50 transition-all min-h-[42px] cursor-pointer"
               >
                 {isSubmitting ? (
                   <span className="flex items-center space-x-2">

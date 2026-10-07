@@ -187,7 +187,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs space-y-3.5">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs space-y-3.5">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Search Input */}
           <div className="relative w-full sm:w-80">
@@ -245,7 +245,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
 
       {/* Documents Grid / Table */}
       {isLoading ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-8 shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-8 shadow-xs">
           <div className="space-y-4">
             <div className="h-4 bg-slate-100 rounded w-1/4 animate-pulse" />
             <div className="h-10 bg-slate-100 rounded-xl w-full animate-pulse" />
@@ -254,7 +254,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
           </div>
         </div>
       ) : filteredDocs.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-xs">
           <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
             <FolderOpen className="w-6 h-6" />
           </div>
@@ -279,7 +279,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
           <div className="px-5 py-3.5 border-b border-slate-200/80 bg-slate-50/60 flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="text-xs font-bold text-slate-800">Archived Documents</span>
@@ -446,7 +446,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
       {/* Delete Document Confirmation Modal */}
       {deletingDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+          <div className="go-surface bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
               <div className="flex items-center space-x-2 text-rose-700">
                 <Trash2 className="w-5 h-5" />

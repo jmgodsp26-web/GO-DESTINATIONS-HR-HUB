@@ -273,7 +273,7 @@ export const ReportsView: React.FC = () => {
       </div>
 
       {/* Filters Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center space-x-1.5 text-slate-600 font-medium">
@@ -318,7 +318,7 @@ export const ReportsView: React.FC = () => {
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Approved Leave</span>
             <span className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg">
@@ -334,7 +334,7 @@ export const ReportsView: React.FC = () => {
           <p className="text-[11px] text-slate-400 mt-1">Across {approvedRequests.length} approved applications</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Review</span>
             <span className="p-1.5 bg-amber-50 text-amber-700 rounded-lg">
@@ -350,7 +350,7 @@ export const ReportsView: React.FC = () => {
           <p className="text-[11px] text-slate-400 mt-1">{totalPendingDays} days currently awaiting sign-off</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Workforce Size</span>
             <span className="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg">
@@ -368,7 +368,7 @@ export const ReportsView: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg Absence Rate</span>
             <span className="p-1.5 bg-purple-50 text-purple-700 rounded-lg">
@@ -388,7 +388,7 @@ export const ReportsView: React.FC = () => {
       {/* Main Analysis Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Department Utilization Breakdown */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
+        <div className="lg:col-span-2 go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Department Leave Utilization</h2>
@@ -435,7 +435,7 @@ export const ReportsView: React.FC = () => {
         </div>
 
         {/* Leave Type Distribution */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Leave Type Share</h2>
@@ -498,7 +498,7 @@ export const ReportsView: React.FC = () => {
       </div>
 
       {/* Filtered Records Summary Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
           <div>
             <h2 className="text-sm font-bold text-slate-900">Leave Applications Register</h2>

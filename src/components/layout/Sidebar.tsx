@@ -132,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed md:sticky top-0 md:top-16 z-40 h-screen md:h-[calc(100vh-4rem)] w-64 bg-[#090D16] text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800/80 transition-transform duration-200 ease-out select-none shadow-sm ${
+        className={`go-sidebar fixed md:sticky top-0 md:top-16 z-40 h-screen md:h-[calc(100vh-4rem)] w-64 bg-[#182E3F] text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800/80 transition-transform duration-200 ease-out select-none shadow-sm ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
@@ -150,6 +150,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
           </div>
 
           {/* Grouped Navigation Links */}
+          <div className="go-sidebar-brand hidden md:block">
+            <span className="go-eyebrow">GO DESTINATIONS</span>
+            <p>Your workplace,<br /><em>beautifully connected.</em></p>
+            <span className="go-sidebar-rule" />
+          </div>
           <nav className="space-y-5 flex-1">
             {navGroups.map((group, groupIdx) => (
               <div key={group.groupTitle || groupIdx} className="space-y-1">
@@ -190,7 +195,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
                         </div>
 
                         {item.badge ? (
-                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-[#ED8F2B] text-white shadow-2xs">
+                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-[#ED9027] text-white shadow-2xs">
                             {item.badge}
                           </span>
                         ) : isActive ? (
@@ -218,7 +223,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
         </div>
 
         {/* User profile capsule & Logout bottom action */}
-        <div className="p-3 border-t border-slate-800/80 bg-[#060910]/80">
+        <div className="p-3 border-t border-slate-800/80 bg-[#182E3F]/80">
           <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/90 mb-2">
             <div className="flex items-center space-x-2.5 min-w-0">
               <div className="relative shrink-0">
@@ -240,7 +245,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
                       : 'GD'}
                   </div>
                 )}
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#090D16]" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#182E3F]" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-slate-200 truncate leading-snug">{user.full_name}</p>
@@ -272,7 +277,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
       {/* Help Modal */}
       {showHelpModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 animate-in zoom-in-95 duration-150">
+          <div className="go-surface bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <LifeBuoy className="w-5 h-5 text-[#3A5D83]" />
@@ -306,7 +311,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
               <button
                 type="button"
                 onClick={() => setShowHelpModal(false)}
-                className="px-4 py-2 bg-[#3A5D83] hover:bg-[#2F4D6D] text-white rounded-xl text-xs font-semibold shadow-2xs transition-colors"
+                className="px-4 py-2 bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-xl text-xs font-semibold shadow-2xs transition-colors"
               >
                 Close
               </button>

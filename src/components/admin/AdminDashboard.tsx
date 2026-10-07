@@ -195,7 +195,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs animate-pulse flex justify-between">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs animate-pulse flex justify-between">
           <div className="space-y-2">
             <div className="h-5 bg-slate-200 rounded w-48" />
             <div className="h-3 bg-slate-200 rounded w-72" />
@@ -205,7 +205,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs animate-pulse space-y-3">
+            <div key={i} className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs animate-pulse space-y-3">
               <div className="h-3 bg-slate-200 rounded w-24" />
               <div className="h-7 bg-slate-200 rounded w-16" />
             </div>
@@ -216,9 +216,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="go-dashboard space-y-6 animate-in fade-in duration-200">
       {/* 1. Operational Command Center Hero */}
-      <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all">
+      <div className="go-welcome relative overflow-hidden go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
           <div>
             <div className="flex items-center space-x-2">
@@ -247,7 +247,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
             <button
               type="button"
               onClick={() => onNavigateTab('leave-requests')}
-              className="px-4 py-2.5 text-xs font-semibold bg-[#3A5D83] hover:bg-[#2F4D6D] active:bg-[#253E58] text-white rounded-xl transition-all shadow-xs min-h-[42px] flex items-center space-x-1.5"
+              className="px-4 py-2.5 text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] active:bg-[#182E3F] text-white rounded-xl transition-all shadow-xs min-h-[42px] flex items-center space-x-1.5"
             >
               <ClipboardList className="w-4 h-4" />
               <span>Review Requests ({pendingRequests.length})</span>
@@ -262,7 +262,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         <div
           id="stat-card-workforce"
           onClick={() => onNavigateTab('employees')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-indigo-300 cursor-pointer transition-all flex flex-col justify-between"
+          className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-indigo-300 cursor-pointer transition-all flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Headcount</span>
@@ -283,7 +283,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         <div
           id="stat-card-on-leave"
           onClick={() => onNavigateTab('calendar')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-emerald-300 cursor-pointer transition-all flex flex-col justify-between"
+          className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-emerald-300 cursor-pointer transition-all flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Out Today</span>
@@ -334,7 +334,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         <div
           id="stat-card-pc-coverage"
           onClick={() => onNavigateTab('holidays')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-sky-300 cursor-pointer transition-all flex flex-col justify-between"
+          className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-sky-300 cursor-pointer transition-all flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Holiday Coverage</span>
@@ -373,7 +373,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
       />
 
       {/* 4. Quick Approval Queue */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-200/70 flex items-center justify-between bg-slate-50/50">
           <div>
             <div className="flex items-center space-x-2">
@@ -394,7 +394,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           <button
             type="button"
             onClick={() => onNavigateTab('leave-requests')}
-            className="text-xs font-semibold text-[#3A5D83] hover:text-[#2F4D6D] transition-colors flex items-center space-x-1"
+            className="text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] transition-colors flex items-center space-x-1"
           >
             <span>All Requests</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -480,7 +480,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
       </div>
 
       {/* 5. Department Absence Heatmap & Distribution */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
+      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
         <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
           <div className="flex items-center space-x-2">
             <Building2 className="w-4 h-4 text-indigo-600" />
@@ -531,7 +531,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
       {/* 7. Two Column Layout: Currently on Leave & Upcoming Holidays */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Currently on Leave list */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
             <div className="flex items-center space-x-2">
               <UserCheck className="w-4 h-4 text-emerald-600" />
@@ -588,7 +588,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         </div>
 
         {/* Company Holidays list */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
             <div className="flex items-center space-x-2">
               <CalendarDays className="w-4 h-4 text-indigo-600" />
@@ -639,7 +639,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
       {/* Review Action Modal */}
       {reviewingRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <h3 className="text-sm font-bold text-slate-900">
                 {reviewAction === 'Approved' ? 'Approve Leave Request' : 'Reject Leave Request'}
@@ -740,7 +740,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
       {/* Admin Assign Holiday Shift Coverage Modal */}
       {isScheduleShiftOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
               <div className="flex items-center space-x-3">
@@ -860,7 +860,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                 <button
                   type="submit"
                   disabled={isAssigningShift}
-                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] hover:bg-[#2F4D6D] text-white rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
+                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
                 >
                   <Users className="w-3.5 h-3.5" />
                   <span>{isAssigningShift ? 'Assigning...' : 'Assign Staff Shift'}</span>

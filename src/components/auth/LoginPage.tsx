@@ -1,3 +1,4 @@
+import { GoDestinationsLogo } from '../common/GoDestinationsLogo';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -98,7 +99,7 @@ export const LoginPage: React.FC = () => {
   );
 
   return (
-    <div className="relative min-h-screen bg-[#fafbfc] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased overflow-hidden select-none">
+    <div className="go-login relative min-h-screen bg-[#fafbfc] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased overflow-hidden select-none">
       {/* Refined Ambient Background Lighting & Subtle Pattern */}
       <div
         className="absolute inset-0 bg-[radial-gradient(ellipse_75%_50%_at_50%_-10%,rgba(58,93,131,0.08),rgba(255,255,255,0))] pointer-events-none"
@@ -109,7 +110,12 @@ export const LoginPage: React.FC = () => {
         aria-hidden="true"
       />
 
-      <div className="relative z-10 w-full max-w-[420px] mx-auto">
+      <aside className="go-login-story" aria-label="GO Destinations workplace">
+        <div className="go-story-top"><GoDestinationsLogo variant="icon-only" size="xl" /><span>GO DESTINATIONS</span></div>
+        <div className="go-story-copy"><span className="go-eyebrow">PEOPLE MAKE THE JOURNEY</span><h2>A world of possibilities.<br /><em>One connected team.</em></h2><p>Your time, your team, and everything you need to do your best work. Welcome to your GO workplace.</p></div>
+        <div className="go-story-footer"><span className="go-story-dot" /> GLOBAL REACH. PERSONAL CONNECTION.</div>
+      </aside>
+      <div className="go-login-form relative z-10 w-full max-w-[420px] mx-auto">
         {/* Brand Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center space-x-2 mb-2">
@@ -127,7 +133,7 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Main Authentication Card */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-[0_4px_24px_-4px_rgba(15,23,42,0.06),0_16px_40px_-8px_rgba(15,23,42,0.04)] p-7 sm:p-9 space-y-6">
+        <div className="go-surface bg-white rounded-2xl border border-slate-200/90 shadow-[0_4px_24px_-4px_rgba(15,23,42,0.06),0_16px_40px_-8px_rgba(15,23,42,0.04)] p-7 sm:p-9 space-y-6">
           <div>
             <h2 className="text-lg font-bold text-slate-900 tracking-tight">
               Sign in to your account
@@ -202,7 +208,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={openResetModal}
-                  className="text-[11px] text-[#3A5D83] hover:text-[#2F4D6D] hover:underline font-semibold cursor-pointer"
+                  className="text-[11px] text-[#3A5D83] hover:text-[#182E3F] hover:underline font-semibold cursor-pointer"
                 >
                   Forgot password?
                 </button>
@@ -277,7 +283,7 @@ export const LoginPage: React.FC = () => {
                 type="submit"
                 id="login-submit-btn"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-white bg-[#3A5D83] hover:bg-[#2F4D6D] active:bg-[#243E58] shadow-[0_2px_8px_-1px_rgba(58,93,131,0.35)] hover:shadow-[0_4px_12px_-2px_rgba(58,93,131,0.45)] disabled:opacity-50 transition-all min-h-[44px] cursor-pointer"
+                className="group relative w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-white bg-[#3A5D83] hover:bg-[#182E3F] active:bg-[#243E58] shadow-[0_2px_8px_-1px_rgba(58,93,131,0.35)] hover:shadow-[0_4px_12px_-2px_rgba(58,93,131,0.45)] disabled:opacity-50 transition-all min-h-[44px] cursor-pointer"
               >
                 {isLoading ? (
                   <span className="flex items-center space-x-2">
@@ -306,7 +312,7 @@ export const LoginPage: React.FC = () => {
       {/* Forgot Password / Account Assistance Modal */}
       {showHelpModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="go-surface bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
             {/* Modal Header & Navigation Tabs */}
             <div className="border-b border-slate-100 bg-slate-50/80 px-6 pt-5 pb-3">
               <div className="flex items-center justify-between mb-3">
@@ -381,7 +387,7 @@ export const LoginPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowHelpModal(false)}
-                    className="px-5 py-2 bg-[#3A5D83] hover:bg-[#2F4D6D] text-white rounded-xl text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                    className="px-5 py-2 bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-xl text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                   >
                     Understood
                   </button>
@@ -422,7 +428,7 @@ export const LoginPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowHelpModal(false)}
-                    className="px-4 py-2 bg-[#3A5D83] hover:bg-[#2F4D6D] text-white rounded-xl text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-xl text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                   >
                     Close
                   </button>

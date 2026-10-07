@@ -65,8 +65,8 @@ export const Header: React.FC<HeaderProps> = ({
   const isAdmin = user.role === 'admin';
 
   return (
-    <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/70 sticky top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+    <header className="go-header bg-white/95 backdrop-blur-md border-b border-slate-200/70 sticky top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-colors">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
         {/* Left Branding & Mobile Menu Toggle */}
         <div className="flex items-center space-x-3 shrink-0">
           <button
@@ -102,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block font-normal">
-                Enterprise Workplace &amp; Leave System
+                Your people. Your workplace. Your GO.
               </p>
             </div>
           </div>
@@ -156,19 +156,19 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#ED8F2B] text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white shadow-xs tabular-nums leading-none">
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#ED9027] text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white shadow-xs tabular-nums leading-none">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 go-surface bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                 <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-200/70 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className="font-semibold text-slate-900 text-xs">Notifications</span>
                     {unreadCount > 0 && (
-                      <span className="text-[10px] bg-[#ED8F2B]/10 text-[#ED8F2B] border border-[#ED8F2B]/30 px-2 py-0.2 rounded-full font-medium">
+                      <span className="text-[10px] bg-[#ED9027]/10 text-[#ED9027] border border-[#ED9027]/30 px-2 py-0.2 rounded-full font-medium">
                         {unreadCount} unread
                       </span>
                     )}
@@ -177,7 +177,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                       type="button"
                       onClick={markAllNotificationsRead}
-                      className="text-[11px] text-[#3A5D83] hover:text-[#2F4D6D] font-medium transition-colors"
+                      className="text-[11px] text-[#3A5D83] hover:text-[#182E3F] font-medium transition-colors"
                     >
                       Mark all as read
                     </button>
@@ -214,7 +214,7 @@ export const Header: React.FC<HeaderProps> = ({
                           ) : notif.type === 'leave_rejected' ? (
                             <XCircle className="w-4 h-4 text-rose-600" />
                           ) : (
-                            <Clock className="w-4 h-4 text-[#ED8F2B]" />
+                            <Clock className="w-4 h-4 text-[#ED9027]" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -227,7 +227,7 @@ export const Header: React.FC<HeaderProps> = ({
                           </p>
                         </div>
                         {!notif.read && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#ED8F2B] mt-1.5 shrink-0" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#ED9027] mt-1.5 shrink-0" />
                         )}
                       </div>
                     ))
