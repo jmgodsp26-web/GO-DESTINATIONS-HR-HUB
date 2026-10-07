@@ -5,6 +5,8 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { createServer as createViteServer } from 'vite';
 import { db } from './server/db.js';
+import { transact, initializeDatabase } from './server/persistence.js';
+import { withDatabase } from './server/request-context.js';
 import { getFirestoreDb } from './server/firestore.js';
 import { UserProfile } from './src/types.js';
 
@@ -14,7 +16,8 @@ export interface AuthenticatedRequest extends Request {
 }
 
 const app = express();
-const PORT = 3000;
+const apiRouter = express.Router();
+const PORT = Number(process.env.PORT || 3000);
 
 // Enable trust proxy for Cloud Run and reverse proxy environments (nginx)
 app.set('trust proxy', 1);
@@ -57,20 +60,74 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts from this IP. Please wait 15 minutes before trying again.' },
 });
 
+app.use('/api', (_req, res, next) => { res.setHeader('Cache-Control', 'private, no-store'); next(); });
 app.use('/api', apiLimiter);
 app.use('/api/auth/login', loginLimiter);
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use('/api', (req, res, next) => {
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    if (req.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json') return res.status(415).json({ error: 'Please submit JSON requests.' });
+    const origin = req.get('origin');
+    const expected = process.env.APP_ORIGIN || `${req.protocol}://${req.get('host')}`;
+    if (origin && origin !== expected) return res.status(403).json({ error: 'Request origin not allowed.' });
+  }
+  next();
+});
+
+// Firebase Hosting forwards only this cookie to Cloud Run.
+const COOKIE = '__session';
+function sessionToken(req: Request): string {
+  const item = (req.headers.cookie || '').split(';').map(value => value.trim()).find(value => value.startsWith(COOKIE + '='));
+  return item ? item.slice(COOKIE.length + 1) : '';
+}
+const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV !== 'test', sameSite: 'lax' as const, path: '/', maxAge: 8 * 60 * 60 * 1000 };
+
+// Hold the response until the entire HR operation commits. Each transaction retry
+// receives a fresh database and router dispatch; failed operations do not persist.
+app.use('/api', async (req: Request, res: Response) => {
+  if (req.path === '/health') return res.json({ status: 'ok' });
+  const originalUrl = req.url;
+  const send = res.send.bind(res);
+  const json = res.json.bind(res);
+  const end = res.end.bind(res);
+  const initialHeaders = res.getHeaders();
+  try {
+    const outcome = await transact(async database => {
+      req.url = req.originalUrl;
+      res.statusCode = 200;
+      for (const header of res.getHeaderNames()) res.removeHeader(header);
+      for (const [header, value] of Object.entries(initialHeaders)) if (value !== undefined) res.setHeader(header, value);
+      const reply = await withDatabase(database, () => new Promise<{ kind: string; body: any; status: number; headers: ReturnType<Response['getHeaders']> }>((resolve, reject) => {
+        const capture = (kind: string, body: any) => {
+          resolve({ kind, body, status: res.statusCode, headers: res.getHeaders() });
+          return res;
+        };
+        res.json = ((body: any) => capture('json', body)) as any;
+        res.send = ((body: any) => capture('send', body)) as any;
+        res.end = ((body: any) => capture('end', body)) as any;
+        apiRouter(req, res, (error?: any) => { if (error) reject(error); else { res.statusCode = 404; capture('json', { error: 'API route not found.' }); } });
+      }));
+      return { result: reply, commit: reply.status < 400 };
+    });
+    res.send = send; res.json = json; res.end = end as any;
+    res.status(outcome.status);
+    for (const [header, value] of Object.entries(outcome.headers)) if (value !== undefined) res.setHeader(header, value);
+    if (outcome.kind === 'json') json(outcome.body);
+    else if (outcome.kind === 'send') send(outcome.body);
+    else end(outcome.body);
+  } catch (error) {
+    res.send = send; res.json = json; res.end = end as any;
+    res.removeHeader('set-cookie');
+    console.error('HR transaction failed:', error);
+    res.status(503).json({ error: 'The database is temporarily unavailable. Your changes were not saved. Please try again.' });
+  } finally { req.url = originalUrl; }
+});
 
 // --- AUTH MIDDLEWARE ---
 function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Authentication required. Please log in.' });
-  }
-
-  const token = authHeader.split(' ')[1];
+  const token = sessionToken(req);
+  if (!token) return res.status(401).json({ error: 'Authentication required. Please log in.' });
   const user = db.getUserByToken(token);
   if (!user) {
     return res.status(401).json({ error: 'Session expired or invalid token. Please log in again.' });
@@ -78,6 +135,10 @@ function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunc
 
   if (user.status === 'disabled') {
     return res.status(403).json({ error: 'Account disabled. Please contact HR administrator.' });
+  }
+
+  if (db.requiresPasswordChange(user.id) && !['/api/auth/me', '/api/auth/change-password'].includes(req.path)) {
+    return res.status(403).json({ error: 'Please change your temporary password before continuing.', mustChangePassword: true });
   }
 
   req.user = user;
@@ -96,7 +157,7 @@ function adminOnlyMiddleware(req: AuthenticatedRequest, res: Response, next: Nex
 // --- API ROUTES ---
 
 // Health & System Status
-app.get('/api/health', (_req: Request, res: Response) => {
+apiRouter.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -105,16 +166,19 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 // 1. Auth routes
-app.post('/api/auth/login', (req: Request, res: Response) => {
+apiRouter.post('/api/auth/login', (req: Request, res: Response) => {
   try {
     const { email, identifier, password } = req.body;
-    const loginIdentifier = (identifier || email || '').trim();
+    const loginIdentifier = typeof (identifier || email) === 'string' ? (identifier || email).trim() : '';
+    if (typeof password !== 'string') return res.status(400).json({ error: 'Password is required.' });
     if (!loginIdentifier) {
-      return res.status(400).json({ error: 'Work email address or employee ID is required.' });
+      return res.status(400).json({ error: 'Company email address is required.' });
     }
 
     const authResult = db.authenticate(loginIdentifier, password);
-    res.json(authResult);
+    res.cookie(COOKIE, authResult.token, cookieOptions);
+    const { token: _secret, ...publicResult } = authResult;
+    res.json(publicResult);
   } catch (error: any) {
     const msg = error.message || 'Authentication failed.';
     const status = msg.includes('disabled') ? 403 : 401;
@@ -123,18 +187,18 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
 });
 
 // Self-service password reset is disabled for compliance and security
-app.post('/api/auth/reset-password', (_req: Request, res: Response) => {
+apiRouter.post('/api/auth/reset-password', (_req: Request, res: Response) => {
   return res.status(403).json({
     error: 'Self-service password reset is disabled for security compliance. Please contact your HR administrator for a verified credential reset.',
   });
 });
 
 // Admin-controlled credential reset with mandatory temporary password
-app.post('/api/admin/employees/:id/reset-password', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.post('/api/admin/employees/:id/reset-password', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { temporary_password } = req.body;
-    if (!temporary_password || typeof temporary_password !== 'string' || temporary_password.trim().length < 8) {
-      return res.status(400).json({ error: 'Temporary password must be at least 8 characters long.' });
+    if (!temporary_password || typeof temporary_password !== 'string' || temporary_password.trim().length < 12) {
+      return res.status(400).json({ error: 'Temporary password must be at least 12 characters long.' });
     }
     db.adminResetPassword(req.params.id, temporary_password.trim(), req.user!);
     res.json({ success: true, message: 'Temporary password generated and existing sessions revoked successfully.' });
@@ -143,26 +207,24 @@ app.post('/api/admin/employees/:id/reset-password', adminOnlyMiddleware, (req: A
   }
 });
 
-app.get('/api/auth/me', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
-  res.json({ user: req.user });
+apiRouter.get('/api/auth/me', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  res.json({ user: req.user, mustChangePassword: db.requiresPasswordChange(req.user!.id) });
 });
 
-app.post('/api/auth/logout', (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    db.logout(token);
-  }
+apiRouter.post('/api/auth/logout', (req: Request, res: Response) => {
+  db.logout(sessionToken(req));
+  res.clearCookie(COOKIE, { ...cookieOptions, maxAge: undefined });
   res.json({ success: true });
 });
 
-app.post('/api/auth/change-password', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.post('/api/auth/change-password', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { current_password, new_password } = req.body;
-    if (!new_password || typeof new_password !== 'string' || new_password.trim().length < 8) {
-      return res.status(400).json({ error: 'New password must be at least 8 characters long.' });
+    if (!new_password || typeof new_password !== 'string' || new_password.trim().length < 12) {
+      return res.status(400).json({ error: 'New password must be at least 12 characters long.' });
     }
     db.changePassword(req.user!.id, current_password || '', new_password.trim());
+    res.clearCookie(COOKIE, { ...cookieOptions, maxAge: undefined });
     res.json({ success: true, message: 'Password updated successfully. Please use your new password next time.' });
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to update password.' });
@@ -170,11 +232,11 @@ app.post('/api/auth/change-password', authMiddleware, (req: AuthenticatedRequest
 });
 
 // 2. Profile & Leave Balances
-app.get('/api/profile', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/profile', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   res.json(req.user);
 });
 
-app.get('/api/leave-balances', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/leave-balances', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     // If admin provides employee_id query, return that employee's balance; otherwise current user
     const targetUserId =
@@ -190,7 +252,7 @@ app.get('/api/leave-balances', authMiddleware, (req: AuthenticatedRequest, res: 
 });
 
 // Leave Transactions Ledger
-app.get(['/api/leave/transactions', '/api/leave-transactions'], authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get(['/api/leave/transactions', '/api/leave-transactions'], authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const targetEmployeeId =
       req.user?.role === 'admin' && req.query.employee_id
@@ -207,7 +269,7 @@ app.get(['/api/leave/transactions', '/api/leave-transactions'], authMiddleware, 
 });
 
 // Admin Manual Leave Balance Adjustment
-app.post('/api/admin/leave-adjustments', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.post('/api/admin/leave-adjustments', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { employee_id, leave_type, amount, reason } = req.body;
     if (!employee_id || !leave_type || amount === undefined || !reason) {
@@ -227,7 +289,7 @@ app.post('/api/admin/leave-adjustments', adminOnlyMiddleware, (req: Authenticate
 });
 
 // 3. Leave Requests
-app.get('/api/leave-requests', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/leave-requests', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { status, employee, leave_type, date } = req.query;
     const requests = db.getLeaveRequests(req.user!, {
@@ -242,7 +304,7 @@ app.get('/api/leave-requests', authMiddleware, (req: AuthenticatedRequest, res: 
   }
 });
 
-app.post('/api/leave-requests', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.post('/api/leave-requests', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const newRequest = db.submitLeaveRequest(req.user!, req.body);
     res.status(201).json(newRequest);
@@ -251,7 +313,7 @@ app.post('/api/leave-requests', authMiddleware, (req: AuthenticatedRequest, res:
   }
 });
 
-app.patch('/api/leave-requests/:id/review', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.patch('/api/leave-requests/:id/review', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { action, admin_note } = req.body;
     if (action !== 'Approved' && action !== 'Rejected') {
@@ -265,7 +327,7 @@ app.patch('/api/leave-requests/:id/review', adminOnlyMiddleware, (req: Authentic
   }
 });
 
-app.patch('/api/leave-requests/:id/cancel', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.patch('/api/leave-requests/:id/cancel', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const cancelled = db.cancelLeaveRequest(req.params.id, req.user!);
     res.json(cancelled);
@@ -274,7 +336,7 @@ app.patch('/api/leave-requests/:id/cancel', authMiddleware, (req: AuthenticatedR
   }
 });
 
-app.delete('/api/leave-requests/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.delete('/api/leave-requests/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const cancelled = db.cancelLeaveRequest(req.params.id, req.user!);
     res.json(cancelled);
@@ -284,7 +346,7 @@ app.delete('/api/leave-requests/:id', authMiddleware, (req: AuthenticatedRequest
 });
 
 // 4. Employee Management
-app.get('/api/employees', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/employees', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const employees = db.getAllEmployees();
     if (req.user?.role !== 'admin') {
@@ -311,7 +373,7 @@ app.get('/api/employees', authMiddleware, (req: AuthenticatedRequest, res: Respo
   }
 });
 
-app.post('/api/employees', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.post('/api/employees', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const profile = db.createEmployee(req.body, req.user!);
     res.status(201).json(profile);
@@ -320,7 +382,7 @@ app.post('/api/employees', adminOnlyMiddleware, (req: AuthenticatedRequest, res:
   }
 });
 
-app.patch('/api/employees/:id', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.patch('/api/employees/:id', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const updated = db.updateEmployee(req.params.id, req.body, req.user!);
     res.json(updated);
@@ -329,7 +391,7 @@ app.patch('/api/employees/:id', adminOnlyMiddleware, (req: AuthenticatedRequest,
   }
 });
 
-app.delete('/api/employees/:id', adminOnlyMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+apiRouter.delete('/api/employees/:id', adminOnlyMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
     await db.deleteEmployee(req.params.id, req.user!);
     res.json({ success: true });
@@ -338,7 +400,7 @@ app.delete('/api/employees/:id', adminOnlyMiddleware, async (req: AuthenticatedR
   }
 });
 
-app.patch('/api/employees/:id/leave-balance', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.patch('/api/employees/:id/leave-balance', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { leave_type, allocated_days } = req.body;
     if (!leave_type || typeof allocated_days !== 'number' || allocated_days < 0) {
@@ -353,7 +415,7 @@ app.patch('/api/employees/:id/leave-balance', adminOnlyMiddleware, (req: Authent
 });
 
 // 5. Holidays & Staff Coverage
-app.get('/api/holidays', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/holidays', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   const { country, year, holiday_type, scope, is_active, upcoming_only, reference_date } = req.query;
   const holidays = db.getHolidays({
     country: country as string,
@@ -367,7 +429,7 @@ app.get('/api/holidays', authMiddleware, (req: AuthenticatedRequest, res: Respon
   res.json(holidays);
 });
 
-app.post('/api/holidays', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.post('/api/holidays', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const holiday = db.addHoliday(req.body, req.user!);
     res.status(201).json(holiday);
@@ -376,7 +438,7 @@ app.post('/api/holidays', adminOnlyMiddleware, (req: AuthenticatedRequest, res: 
   }
 });
 
-app.patch('/api/holidays/:id', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.patch('/api/holidays/:id', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const holiday = db.updateHoliday(req.params.id, req.body, req.user!);
     res.json(holiday);
@@ -385,7 +447,7 @@ app.patch('/api/holidays/:id', adminOnlyMiddleware, (req: AuthenticatedRequest, 
   }
 });
 
-app.patch('/api/holidays/:id/toggle-active', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.patch('/api/holidays/:id/toggle-active', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const holiday = db.toggleHolidayActive(req.params.id, req.user!);
     res.json(holiday);
@@ -394,7 +456,7 @@ app.patch('/api/holidays/:id/toggle-active', adminOnlyMiddleware, (req: Authenti
   }
 });
 
-app.delete('/api/holidays/:id', adminOnlyMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+apiRouter.delete('/api/holidays/:id', adminOnlyMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
     await db.deleteHoliday(req.params.id, req.user!);
     res.json({ success: true });
@@ -404,7 +466,7 @@ app.delete('/api/holidays/:id', adminOnlyMiddleware, async (req: AuthenticatedRe
 });
 
 // Holiday Shift Requests & Coverage
-app.get('/api/holiday-shifts', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/holiday-shifts', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { holiday_id, holiday_date, status, employee_id } = req.query;
     // Strict server-side authorization: Standard employees can only access their own shifts
@@ -425,7 +487,7 @@ app.get('/api/holiday-shifts', authMiddleware, (req: AuthenticatedRequest, res: 
   }
 });
 
-app.post('/api/holiday-shifts', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.post('/api/holiday-shifts', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const shift = db.submitHolidayShiftRequest(req.user!, req.body);
     res.status(201).json(shift);
@@ -434,7 +496,7 @@ app.post('/api/holiday-shifts', authMiddleware, (req: AuthenticatedRequest, res:
   }
 });
 
-app.post('/api/admin/holiday-shifts/assign', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.post('/api/admin/holiday-shifts/assign', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const shift = db.assignHolidayShift(req.user!, req.body);
     res.status(201).json(shift);
@@ -443,7 +505,7 @@ app.post('/api/admin/holiday-shifts/assign', adminOnlyMiddleware, (req: Authenti
   }
 });
 
-app.patch('/api/holiday-shifts/:id/review', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.patch('/api/holiday-shifts/:id/review', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { action, admin_note } = req.body;
     if (action !== 'Approved' && action !== 'Rejected') {
@@ -456,7 +518,7 @@ app.patch('/api/holiday-shifts/:id/review', adminOnlyMiddleware, (req: Authentic
   }
 });
 
-app.delete('/api/holiday-shifts/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.delete('/api/holiday-shifts/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     db.cancelHolidayShiftRequest(req.params.id, req.user!);
     res.json({ success: true });
@@ -465,7 +527,7 @@ app.delete('/api/holiday-shifts/:id', authMiddleware, (req: AuthenticatedRequest
   }
 });
 
-app.get('/api/holiday-coverage', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/holiday-coverage', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { upcoming_only, reference_date, country } = req.query;
     const holidays = db.getHolidays({
@@ -481,7 +543,7 @@ app.get('/api/holiday-coverage', authMiddleware, (req: AuthenticatedRequest, res
   }
 });
 
-app.get('/api/holiday-coverage/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/holiday-coverage/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const coverage = db.getHolidayStaffingCoverage(req.params.id);
     res.json(coverage);
@@ -490,7 +552,7 @@ app.get('/api/holiday-coverage/:id', authMiddleware, (req: AuthenticatedRequest,
   }
 });
 
-app.post('/api/admin/holiday-conflicts/resolve', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.post('/api/admin/holiday-conflicts/resolve', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { employee_id, holiday_date, resolution } = req.body;
     if (!employee_id || !holiday_date || !resolution) {
@@ -504,7 +566,7 @@ app.post('/api/admin/holiday-conflicts/resolve', adminOnlyMiddleware, (req: Auth
 });
 
 // 6. Calendar
-app.get('/api/calendar', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/calendar', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const events = db.getCalendarEvents(req.user!);
     res.json(events);
@@ -514,7 +576,7 @@ app.get('/api/calendar', authMiddleware, (req: AuthenticatedRequest, res: Respon
 });
 
 // 7. Audit Logs (Admin only)
-app.get('/api/audit-logs', adminOnlyMiddleware, (_req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/audit-logs', adminOnlyMiddleware, (_req: AuthenticatedRequest, res: Response) => {
   try {
     const logs = db.getAuditLogs();
     res.json(logs);
@@ -524,7 +586,7 @@ app.get('/api/audit-logs', adminOnlyMiddleware, (_req: AuthenticatedRequest, res
 });
 
 // 8. Notifications
-app.get('/api/notifications', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/notifications', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const notifs = db.getNotifications(req.user!.id);
     res.json(notifs);
@@ -533,7 +595,7 @@ app.get('/api/notifications', authMiddleware, (req: AuthenticatedRequest, res: R
   }
 });
 
-app.patch('/api/notifications/:id/read', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.patch('/api/notifications/:id/read', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     db.markNotificationRead(req.params.id, req.user!.id);
     res.json({ success: true });
@@ -542,7 +604,7 @@ app.patch('/api/notifications/:id/read', authMiddleware, (req: AuthenticatedRequ
   }
 });
 
-app.post('/api/notifications/mark-all-read', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.post('/api/notifications/mark-all-read', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     db.markAllNotificationsRead(req.user!.id);
     res.json({ success: true });
@@ -551,7 +613,7 @@ app.post('/api/notifications/mark-all-read', authMiddleware, (req: Authenticated
   }
 });
 
-app.delete('/api/notifications/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.delete('/api/notifications/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const success = db.deleteNotification(req.params.id, req.user!.id);
     res.json({ success });
@@ -560,7 +622,7 @@ app.delete('/api/notifications/:id', authMiddleware, (req: AuthenticatedRequest,
   }
 });
 
-app.delete('/api/notifications', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.delete('/api/notifications', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const success = db.clearNotifications(req.user!.id);
     res.json({ success });
@@ -571,7 +633,7 @@ app.delete('/api/notifications', authMiddleware, (req: AuthenticatedRequest, res
 
 // 9. Employee Documents
 // Admin get all documents for an employee
-app.get('/api/admin/employees/:id/documents', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/admin/employees/:id/documents', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const docs = db.getEmployeeDocuments(req.params.id);
     res.json(docs);
@@ -581,7 +643,7 @@ app.get('/api/admin/employees/:id/documents', adminOnlyMiddleware, (req: Authent
 });
 
 // Employee get own documents
-app.get('/api/my-documents', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/my-documents', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const docs = db.getEmployeeDocuments(req.user!.id);
     res.json(docs);
@@ -590,7 +652,7 @@ app.get('/api/my-documents', authMiddleware, (req: AuthenticatedRequest, res: Re
   }
 });
 
-app.post('/api/admin/employees/:id/documents', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.post('/api/admin/employees/:id/documents', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { name, category, file_size, file_data } = req.body;
     if (!name || typeof name !== 'string' || !name.trim()) {
@@ -614,7 +676,7 @@ app.post('/api/admin/employees/:id/documents', adminOnlyMiddleware, (req: Authen
   }
 });
 
-app.delete('/api/admin/employees/:employeeId/documents/:docId', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.delete('/api/admin/employees/:employeeId/documents/:docId', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const success = db.deleteEmployeeDocument(req.params.employeeId, req.params.docId);
     if (!success) {
@@ -627,7 +689,7 @@ app.delete('/api/admin/employees/:employeeId/documents/:docId', adminOnlyMiddlew
 });
 
 // --- SETTINGS ROUTES ---
-app.get('/api/settings', authMiddleware, (_req: AuthenticatedRequest, res: Response) => {
+apiRouter.get('/api/settings', authMiddleware, (_req: AuthenticatedRequest, res: Response) => {
   try {
     const settings = db.getCompanySettings();
     res.json(settings);
@@ -636,7 +698,7 @@ app.get('/api/settings', authMiddleware, (_req: AuthenticatedRequest, res: Respo
   }
 });
 
-app.patch('/api/settings', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+apiRouter.patch('/api/settings', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const updated = db.updateCompanySettings(req.body);
     res.json(updated);
@@ -658,13 +720,9 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 // --- CLIENT SERVING VIA VITE MIDDLEWARE ---
 async function start() {
-  try {
-    await db.initFirestoreSync();
-  } catch (syncErr) {
-    console.warn('[Firestore] Initial sync warning:', syncErr);
-  }
+  await initializeDatabase();
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (!['production', 'test'].includes(process.env.NODE_ENV || '')) {
     const isHmrDisabled = process.env.DISABLE_HMR === 'true';
     const vite = await createViteServer({
       server: {
@@ -687,4 +745,4 @@ async function start() {
   });
 }
 
-start();
+start().catch(error => { console.error('Startup failed:', error); process.exit(1); });

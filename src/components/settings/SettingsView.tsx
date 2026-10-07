@@ -54,8 +54,8 @@ export const SettingsView: React.FC = () => {
     setPasswordError(null);
     setPasswordSuccess(null);
 
-    if (!newPassword || newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters long.');
+    if (!newPassword || newPassword.length < 12) {
+      setPasswordError('New password must be at least 12 characters long.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -406,7 +406,7 @@ export const SettingsView: React.FC = () => {
                   placeholder="Enter current password"
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83] font-mono"
                 />
-                <span className="text-[10px] text-slate-400 mt-0.5 block">Default is Welcome2026! if not changed</span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Use your current personal password</span>
               </div>
 
               <div>
@@ -417,7 +417,7 @@ export const SettingsView: React.FC = () => {
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="At least 6 characters"
+                  placeholder="At least 12 characters"
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83] font-mono"
                 />
               </div>

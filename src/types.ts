@@ -243,7 +243,6 @@ export interface CalendarEvent {
 }
 
 export interface AuthResponse {
-  token: string;
   user: UserProfile;
   mustChangePassword?: boolean;
 }

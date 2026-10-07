@@ -1,62 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default catch-all denies unmatched paths
+    // Only the trusted backend Admin SDK may access HR and credential data.
     match /{document=**} {
       allow read, write: if false;
     }
-
-    function isValidDocId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128;
-    }
-
-    match /employees/{employeeId} {
-      allow read, write: if isValidDocId(employeeId);
-    }
-
-    match /auth_credentials/{credentialId} {
-      allow read, write: if isValidDocId(credentialId);
-    }
-
-    match /leave_balances/{balanceId} {
-      allow read, write: if isValidDocId(balanceId);
-    }
-
-    match /leave_requests/{requestId} {
-      allow read, write: if isValidDocId(requestId);
-    }
-
-    match /leave_transactions/{txId} {
-      allow read, write: if isValidDocId(txId);
-    }
-
-    match /holidays/{holidayId} {
-      allow read, write: if isValidDocId(holidayId);
-    }
-
-    match /holiday_shifts/{shiftId} {
-      allow read, write: if isValidDocId(shiftId);
-    }
-
-    match /audit_logs/{logId} {
-      allow read, write: if isValidDocId(logId);
-    }
-
-    match /notifications/{notificationId} {
-      allow read, write: if isValidDocId(notificationId);
-    }
-
-    match /employee_documents/{docId} {
-      allow read, write: if isValidDocId(docId);
-    }
-
-    match /settings/{settingId} {
-      allow read, write: if isValidDocId(settingId);
-    }
-
-    match /_connection_test/{testId} {
-      allow read, write: if isValidDocId(testId);
-    }
   }
 }
-

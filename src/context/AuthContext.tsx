@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { UserProfile, NotificationItem } from '../types';
-import { api, setStoredToken, getStoredToken } from '../services/api';
+import { api } from '../services/api';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -17,7 +17,6 @@ interface AuthContextType {
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
   completeFirstTimePasswordChange: (newPassword: string) => Promise<void>;
-  dismissFirstTimePasswordChange: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,7 +29,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const refreshNotifications = useCallback(async () => {
-    if (!getStoredToken()) return;
     try {
       const items = await api.getNotifications();
       setNotifications(items);
@@ -40,19 +38,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const refreshUser = useCallback(async () => {
-    const token = getStoredToken();
-    if (!token) {
-      setUser(null);
-      setIsLoading(false);
-      return;
-    }
-
     try {
       const res = await api.getMe();
       setUser(res.user);
-      await refreshNotifications();
+      setMustChangePassword(Boolean(res.mustChangePassword));
+      if (!res.mustChangePassword) await refreshNotifications();
     } catch {
-      setStoredToken(null);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -60,13 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [refreshNotifications]);
 
   useEffect(() => {
-    const token = getStoredToken();
-    if (!token) {
-      setUser(null);
-      setIsLoading(false);
-    } else {
-      refreshUser();
-    }
+    refreshUser();
   }, [refreshUser]);
 
   // Instantly handle session expiry without unhandled promise rejections
@@ -83,12 +68,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Periodic polling to keep notification counter badge real-time
   useEffect(() => {
-    if (!user) return;
+    if (!user || mustChangePassword) return;
     const interval = setInterval(() => {
       refreshNotifications();
     }, 10000);
     return () => clearInterval(interval);
-  }, [user, refreshNotifications]);
+  }, [user, mustChangePassword, refreshNotifications]);
 
   const login = async (identifier: string, passwordHash?: string) => {
     setError(null);
@@ -100,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setMustChangePassword(false);
       }
-      await refreshNotifications();
+      if (!res.mustChangePassword) await refreshNotifications();
     } catch (err: any) {
       setError(err.message || 'Login failed.');
       throw err;
@@ -109,15 +94,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const completeFirstTimePasswordChange = async (newPassword: string) => {
     try {
-      await api.changePassword('Welcome2026!', newPassword);
+      await api.changePassword('', newPassword);
       setMustChangePassword(false);
     } catch (err: any) {
       throw err;
     }
-  };
-
-  const dismissFirstTimePasswordChange = () => {
-    setMustChangePassword(false);
   };
 
   const switchUser = async (identifier: string, password?: string) => {
@@ -127,7 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await api.login(identifier, password || '');
       setUser(res.user);
       setMustChangePassword(Boolean(res.mustChangePassword));
-      await refreshNotifications();
+      if (!res.mustChangePassword) await refreshNotifications();
     } catch (err: any) {
       setError(err.message || 'Failed to switch user.');
     } finally {
@@ -186,7 +167,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         markNotificationRead,
         markAllNotificationsRead,
         completeFirstTimePasswordChange,
-        dismissFirstTimePasswordChange,
       }}
     >
       {children}

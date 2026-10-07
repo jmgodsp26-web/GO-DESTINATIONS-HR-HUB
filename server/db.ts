@@ -21,32 +21,8 @@ import {
 } from '../src/types.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import {
-  saveEmployeeToFirestore,
-  saveCredentialsToFirestore,
-  deleteEmployeeFromFirestore,
-  saveLeaveBalanceToFirestore,
-  deleteLeaveBalanceFromFirestore,
-  saveLeaveRequestToFirestore,
-  deleteLeaveRequestFromFirestore,
-  saveLeaveTransactionToFirestore,
-  saveHolidayToFirestore,
-  deleteHolidayFromFirestore,
-  saveHolidayShiftToFirestore,
-  deleteHolidayShiftFromFirestore,
-  saveAuditLogToFirestore,
-  saveNotificationToFirestore,
-  deleteNotificationFromFirestore,
-  saveEmployeeDocumentToFirestore,
-  deleteEmployeeDocumentFromFirestore,
-  saveCompanySettingsToFirestore,
-  saveDeletedRecordsToFirestore,
-  loadDataFromFirestore,
-  seedInitialFirestoreData,
-  saveStateToDisk,
-  loadStateFromDisk,
-  PersistentData,
-} from './persistence.js';
+import { PersistentData } from './persistence.js';
+import { currentDatabase } from './request-context.js';
 
 const BCRYPT_SALT_ROUNDS = 12;
 
@@ -95,7 +71,7 @@ export function isProgramCoordinator(user: { job_title?: string; department?: st
   );
 }
 
-class HRDatabase {
+export class HRDatabase {
   private users: UserCredentials[] = [];
   private leaveBalances: LeaveBalance[] = [];
   private leaveTransactions: LeaveTransaction[] = [];
@@ -112,23 +88,22 @@ class HRDatabase {
   private readonly SESSION_ABSOLUTE_TTL = 8 * 60 * 60 * 1000; // 8 hours absolute lifetime
   private readonly SESSION_IDLE_TTL = 2 * 60 * 60 * 1000; // 2 hours idle timeout
 
-  constructor() {
-    const diskStore = loadStateFromDisk();
-    if (diskStore && diskStore.users && diskStore.users.length > 0) {
-      this.hydrateFromStore(diskStore);
-    } else {
-      this.seedInitialData();
-      try {
-        this.persistAuthoritativeState();
-      } catch (err) {
-        console.warn('[Persistence] Initial disk save deferred:', err);
-      }
-    }
+  constructor(data?: PersistentData) {
+    // Keep the transaction input immutable so newly inserted/updated rows are detected.
+    if (data) this.hydrateFromStore(structuredClone(data));
+  }
 
-    // Periodic session cleanup every 15 minutes
-    setInterval(() => {
-      this.cleanupExpiredSessions();
-    }, 15 * 60 * 1000).unref();
+  public static bootstrap(): HRDatabase {
+    const instance = new HRDatabase();
+    const email = (process.env.INITIAL_ADMIN_EMAIL || '').trim().toLowerCase();
+    const password = process.env.INITIAL_ADMIN_PASSWORD || '';
+    const full_name = process.env.INITIAL_ADMIN_NAME || 'HR Administrator';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.trim().length < 12) {
+      throw new Error('A new database requires INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD (at least 12 characters).');
+    }
+    const actor = { id: 'setup', full_name, role: 'admin' } as UserProfile;
+    instance.createEmployee({ full_name, email, password, phone: '', department: 'Leadership', job_title: 'HR Administrator', date_joined: new Date().toISOString().slice(0, 10), role: 'admin' }, actor);
+    return instance;
   }
 
   public cleanupExpiredSessions() {
@@ -140,8 +115,8 @@ class HRDatabase {
     }
   }
 
-  public persistAuthoritativeState(): void {
-    const data: PersistentData = {
+  public exportState(): PersistentData {
+    return {
       users: this.users,
       employees: this.users.map((u) => u.profile),
       leaveBalances: this.leaveBalances,
@@ -153,15 +128,18 @@ class HRDatabase {
       notifications: this.notifications,
       employeeDocuments: this.employeeDocuments,
       companySettings: this.companySettings,
-      sessions: Array.from(this.sessions.entries()).filter(([_, s]) => Date.now() < s.expiresAt),
+      sessions: Array.from(this.sessions.entries()),
       deletedEmployeeIds: Array.from(this.deletedEmployeeIds),
       deletedHolidayIds: Array.from(this.deletedHolidayIds),
       deletedShiftIds: Array.from(this.deletedShiftIds),
     };
-    saveStateToDisk(data);
+
   }
 
   private hydrateFromStore(data: PersistentData) {
+    for (const [hash, session] of data.sessions || []) {
+      if (Date.now() < session.expiresAt && Date.now() - session.lastActivityAt < this.SESSION_IDLE_TTL) this.sessions.set(hash, session);
+    }
     if (data.deletedEmployeeIds && Array.isArray(data.deletedEmployeeIds)) {
       this.deletedEmployeeIds = new Set(data.deletedEmployeeIds);
     }
@@ -172,15 +150,9 @@ class HRDatabase {
       this.deletedShiftIds = new Set(data.deletedShiftIds);
     }
     if (data.users && data.users.length > 0) {
-      this.users = data.users.filter((u) => !this.deletedEmployeeIds.has(u.id));
-    }
-    if (data.sessions && Array.isArray(data.sessions)) {
-      const now = Date.now();
-      for (const [token, session] of data.sessions) {
-        if (session && now < session.expiresAt && (now - session.lastActivityAt) < this.SESSION_IDLE_TTL) {
-          this.sessions.set(token, session);
-        }
-      }
+      this.users = data.users.filter((u) => !this.deletedEmployeeIds.has(u.id)).map((u) => ({
+        ...u, passwordHash: u.passwordHash && !/^\$2[ab]\$/.test(u.passwordHash) ? hashPassword(u.passwordHash) : u.passwordHash,
+      }));
     }
     if (data.leaveBalances) {
       this.leaveBalances = data.leaveBalances;
@@ -216,798 +188,6 @@ class HRDatabase {
     }
   }
 
-  public async initFirestoreSync(): Promise<void> {
-    try {
-      const cloudData = await loadDataFromFirestore();
-      if (cloudData) {
-        console.log(`[Firestore] Syncing with cloud Firestore...`);
-
-        // 0. Tombstone synchronization: Combine cloud tombstones with local tombstones
-        if (cloudData.deletedEmployeeIds && Array.isArray(cloudData.deletedEmployeeIds)) {
-          for (const id of cloudData.deletedEmployeeIds) {
-            this.deletedEmployeeIds.add(id);
-          }
-        }
-        if (cloudData.deletedHolidayIds && Array.isArray(cloudData.deletedHolidayIds)) {
-          for (const id of cloudData.deletedHolidayIds) {
-            this.deletedHolidayIds.add(id);
-          }
-        }
-        if (cloudData.deletedShiftIds && Array.isArray(cloudData.deletedShiftIds)) {
-          for (const id of cloudData.deletedShiftIds) {
-            this.deletedShiftIds.add(id);
-          }
-        }
-
-        // 1. Employees & Users: Union merge by ID without dropping local or cloud records (never resurrect deleted)
-        const localUsersMap = new Map(
-          this.users.filter((u) => !this.deletedEmployeeIds.has(u.id)).map((u) => [u.id, u])
-        );
-        const cloudUsers = cloudData.users || [];
-        const cloudEmployees = cloudData.employees || [];
-        const missingInCloudPromises: Promise<any>[] = [];
-
-        for (const ce of cloudEmployees) {
-          if (this.deletedEmployeeIds.has(ce.id)) {
-            // Document was permanently deleted; ensure purged from Cloud Firestore
-            missingInCloudPromises.push(deleteEmployeeFromFirestore(ce.id));
-            continue;
-          }
-
-          const matchingCloudUser = cloudUsers.find((cu) => cu.id === ce.id || cu.email === ce.email);
-          const existingLocal = localUsersMap.get(ce.id);
-
-          const passwordHash =
-            matchingCloudUser?.passwordHash ||
-            existingLocal?.passwordHash ||
-            hashPassword('Welcome2026!');
-          const passwordCustomized =
-            matchingCloudUser?.passwordCustomized ?? existingLocal?.passwordCustomized ?? false;
-          const mustChangePassword =
-            matchingCloudUser?.mustChangePassword ?? existingLocal?.mustChangePassword ?? false;
-
-          let profile = ce;
-          if (existingLocal && existingLocal.profile.updated_at && ce.updated_at) {
-            if (new Date(existingLocal.profile.updated_at).getTime() > new Date(ce.updated_at).getTime()) {
-              profile = existingLocal.profile;
-            }
-          }
-
-          localUsersMap.set(ce.id, {
-            id: ce.id,
-            email: ce.email,
-            passwordHash,
-            passwordCustomized,
-            mustChangePassword,
-            profile,
-          });
-        }
-
-        // Back-fill any local users missing from cloud
-        for (const localUser of this.users) {
-          if (!this.deletedEmployeeIds.has(localUser.id) && !cloudEmployees.some((ce) => ce.id === localUser.id)) {
-            missingInCloudPromises.push(saveEmployeeToFirestore(localUser.profile));
-            missingInCloudPromises.push(
-              saveCredentialsToFirestore(localUser.id, {
-                email: localUser.email,
-                passwordHash: localUser.passwordHash,
-                passwordCustomized: localUser.passwordCustomized,
-                mustChangePassword: localUser.mustChangePassword,
-              })
-            );
-          }
-        }
-        this.users = Array.from(localUsersMap.values()).filter((u) => !this.deletedEmployeeIds.has(u.id));
-
-        // 2. Leave Balances: Union merge by ID
-        const balanceMap = new Map(this.leaveBalances.map((b) => [b.id, b]));
-        if (cloudData.leaveBalances) {
-          for (const cb of cloudData.leaveBalances) {
-            if (this.deletedEmployeeIds.has(cb.employee_id)) {
-              missingInCloudPromises.push(deleteLeaveBalanceFromFirestore(cb.id));
-              continue;
-            }
-            const eb = balanceMap.get(cb.id);
-            if (!eb || (cb.updated_at && (!eb.updated_at || new Date(cb.updated_at).getTime() >= new Date(eb.updated_at).getTime()))) {
-              balanceMap.set(cb.id, cb);
-            }
-          }
-        }
-        for (const b of this.leaveBalances) {
-          if (!this.deletedEmployeeIds.has(b.employee_id) && !cloudData.leaveBalances?.some((cb) => cb.id === b.id)) {
-            missingInCloudPromises.push(saveLeaveBalanceToFirestore(b));
-          }
-        }
-        this.leaveBalances = Array.from(balanceMap.values()).filter((b) => !this.deletedEmployeeIds.has(b.employee_id));
-
-        // 3. Leave Requests: Union merge by ID
-        const reqMap = new Map(this.leaveRequests.map((r) => [r.id, r]));
-        if (cloudData.leaveRequests) {
-          for (const cr of cloudData.leaveRequests) {
-            if (this.deletedEmployeeIds.has(cr.employee_id)) {
-              missingInCloudPromises.push(deleteLeaveRequestFromFirestore(cr.id));
-              continue;
-            }
-            const er = reqMap.get(cr.id);
-            if (!er || (cr.updated_at && (!er.updated_at || new Date(cr.updated_at).getTime() >= new Date(er.updated_at).getTime()))) {
-              reqMap.set(cr.id, cr);
-            }
-          }
-        }
-        for (const r of this.leaveRequests) {
-          if (!this.deletedEmployeeIds.has(r.employee_id) && !cloudData.leaveRequests?.some((cr) => cr.id === r.id)) {
-            missingInCloudPromises.push(saveLeaveRequestToFirestore(r));
-          }
-        }
-        this.leaveRequests = Array.from(reqMap.values()).filter((r) => !this.deletedEmployeeIds.has(r.employee_id));
-
-        // 4. Leave Transactions: Union merge by ID
-        const txMap = new Map(this.leaveTransactions.map((t) => [t.id, t]));
-        if (cloudData.leaveTransactions) {
-          for (const ct of cloudData.leaveTransactions) {
-            if (this.deletedEmployeeIds.has(ct.employee_id)) continue;
-            txMap.set(ct.id, ct);
-          }
-        }
-        for (const t of this.leaveTransactions) {
-          if (!this.deletedEmployeeIds.has(t.employee_id) && !cloudData.leaveTransactions?.some((ct) => ct.id === t.id)) {
-            missingInCloudPromises.push(saveLeaveTransactionToFirestore(t));
-          }
-        }
-        this.leaveTransactions = Array.from(txMap.values()).filter((t) => !this.deletedEmployeeIds.has(t.employee_id));
-
-        // 5. Holidays: Union merge by ID
-        const holMap = new Map(
-          this.holidays.filter((h) => !this.deletedHolidayIds.has(h.id)).map((h) => [h.id, h])
-        );
-        if (cloudData.holidays) {
-          for (const ch of cloudData.holidays) {
-            if (this.deletedHolidayIds.has(ch.id)) {
-              missingInCloudPromises.push(deleteHolidayFromFirestore(ch.id));
-              continue;
-            }
-            holMap.set(ch.id, ch);
-          }
-        }
-        for (const h of this.holidays) {
-          if (!this.deletedHolidayIds.has(h.id) && !cloudData.holidays?.some((ch) => ch.id === h.id)) {
-            missingInCloudPromises.push(saveHolidayToFirestore(h));
-          }
-        }
-        this.holidays = Array.from(holMap.values()).filter((h) => !this.deletedHolidayIds.has(h.id));
-
-        // 6. Holiday Shifts: Union merge by ID
-        const shiftMap = new Map(
-          this.holidayShifts.filter((s) => !this.deletedShiftIds.has(s.id)).map((s) => [s.id, s])
-        );
-        if (cloudData.holidayShifts) {
-          for (const cs of cloudData.holidayShifts) {
-            if (
-              this.deletedHolidayIds.has(cs.holiday_id) ||
-              this.deletedEmployeeIds.has(cs.employee_id) ||
-              this.deletedShiftIds.has(cs.id)
-            ) {
-              missingInCloudPromises.push(deleteHolidayShiftFromFirestore(cs.id));
-              continue;
-            }
-            shiftMap.set(cs.id, cs);
-          }
-        }
-        for (const s of this.holidayShifts) {
-          if (
-            !this.deletedHolidayIds.has(s.holiday_id) &&
-            !this.deletedEmployeeIds.has(s.employee_id) &&
-            !this.deletedShiftIds.has(s.id)
-          ) {
-            if (!cloudData.holidayShifts?.some((cs) => cs.id === s.id)) {
-              missingInCloudPromises.push(saveHolidayShiftToFirestore(s));
-            }
-          }
-        }
-        this.holidayShifts = Array.from(shiftMap.values()).filter(
-          (s) =>
-            !this.deletedHolidayIds.has(s.holiday_id) &&
-            !this.deletedEmployeeIds.has(s.employee_id) &&
-            !this.deletedShiftIds.has(s.id)
-        );
-
-        // 7. Audit Logs: Union merge by ID
-        const logMap = new Map(this.auditLogs.map((l) => [l.id, l]));
-        if (cloudData.auditLogs) {
-          for (const cl of cloudData.auditLogs) {
-            logMap.set(cl.id, cl);
-          }
-        }
-        this.auditLogs = Array.from(logMap.values());
-
-        // 8. Notifications: Union merge by ID
-        const notifMap = new Map(this.notifications.map((n) => [n.id, n]));
-        if (cloudData.notifications) {
-          for (const cn of cloudData.notifications) {
-            notifMap.set(cn.id, cn);
-          }
-        }
-        this.notifications = Array.from(notifMap.values());
-
-        // 9. Employee Documents: Union merge by ID
-        const docMap = new Map(this.employeeDocuments.map((d) => [d.id, d]));
-        if (cloudData.employeeDocuments) {
-          for (const cd of cloudData.employeeDocuments) {
-            docMap.set(cd.id, cd);
-          }
-        }
-        this.employeeDocuments = Array.from(docMap.values());
-
-        // 10. Company Settings: Merge
-        if (cloudData.companySettings) {
-          this.companySettings = {
-            ...this.companySettings,
-            ...cloudData.companySettings,
-          };
-        }
-
-        // Instantly write unified snapshot to local disk
-        this.persistAuthoritativeState();
-
-        // Flush any missing items to Cloud Firestore in background
-        if (missingInCloudPromises.length > 0) {
-          console.log(`[Firestore] Syncing ${missingInCloudPromises.length} local records to cloud Firestore...`);
-          Promise.allSettled(missingInCloudPromises).catch(() => {});
-        }
-
-        console.log(`[Firestore] Resilient two-way synchronization complete: ${this.users.length} employees, ${this.leaveRequests.length} leave requests, ${this.leaveBalances.length} balances.`);
-      } else {
-        console.log('[Firestore] Cloud Firestore not populated yet. Seeding current state...');
-        await seedInitialFirestoreData({
-          employees: this.users.map((u) => ({
-            profile: u.profile,
-            credentials: { email: u.email, passwordHash: u.passwordHash },
-          })),
-          leaveBalances: this.leaveBalances,
-          holidays: this.holidays,
-          companySettings: this.companySettings,
-        });
-        console.log('[Firestore] Initial master data synced to cloud Firestore!');
-      }
-    } catch (err) {
-      console.warn('[Firestore] Sync warning (continuing with authoritative local storage):', err);
-    }
-  }
-
-  private seedInitialData() {
-    // Authorized staff accounts (Admins & Employees)
-    const rawStaff: Array<{
-      id: string;
-      full_name: string;
-      email: string;
-      role: UserRole;
-      department: string;
-      job_title: string;
-      employee_id: string;
-    }> = [
-      {
-        id: "usr-isiah-dane",
-        full_name: "Isiah Dane",
-        email: "igeguera@gmail.com",
-        role: "admin",
-        department: "Leadership",
-        job_title: "HR Administrator",
-        employee_id: "HR-001",
-      },
-      {
-        id: "usr-ann-loraine",
-        full_name: "Ann Loraine",
-        email: "ann.loraine@godestinations.com",
-        role: "admin",
-        department: "Leadership",
-        job_title: "HR Director",
-        employee_id: "HR-002",
-      },
-      {
-        id: "usr-trixie-garganera",
-        full_name: "Trixie Garganera",
-        email: "trixie.garganera@godestinations.com",
-        role: "employee",
-        department: "Program Management",
-        job_title: "Program Manager",
-        employee_id: "HR-003",
-      },
-      {
-        id: "usr-denisse-joseph",
-        full_name: "Denisse Joseph",
-        email: "denisse.joseph@godestinations.com",
-        role: "employee",
-        department: "Relationship Management",
-        job_title: "Relationship Manager",
-        employee_id: "HR-004",
-      },
-    ];
-
-    this.users = rawStaff.map((s) => ({
-      id: s.id,
-      email: s.email,
-      passwordHash: hashPassword('Welcome2026!'),
-      profile: {
-        id: s.id,
-        user_id: s.id,
-        employee_id: s.employee_id,
-        full_name: s.full_name,
-        email: s.email,
-        phone: "+63 917 123 4567",
-        department: s.department,
-        job_title: s.job_title,
-        country: "Philippines",
-        region: "National Capital Region",
-        timezone: "Asia/Manila",
-        date_joined: "2024-01-15",
-        hire_date: "2024-01-15",
-        date_of_birth: "1995-05-12",
-        birthday: "1995-05-12",
-        avatar_url: "",
-        role: s.role,
-        status: "active",
-        is_pc: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    }));
-
-    // Initial Leave Balances for authorized users (0 used)
-    this.leaveBalances = [];
-    for (const u of this.users) {
-      this.leaveBalances.push({
-        id: "bal-vac-" + u.id,
-        employee_id: u.id,
-        leave_type: "Vacation Leave",
-        allocated_days: u.profile.role === "admin" ? 20 : 15,
-        used_days: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      this.leaveBalances.push({
-        id: "bal-sick-" + u.id,
-        employee_id: u.id,
-        leave_type: "Sick Leave",
-        allocated_days: 10,
-        used_days: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      this.leaveBalances.push({
-        id: "bal-emerg-" + u.id,
-        employee_id: u.id,
-        leave_type: "Emergency Leave",
-        allocated_days: 5,
-        used_days: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-    }
-
-    // Company & Multi-Country Holidays
-    this.holidays = [
-      // --- PAST OBSERVED HOLIDAYS (For historical record & testing past-date filtering) ---
-      {
-        id: 'hol-00',
-        name: 'National Heroes Day',
-        date: '2026-08-31',
-        country: 'Philippines',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'National public observance honoring the heroes of the Philippine revolution and nation.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-01',
-        name: 'Labor Day',
-        date: '2026-09-07',
-        country: 'United States',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Federal holiday celebrating the American labor movement and contributions of workers.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-ca-01',
-        name: 'Labour Day',
-        date: '2026-09-07',
-        country: 'Canada',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Statutory holiday celebrating the achievements of workers across Canada.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-
-      // --- UPCOMING 2026 HOLIDAYS ---
-      {
-        id: 'hol-ca-02',
-        name: 'National Day for Truth and Reconciliation',
-        date: '2026-09-30',
-        country: 'Canada',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Federal statutory holiday honoring children who survived residential schools and remembering those who did not.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-global-01',
-        name: 'Global Summit & Wellbeing Day',
-        date: '2026-10-02',
-        country: 'Company-wide',
-        region: 'All',
-        holiday_type: 'Company Holiday',
-        scope: 'Company-wide',
-        description: 'All-hands global organizational reflection and mental health wellness break for all employees worldwide.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-ca-03',
-        name: 'Thanksgiving Day',
-        date: '2026-10-12',
-        country: 'Canada',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Statutory holiday observed with family gatherings and gratitude across Canada.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-us-02',
-        name: "Indigenous Peoples' Day / Columbus Day",
-        date: '2026-10-12',
-        country: 'United States',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Federal holiday recognizing the histories, resilience, and cultures of Indigenous peoples.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-us-03',
-        name: 'Veterans Day',
-        date: '2026-11-11',
-        country: 'United States',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Federal holiday honoring military veterans who have served in the United States Armed Forces.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-ca-04',
-        name: 'Remembrance Day',
-        date: '2026-11-11',
-        country: 'Canada',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Memorial day observed in Commonwealth member states since the end of the First World War.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-02',
-        name: 'Thanksgiving Day',
-        date: '2026-11-26',
-        country: 'United States',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Federal holiday celebrated with family, feasting, and community gathering.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-03',
-        name: 'Day After Thanksgiving',
-        date: '2026-11-27',
-        country: 'United States',
-        region: 'All',
-        holiday_type: 'Company Holiday',
-        scope: 'Country-specific',
-        description: 'Extended holiday weekend break for US personnel.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-ph-02',
-        name: 'Bonifacio Day',
-        date: '2026-11-30',
-        country: 'Philippines',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Regular national holiday commemorating the birth and bravery of Andrés Bonifacio.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-ph-03',
-        name: 'Feast of the Immaculate Conception',
-        date: '2026-12-08',
-        country: 'Philippines',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Special non-working national holiday observed throughout the Philippines.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-04',
-        name: 'Christmas Eve',
-        date: '2026-12-24',
-        country: 'Philippines',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Special non-working holiday for family reunion and Noche Buena festivities.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-05',
-        name: 'Christmas Day',
-        date: '2026-12-25',
-        country: 'Company-wide',
-        region: 'All',
-        holiday_type: 'Company Holiday',
-        scope: 'Company-wide',
-        description: 'Global holiday closure across all company locations and international offices.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-ca-05',
-        name: 'Boxing Day',
-        date: '2026-12-26',
-        country: 'Canada',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Statutory holiday celebrated the day after Christmas across Canada.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-global-02',
-        name: 'Year-End Global Rest & Shutdown',
-        date: '2026-12-28',
-        country: 'Company-wide',
-        region: 'All',
-        holiday_type: 'Company Holiday',
-        scope: 'Company-wide',
-        description: 'Annual paid winter shutdown for all international staff to recharge.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-ph-04',
-        name: 'Rizal Day',
-        date: '2026-12-30',
-        country: 'Philippines',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'National holiday honoring the martyrdom, life, and legacy of Dr. José Rizal.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-06',
-        name: 'Last Day of the Year',
-        date: '2026-12-31',
-        country: 'Philippines',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Special non-working holiday welcoming the New Year celebration.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-
-      // --- UPCOMING 2027 HOLIDAYS (Seamless Year Transition) ---
-      {
-        id: 'hol-07',
-        name: "New Year's Day",
-        date: '2027-01-01',
-        country: 'Company-wide',
-        region: 'All',
-        holiday_type: 'Company Holiday',
-        scope: 'Company-wide',
-        description: 'First day of the new calendar year observed worldwide as a company-wide holiday closure.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-us-04',
-        name: 'Martin Luther King Jr. Day',
-        date: '2027-01-18',
-        country: 'United States',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Federal holiday marking the birthday of civil rights pioneer Dr. Martin Luther King Jr.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-ph-05',
-        name: 'EDSA People Power Revolution Anniversary',
-        date: '2027-02-25',
-        country: 'Philippines',
-        region: 'All',
-        holiday_type: 'Observance',
-        scope: 'Country-specific',
-        description: 'Special national observance commemorating the historic peaceful restoration of democracy.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-global-03',
-        name: 'Global Innovation & Hack Day',
-        date: '2027-03-15',
-        country: 'Company-wide',
-        region: 'All',
-        holiday_type: 'Company Holiday',
-        scope: 'Company-wide',
-        description: 'Company-wide creative exploration day and global project showcase.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-ph-06',
-        name: 'Araw ng Kagitingan (Day of Valor)',
-        date: '2027-04-09',
-        country: 'Philippines',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Regular national holiday honoring Filipino and allied veterans of World War II.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-ca-06',
-        name: 'Victoria Day',
-        date: '2027-05-24',
-        country: 'Canada',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Canadian statutory holiday honoring Queen Victoria and marking the unofficial beginning of summer.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-us-05',
-        name: 'Memorial Day',
-        date: '2027-05-31',
-        country: 'United States',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Federal holiday honoring military personnel who died in service of the country.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-ph-07',
-        name: 'Philippine Independence Day',
-        date: '2027-06-12',
-        country: 'Philippines',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Annual regular national holiday commemorating the 1898 declaration of Philippine independence.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-ca-07',
-        name: 'Canada Day',
-        date: '2027-07-01',
-        country: 'Canada',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'National holiday celebrating the anniversary of the confederation of Canada.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'hol-us-06',
-        name: 'Independence Day',
-        date: '2027-07-04',
-        country: 'United States',
-        region: 'All',
-        holiday_type: 'Public Holiday',
-        scope: 'Country-specific',
-        description: 'Federal holiday commemorating the adoption of the Declaration of Independence.',
-        is_active: true,
-        created_by: 'System',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-    ];
-
-    // Initialize all operational records completely clean (no dummy data)
-    this.holidayShifts = [];
-    this.leaveRequests = [];
-    this.leaveTransactions = [];
-    this.auditLogs = [];
-    this.notifications = [];
-    this.employeeDocuments = [];
-  }
-
   // --- AUTH METHODS ---
   public authenticate(
     identifier: string,
@@ -1015,34 +195,12 @@ class HRDatabase {
   ): { token: string; user: UserProfile; mustChangePassword: boolean } {
     const cleanId = (identifier || '').trim().toLowerCase();
     if (!cleanId) {
-      throw new Error('Please enter your work email address or employee ID.');
+      throw new Error('Please enter your company email address.');
     }
 
     const user = this.users.find((u) => {
       const email = (u.email || '').toLowerCase();
-      const emailUser = email.split('@')[0];
-      const fullName = (u.profile.full_name || '').toLowerCase();
-      const nameParts = fullName.split(' ').filter(Boolean);
-      const id = (u.id || '').toLowerCase();
-      const empId = (u.profile.employee_id || '').toLowerCase();
-
-      const isAnnLoraine = u.id === 'usr-ann-loraine' || email.includes('ann.loraine');
-      const emailMatch =
-        email === cleanId ||
-        emailUser === cleanId ||
-        (isAnnLoraine && (cleanId === 'anne.loraine' || cleanId === 'anne.loraine@godestinations.com' || cleanId === 'anne' || cleanId === 'anne loraine')) ||
-        (u.id === 'usr-isiah-dane' && (cleanId === 'admin' || cleanId === 'administrator' || cleanId === 'hr' || cleanId === 'jmgo.dsp26@gmail.com' || cleanId.includes('jmgo') || cleanId.includes('geguera')));
-      const nameMatch =
-        fullName === cleanId ||
-        nameParts.includes(cleanId) ||
-        cleanId.includes(fullName) ||
-        (isAnnLoraine && (cleanId === 'anne loraine' || cleanId === 'anne' || cleanId.includes('anne'))) ||
-        (cleanId.includes('isiah') && u.id === 'usr-isiah-dane') ||
-        (cleanId.includes('geguera') && (u.id === 'usr-isiah-dane' || email.includes('geguera')));
-      const idMatch = id === cleanId;
-      const empIdMatch = empId && empId === cleanId;
-
-      return emailMatch || nameMatch || idMatch || empIdMatch;
+      return email === cleanId;
     });
 
     if (!user) {
@@ -1053,7 +211,7 @@ class HRDatabase {
       throw new Error('This account has been disabled. Please contact your HR administrator.');
     }
 
-    const providedPassword = (passwordHash || '').trim();
+    const providedPassword = typeof passwordHash === 'string' ? passwordHash.trim() : '';
     if (!providedPassword) {
       throw new Error('Wrong password. Please try again or reset your password.');
     }
@@ -1064,34 +222,16 @@ class HRDatabase {
     let isMatch = false;
     if (storedPassword) {
       isMatch = verifyPassword(providedPassword, storedPassword);
-      // Also accept initial setup password Welcome2026! for onboarding & administrative recovery
-      if (!isMatch && providedPassword === 'Welcome2026!') {
-        isMatch = true;
-      }
       if (!isMatch) {
         throw new Error('Wrong password. Please try again or reset your password.');
       }
       // Upgrade plaintext password to bcrypt hash in memory and Firestore
       if (!storedPassword.startsWith('$2a$') && !storedPassword.startsWith('$2b$')) {
         user.passwordHash = hashPassword(providedPassword);
-        saveCredentialsToFirestore(user.id, {
-          email: user.email,
-          passwordHash: user.passwordHash,
-          passwordCustomized: user.passwordCustomized,
-          mustChangePassword: user.mustChangePassword,
-        }).catch((e) => console.error('[Firestore] Upgrade password hash error:', e));
+
       }
     } else {
-      // Uninitialized account: set password
-      user.passwordHash = hashPassword(providedPassword || 'Welcome2026!');
-      user.passwordCustomized = false;
-      user.mustChangePassword = true;
-      saveCredentialsToFirestore(user.id, {
-        email: user.email,
-        passwordHash: user.passwordHash,
-        passwordCustomized: false,
-        mustChangePassword: true,
-      }).catch((e) => console.error('[Firestore] Save initialized password error:', e));
+      throw new Error('Account credentials require an HR administrator reset.');
     }
 
     // First time login detection
@@ -1102,26 +242,32 @@ class HRDatabase {
     // Cryptographically secure session token: 32 bytes of randomness (64 hex characters)
     const token = 'hr_sess_' + crypto.randomBytes(32).toString('hex');
     const now = Date.now();
-    this.sessions.set(token, {
+    this.sessions.set(crypto.createHash('sha256').update(token).digest('hex'), {
       userId: user.id,
       createdAt: now,
       lastActivityAt: now,
       expiresAt: now + this.SESSION_ABSOLUTE_TTL,
     });
-    this.persistAuthoritativeState();
+
     return { token, user: user.profile, mustChangePassword: isFirstTime };
+  }
+
+  public requiresPasswordChange(userId: string): boolean {
+    const user = this.users.find((u) => u.id === userId);
+    return Boolean(user && (user.mustChangePassword || !user.passwordCustomized));
   }
 
   public getUserByToken(token: string): UserProfile | null {
     if (!token) return null;
-    const session = this.sessions.get(token);
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const session = this.sessions.get(tokenHash);
     if (!session) return null;
 
     const now = Date.now();
     // Validate absolute expiration and idle timeout
     if (now > session.expiresAt || (now - session.lastActivityAt) > this.SESSION_IDLE_TTL) {
-      this.sessions.delete(token);
-      this.persistAuthoritativeState();
+      this.sessions.delete(tokenHash);
+
       return null;
     }
 
@@ -1132,8 +278,8 @@ class HRDatabase {
 
   public logout(token: string) {
     if (token) {
-      this.sessions.delete(token);
-      this.persistAuthoritativeState();
+      this.sessions.delete(crypto.createHash('sha256').update(token).digest('hex'));
+
     }
   }
 
@@ -1146,7 +292,7 @@ class HRDatabase {
       }
     }
     if (changed) {
-      this.persistAuthoritativeState();
+
     }
   }
 
@@ -1190,6 +336,9 @@ class HRDatabase {
     },
     adminUser: UserProfile
   ): UserProfile {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email || '')) throw new Error('A valid company email is required.');
+    if (!data.full_name?.trim()) throw new Error('Employee name is required.');
+    if (data.password && data.password.trim().length < 12) throw new Error('Temporary password must be at least 12 characters.');
     if (data.email && this.users.some((u) => u.email && u.email.toLowerCase() === data.email.toLowerCase())) {
       throw new Error('An employee with this email already exists.');
     }
@@ -1203,7 +352,7 @@ class HRDatabase {
       user_id: newId,
       employee_id: employeeId,
       full_name: data.full_name,
-      email: data.email || '',
+      email: data.email.trim().toLowerCase(),
       phone: data.phone || '',
       department: data.department || '',
       job_title: data.job_title || (data.role === 'admin' ? 'Administrator' : 'Employee'),
@@ -1223,8 +372,10 @@ class HRDatabase {
 
     this.users.push({
       id: newId,
-      email: data.email || '',
-      passwordHash: data.password || '',
+      email: data.email.trim().toLowerCase(),
+      passwordHash: hashPassword(data.password || crypto.randomBytes(32).toString('hex')),
+      passwordCustomized: false,
+      mustChangePassword: true,
       profile,
     });
 
@@ -1279,21 +430,7 @@ class HRDatabase {
     });
 
     // Cloud Firestore persistence
-    saveEmployeeToFirestore(profile).catch((e) =>
-      console.error('[Firestore] Save employee error:', e)
-    );
-    saveCredentialsToFirestore(newId, {
-      email: data.email || '',
-      passwordHash: hashPassword(data.password || 'Welcome2026!'),
-      passwordCustomized: false,
-      mustChangePassword: true,
-    }).catch((e) => console.error('[Firestore] Save credentials error:', e));
 
-    this.leaveBalances
-      .filter((b) => b.employee_id === newId)
-      .forEach((b) => saveLeaveBalanceToFirestore(b).catch((e) => console.error('[Firestore] Save balance error:', e)));
-
-    this.persistAuthoritativeState();
     return profile;
   }
 
@@ -1322,25 +459,26 @@ class HRDatabase {
     }
 
     if (updates.email !== undefined) {
-      user.email = updates.email;
+      const email = updates.email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('A valid company email is required.');
+      if (this.users.some(u => u.id !== employeeId && u.email === email)) throw new Error('This company email is already registered.');
+      user.email = email;
+      updates = { ...updates, email };
     }
 
+    if (updates.password && updates.password.trim().length < 12) throw new Error('Temporary password must be at least 12 characters.');
     if (updates.password !== undefined && updates.password.trim()) {
       user.passwordHash = hashPassword(updates.password.trim());
       user.passwordCustomized = false;
       user.mustChangePassword = true;
       this.revokeAllSessionsForUser(employeeId);
-      saveCredentialsToFirestore(user.id, {
-        email: user.email,
-        passwordHash: user.passwordHash,
-        passwordCustomized: false,
-        mustChangePassword: true,
-      }).catch((e) => console.error('[Firestore] Update credentials error:', e));
+
     }
 
+    const { password: _password, ...profileUpdates } = updates;
     user.profile = {
       ...user.profile,
-      ...updates,
+      ...profileUpdates,
       updated_at: new Date().toISOString(),
     };
 
@@ -1369,11 +507,7 @@ class HRDatabase {
     });
 
     // Cloud Firestore persistence (strictly clean of any credentials)
-    saveEmployeeToFirestore(user.profile).catch((e) =>
-      console.error('[Firestore] Update employee error:', e)
-    );
 
-    this.persistAuthoritativeState();
     return user.profile;
   }
 
@@ -1387,12 +521,12 @@ class HRDatabase {
 
     // Verify current password using cryptographic comparison
     const isMatch = verifyPassword(cleanCurrent, storedPass);
-    if (!isMatch && cleanCurrent !== 'Welcome2026!') {
+    if (!isMatch && !(this.requiresPasswordChange(userId) && !cleanCurrent)) {
       throw new Error('Current password does not match our records.');
     }
 
-    if (!cleanNew || cleanNew.length < 8) {
-      throw new Error('New password must be at least 8 characters long.');
+    if (!cleanNew || cleanNew.length < 12) {
+      throw new Error('New password must be at least 12 characters long.');
     }
 
     user.passwordHash = hashPassword(cleanNew);
@@ -1412,14 +546,6 @@ class HRDatabase {
       details: `Account password was updated for ${user.profile.full_name}.`,
     });
 
-    saveCredentialsToFirestore(user.id, {
-      email: user.email,
-      passwordHash: user.passwordHash,
-      passwordCustomized: true,
-      mustChangePassword: false,
-    }).catch((e) => console.error('[Firestore] Change password error:', e));
-
-    this.persistAuthoritativeState();
     return true;
   }
 
@@ -1428,7 +554,7 @@ class HRDatabase {
     if (!user) throw new Error('Employee not found.');
 
     const cleanTemp = (temporaryPassword || '').trim();
-    if (!cleanTemp || cleanTemp.length < 8) {
+    if (!cleanTemp || cleanTemp.length < 12) {
       throw new Error('Temporary password must be at least 8 characters long.');
     }
 
@@ -1448,14 +574,6 @@ class HRDatabase {
       details: `Admin ${adminUser.full_name} issued a temporary credential reset for ${user.profile.full_name} (${user.profile.employee_id}).`,
     });
 
-    saveCredentialsToFirestore(user.id, {
-      email: user.email,
-      passwordHash: user.passwordHash,
-      passwordCustomized: false,
-      mustChangePassword: true,
-    }).catch((e) => console.error('[Firestore] Admin reset password error:', e));
-
-    this.persistAuthoritativeState();
     return true;
   }
 
@@ -1518,28 +636,6 @@ class HRDatabase {
     });
 
     // 8. Authoritative local persistence and cloud tombstone save
-    this.persistAuthoritativeState();
-    saveDeletedRecordsToFirestore(
-      Array.from(this.deletedEmployeeIds),
-      Array.from(this.deletedHolidayIds),
-      Array.from(this.deletedShiftIds)
-    ).catch(() => {});
-
-    // 9. Firestore purge
-    try {
-      await deleteEmployeeFromFirestore(employeeId);
-      for (const b of removedBalances) {
-        await deleteLeaveBalanceFromFirestore(b.id).catch(() => {});
-      }
-      for (const r of removedRequests) {
-        await deleteLeaveRequestFromFirestore(r.id).catch(() => {});
-      }
-      for (const s of removedShifts) {
-        await deleteHolidayShiftFromFirestore(s.id).catch(() => {});
-      }
-    } catch (e) {
-      console.warn('[Firestore] Background deletion warning:', e);
-    }
 
     return true;
   }
@@ -1593,9 +689,7 @@ class HRDatabase {
     });
 
     // Cloud Firestore persistence
-    saveLeaveBalanceToFirestore(balance).catch((e) => console.error('[Firestore] Save balance error:', e));
 
-    this.persistAuthoritativeState();
     return balance;
   }
 
@@ -1777,9 +871,6 @@ class HRDatabase {
     };
 
     this.leaveRequests.unshift(newRequest);
-    saveLeaveRequestToFirestore(newRequest).catch((e) =>
-      console.error('[Firestore] Save leave request error:', e)
-    );
 
     const halfDayLabel = isHalfDay ? ` (Half-Day ${halfDayPeriod === 'morning' ? 'Morning' : 'Afternoon'})` : '';
 
@@ -1796,12 +887,9 @@ class HRDatabase {
         link_tab: 'leave-requests',
       };
       this.notifications.unshift(notifItem);
-      saveNotificationToFirestore(notifItem).catch((e) =>
-        console.error('[Firestore] Save notification error:', e)
-      );
+
     }
 
-    this.persistAuthoritativeState();
     return newRequest;
   }
 
@@ -1840,9 +928,6 @@ class HRDatabase {
         if (balance) {
           balance.used_days = Math.max(0, balance.used_days - request.total_days);
           balance.updated_at = new Date().toISOString();
-          saveLeaveBalanceToFirestore(balance).catch((e) =>
-            console.error('[Firestore] Restore leave balance error:', e)
-          );
 
           const reversalTx: LeaveTransaction = {
             id: 'tx-' + Math.random().toString(36).substring(2, 9),
@@ -1860,16 +945,10 @@ class HRDatabase {
             created_at: new Date().toISOString(),
           };
           this.leaveTransactions.unshift(reversalTx);
-          saveLeaveTransactionToFirestore(reversalTx).catch((e) =>
-            console.error('[Firestore] Save reversal transaction error:', e)
-          );
+
         }
       }
     }
-
-    saveLeaveRequestToFirestore(request).catch((e) =>
-      console.error('[Firestore] Save cancelled leave error:', e)
-    );
 
     this.logAudit({
       action: 'Leave request cancelled',
@@ -1881,7 +960,6 @@ class HRDatabase {
       details: `Cancelled leave request for ${request.employee_name} (${request.leave_type}, ${request.total_days} days).${wasApproved ? ' Restored balance in ledger.' : ''}`,
     });
 
-    this.persistAuthoritativeState();
     return request;
   }
 
@@ -1928,9 +1006,7 @@ class HRDatabase {
         if (balance) {
           balance.used_days += request.total_days;
           balance.updated_at = new Date().toISOString();
-          saveLeaveBalanceToFirestore(balance).catch((e) =>
-            console.error('[Firestore] Save balance error:', e)
-          );
+
         }
       }
 
@@ -1958,18 +1034,12 @@ class HRDatabase {
         created_at: new Date().toISOString(),
       };
       this.leaveTransactions.unshift(deductionTx);
-      saveLeaveTransactionToFirestore(deductionTx).catch((e) =>
-        console.error('[Firestore] Save transaction error:', e)
-      );
 
       request.status = 'Approved';
       request.admin_note = adminNote || undefined;
       request.reviewed_at = new Date().toISOString();
       request.reviewed_by = adminUser.id;
       request.reviewed_by_name = adminUser.full_name;
-      saveLeaveRequestToFirestore(request).catch((e) =>
-        console.error('[Firestore] Save leave request error:', e)
-      );
 
       this.logAudit({
         action: 'Leave approved',
@@ -1992,18 +1062,13 @@ class HRDatabase {
         link_tab: 'leave',
       };
       this.notifications.unshift(approvedNotif);
-      saveNotificationToFirestore(approvedNotif).catch((e) =>
-        console.error('[Firestore] Save notification error:', e)
-      );
+
     } else {
       request.status = 'Rejected';
       request.admin_note = adminNote || undefined;
       request.reviewed_at = new Date().toISOString();
       request.reviewed_by = adminUser.id;
       request.reviewed_by_name = adminUser.full_name;
-      saveLeaveRequestToFirestore(request).catch((e) =>
-        console.error('[Firestore] Save leave request error:', e)
-      );
 
       this.logAudit({
         action: 'Leave rejected',
@@ -2026,12 +1091,9 @@ class HRDatabase {
         link_tab: 'leave',
       };
       this.notifications.unshift(rejectedNotif);
-      saveNotificationToFirestore(rejectedNotif).catch((e) =>
-        console.error('[Firestore] Save notification error:', e)
-      );
+
     }
 
-    this.persistAuthoritativeState();
     return request;
   }
 
@@ -2159,9 +1221,6 @@ class HRDatabase {
     };
 
     this.holidays.push(holiday);
-    saveHolidayToFirestore(holiday).catch((e) =>
-      console.error('[Firestore] Save holiday error:', e)
-    );
 
     this.logAudit({
       action: 'Holiday created',
@@ -2173,7 +1232,6 @@ class HRDatabase {
       details: `Added holiday: ${holiday.name} on ${holiday.date} (${holiday.country} • ${holiday.holiday_type}).`,
     });
 
-    this.persistAuthoritativeState();
     return holiday;
   }
 
@@ -2195,18 +1253,12 @@ class HRDatabase {
     if (data.is_active !== undefined) holiday.is_active = data.is_active;
     holiday.updated_at = new Date().toISOString();
 
-    saveHolidayToFirestore(holiday).catch((e) =>
-      console.error('[Firestore] Save holiday error:', e)
-    );
-
     // Keep shift requests date synchronized
     for (const shift of this.holidayShifts) {
       if (shift.holiday_id === id) {
         shift.holiday_name = holiday.name;
         shift.holiday_date = holiday.date;
-        saveHolidayShiftToFirestore(shift).catch((e) =>
-          console.error('[Firestore] Save holiday shift error:', e)
-        );
+
       }
     }
 
@@ -2220,7 +1272,6 @@ class HRDatabase {
       details: `Updated holiday: ${holiday.name} (${holiday.date}, ${holiday.country}).`,
     });
 
-    this.persistAuthoritativeState();
     return holiday;
   }
 
@@ -2230,10 +1281,6 @@ class HRDatabase {
 
     holiday.is_active = !holiday.is_active;
     holiday.updated_at = new Date().toISOString();
-
-    saveHolidayToFirestore(holiday).catch((e) =>
-      console.error('[Firestore] Save holiday error:', e)
-    );
 
     this.logAudit({
       action: 'Holiday status toggled',
@@ -2245,7 +1292,6 @@ class HRDatabase {
       details: `Changed status of holiday ${holiday.name} to ${holiday.is_active ? 'Active' : 'Inactive'}.`,
     });
 
-    this.persistAuthoritativeState();
     return holiday;
   }
 
@@ -2276,22 +1322,6 @@ class HRDatabase {
       target_id: id,
       details: `Deleted holiday: ${removed.name} (${removed.date}, ${removed.country}) and cleared associated coverage shifts.`,
     });
-
-    this.persistAuthoritativeState();
-    saveDeletedRecordsToFirestore(
-      Array.from(this.deletedEmployeeIds),
-      Array.from(this.deletedHolidayIds),
-      Array.from(this.deletedShiftIds)
-    ).catch(() => {});
-
-    try {
-      await deleteHolidayFromFirestore(id);
-      for (const s of removedShifts) {
-        await deleteHolidayShiftFromFirestore(s.id).catch(() => {});
-      }
-    } catch (e) {
-      console.warn('[Firestore] Delete holiday cloud sync warning:', e);
-    }
 
     return true;
   }
@@ -2364,9 +1394,6 @@ class HRDatabase {
     };
 
     this.holidayShifts.unshift(newShift);
-    saveHolidayShiftToFirestore(newShift).catch((e) =>
-      console.error('[Firestore] Save holiday shift error:', e)
-    );
 
     // Notify admins
     const admins = this.users.filter((u) => u.profile.role === 'admin');
@@ -2382,12 +1409,9 @@ class HRDatabase {
         link_tab: 'admin-dashboard',
       };
       this.notifications.unshift(notifItem);
-      saveNotificationToFirestore(notifItem).catch((e) =>
-        console.error('[Firestore] Save notification error:', e)
-      );
+
     }
 
-    this.persistAuthoritativeState();
     return newShift;
   }
 
@@ -2448,10 +1472,6 @@ class HRDatabase {
       this.holidayShifts.unshift(shift);
     }
 
-    saveHolidayShiftToFirestore(shift).catch((e) =>
-      console.error('[Firestore] Save holiday shift error:', e)
-    );
-
     // Award holiday work credit if Approved and not already credited
     if (status === 'Approved') {
       const existingCredit = this.leaveTransactions.find(
@@ -2475,9 +1495,6 @@ class HRDatabase {
         }
         creditBal.allocated_days += 1;
         creditBal.updated_at = new Date().toISOString();
-        saveLeaveBalanceToFirestore(creditBal).catch((e) =>
-          console.error('[Firestore] Save balance error:', e)
-        );
 
         const remaining = creditBal.allocated_days - creditBal.used_days;
 
@@ -2499,9 +1516,7 @@ class HRDatabase {
           created_at: new Date().toISOString(),
         };
         this.leaveTransactions.unshift(creditTx);
-        saveLeaveTransactionToFirestore(creditTx).catch((e) =>
-          console.error('[Firestore] Save transaction error:', e)
-        );
+
       }
     }
 
@@ -2526,11 +1541,7 @@ class HRDatabase {
       link_tab: 'holidays',
     };
     this.notifications.unshift(notifItem);
-    saveNotificationToFirestore(notifItem).catch((e) =>
-      console.error('[Firestore] Save notification error:', e)
-    );
 
-    this.persistAuthoritativeState();
     return shift;
   }
 
@@ -2558,10 +1569,6 @@ class HRDatabase {
       shift.approved_by_name = adminUser.full_name;
       shift.approved_at = new Date().toISOString();
 
-      saveHolidayShiftToFirestore(shift).catch((e) =>
-        console.error('[Firestore] Save holiday shift error:', e)
-      );
-
       // DUPLICATE CREDIT CHECK
       const existingCredit = this.leaveTransactions.find(
         (t) => t.reference_id === shift.id && t.transaction_type === 'holiday_credit'
@@ -2586,9 +1593,6 @@ class HRDatabase {
 
         creditBal.allocated_days += 1;
         creditBal.updated_at = new Date().toISOString();
-        saveLeaveBalanceToFirestore(creditBal).catch((e) =>
-          console.error('[Firestore] Save balance error:', e)
-        );
 
         const currentRemaining = creditBal.allocated_days - creditBal.used_days;
 
@@ -2610,9 +1614,7 @@ class HRDatabase {
           created_at: new Date().toISOString(),
         };
         this.leaveTransactions.unshift(creditTx);
-        saveLeaveTransactionToFirestore(creditTx).catch((e) =>
-          console.error('[Firestore] Save transaction error:', e)
-        );
+
       }
 
       this.logAudit({
@@ -2636,13 +1638,8 @@ class HRDatabase {
         link_tab: 'leave',
       };
       this.notifications.unshift(approvedNotif);
-      saveNotificationToFirestore(approvedNotif).catch((e) =>
-        console.error('[Firestore] Save notification error:', e)
-      );
+
     } else {
-      saveHolidayShiftToFirestore(shift).catch((e) =>
-        console.error('[Firestore] Save holiday shift error:', e)
-      );
 
       // If previously approved, reverse credit
       if (previousStatus === 'Approved') {
@@ -2656,9 +1653,7 @@ class HRDatabase {
           if (creditBal) {
             creditBal.allocated_days = Math.max(0, creditBal.allocated_days - 1);
             creditBal.updated_at = new Date().toISOString();
-            saveLeaveBalanceToFirestore(creditBal).catch((e) =>
-              console.error('[Firestore] Save balance error:', e)
-            );
+
           }
 
           const currentRemaining = creditBal ? creditBal.allocated_days - creditBal.used_days : 0;
@@ -2681,9 +1676,7 @@ class HRDatabase {
             created_at: new Date().toISOString(),
           };
           this.leaveTransactions.unshift(revTx);
-          saveLeaveTransactionToFirestore(revTx).catch((e) =>
-            console.error('[Firestore] Save transaction error:', e)
-          );
+
         }
       }
 
@@ -2708,12 +1701,9 @@ class HRDatabase {
         link_tab: 'holidays',
       };
       this.notifications.unshift(rejectedNotif);
-      saveNotificationToFirestore(rejectedNotif).catch((e) =>
-        console.error('[Firestore] Save notification error:', e)
-      );
+
     }
 
-    this.persistAuthoritativeState();
     return shift;
   }
 
@@ -2737,9 +1727,7 @@ class HRDatabase {
         if (creditBal) {
           creditBal.allocated_days = Math.max(0, creditBal.allocated_days - 1);
           creditBal.updated_at = new Date().toISOString();
-          saveLeaveBalanceToFirestore(creditBal).catch((e) =>
-            console.error('[Firestore] Save balance error:', e)
-          );
+
         }
 
         const currentRemaining = creditBal ? creditBal.allocated_days - creditBal.used_days : 0;
@@ -2762,9 +1750,7 @@ class HRDatabase {
           created_at: new Date().toISOString(),
         };
         this.leaveTransactions.unshift(revTx);
-        saveLeaveTransactionToFirestore(revTx).catch((e) =>
-          console.error('[Firestore] Save transaction error:', e)
-        );
+
       }
     }
 
@@ -2784,21 +1770,13 @@ class HRDatabase {
         this.holidayShifts.splice(idx, 1);
       }
       this.deletedShiftIds.add(requestId);
-      deleteHolidayShiftFromFirestore(requestId).catch(() => {});
-      saveDeletedRecordsToFirestore(
-        Array.from(this.deletedEmployeeIds),
-        Array.from(this.deletedHolidayIds),
-        Array.from(this.deletedShiftIds)
-      ).catch(() => {});
+
     } else {
       shift.status = 'Cancelled';
       shift.updated_at = new Date().toISOString();
-      saveHolidayShiftToFirestore(shift).catch((e) =>
-        console.error('[Firestore] Save holiday shift error:', e)
-      );
+
     }
 
-    this.persistAuthoritativeState();
     return true;
   }
 
@@ -2830,9 +1808,6 @@ class HRDatabase {
         l.reviewed_at = new Date().toISOString();
         l.reviewed_by = adminUser.id;
         l.reviewed_by_name = adminUser.full_name;
-        saveLeaveRequestToFirestore(l).catch((e) =>
-          console.error('[Firestore] Save leave error:', e)
-        );
 
         // Restore balance
         const bal = this.leaveBalances.find(
@@ -2841,9 +1816,7 @@ class HRDatabase {
         if (bal) {
           bal.used_days = Math.max(0, bal.used_days - l.total_days);
           bal.updated_at = new Date().toISOString();
-          saveLeaveBalanceToFirestore(bal).catch((e) =>
-            console.error('[Firestore] Save balance error:', e)
-          );
+
         }
 
         const currentRem = bal ? bal.allocated_days - bal.used_days : 0;
@@ -2865,16 +1838,11 @@ class HRDatabase {
           created_at: new Date().toISOString(),
         };
         this.leaveTransactions.unshift(revTx);
-        saveLeaveTransactionToFirestore(revTx).catch((e) =>
-          console.error('[Firestore] Save transaction error:', e)
-        );
+
       }
 
       // Ensure shift has holiday credit
       for (const s of shifts) {
-        saveHolidayShiftToFirestore(s).catch((e) =>
-          console.error('[Firestore] Save shift error:', e)
-        );
 
         const existingCredit = this.leaveTransactions.find(
           (t) => t.reference_id === s.id && t.transaction_type === 'holiday_credit'
@@ -2897,9 +1865,6 @@ class HRDatabase {
           }
           creditBal.allocated_days += 1;
           creditBal.updated_at = new Date().toISOString();
-          saveLeaveBalanceToFirestore(creditBal).catch((e) =>
-            console.error('[Firestore] Save balance error:', e)
-          );
 
           const creditTx: LeaveTransaction = {
             id: 'tx-hol-' + Math.random().toString(36).substring(2, 9),
@@ -2919,9 +1884,7 @@ class HRDatabase {
             created_at: new Date().toISOString(),
           };
           this.leaveTransactions.unshift(creditTx);
-          saveLeaveTransactionToFirestore(creditTx).catch((e) =>
-            console.error('[Firestore] Save transaction error:', e)
-          );
+
         }
       }
     } else {
@@ -2930,9 +1893,6 @@ class HRDatabase {
         s.status = 'Cancelled';
         s.admin_note = 'Cancelled by Admin in favor of approved leave request.';
         s.updated_at = new Date().toISOString();
-        saveHolidayShiftToFirestore(s).catch((e) =>
-          console.error('[Firestore] Save shift error:', e)
-        );
 
         const creditTx = this.leaveTransactions.find(
           (t) => t.reference_id === s.id && t.transaction_type === 'holiday_credit'
@@ -2944,9 +1904,7 @@ class HRDatabase {
           if (creditBal) {
             creditBal.allocated_days = Math.max(0, creditBal.allocated_days - 1);
             creditBal.updated_at = new Date().toISOString();
-            saveLeaveBalanceToFirestore(creditBal).catch((e) =>
-              console.error('[Firestore] Save balance error:', e)
-            );
+
           }
 
           const rem = creditBal ? creditBal.allocated_days - creditBal.used_days : 0;
@@ -2969,9 +1927,7 @@ class HRDatabase {
             created_at: new Date().toISOString(),
           };
           this.leaveTransactions.unshift(revTx);
-          saveLeaveTransactionToFirestore(revTx).catch((e) =>
-            console.error('[Firestore] Save transaction error:', e)
-          );
+
         }
       }
     }
@@ -2997,11 +1953,7 @@ class HRDatabase {
       link_tab: resolution === 'keep_shift' ? 'holidays' : 'leave',
     };
     this.notifications.unshift(conflictNotif);
-    saveNotificationToFirestore(conflictNotif).catch((e) =>
-      console.error('[Firestore] Save notification error:', e)
-    );
 
-    this.persistAuthoritativeState();
     return { success: true };
   }
 
@@ -3050,9 +2002,6 @@ class HRDatabase {
 
     balance.allocated_days = Math.max(0, balance.allocated_days + amount);
     balance.updated_at = new Date().toISOString();
-    saveLeaveBalanceToFirestore(balance).catch((e) =>
-      console.error('[Firestore] Save balance error:', e)
-    );
 
     const remaining = balance.allocated_days - balance.used_days;
 
@@ -3072,9 +2021,6 @@ class HRDatabase {
     };
 
     this.leaveTransactions.unshift(transaction);
-    saveLeaveTransactionToFirestore(transaction).catch((e) =>
-      console.error('[Firestore] Save transaction error:', e)
-    );
 
     this.logAudit({
       action: 'Leave balance adjusted',
@@ -3097,11 +2043,7 @@ class HRDatabase {
       link_tab: 'leave',
     };
     this.notifications.unshift(notifItem);
-    saveNotificationToFirestore(notifItem).catch((e) =>
-      console.error('[Firestore] Save notification error:', e)
-    );
 
-    this.persistAuthoritativeState();
     return { success: true, transaction, balance };
   }
 
@@ -3369,9 +2311,7 @@ class HRDatabase {
       timestamp: new Date().toISOString(),
     };
     this.auditLogs.unshift(log);
-    saveAuditLogToFirestore(log).catch((e) =>
-      console.error('[Firestore] Save audit log error:', e)
-    );
+
   }
 
   // --- NOTIFICATIONS ---
@@ -3394,10 +2334,7 @@ class HRDatabase {
     const notif = this.notifications.find((n) => n.id === notifId && n.user_id === userId);
     if (notif) {
       notif.read = true;
-      saveNotificationToFirestore(notif).catch((e) =>
-        console.error('[Firestore] Save notification error:', e)
-      );
-      this.persistAuthoritativeState();
+
     }
   }
 
@@ -3406,14 +2343,12 @@ class HRDatabase {
     for (const n of this.notifications) {
       if (n.user_id === userId) {
         n.read = true;
-        saveNotificationToFirestore(n).catch((e) =>
-          console.error('[Firestore] Save notification error:', e)
-        );
+
         changed = true;
       }
     }
     if (changed) {
-      this.persistAuthoritativeState();
+
     }
   }
 
@@ -3421,8 +2356,7 @@ class HRDatabase {
     const idx = this.notifications.findIndex((n) => n.id === notifId && n.user_id === userId);
     if (idx !== -1) {
       this.notifications.splice(idx, 1);
-      deleteNotificationFromFirestore(notifId).catch(() => {});
-      this.persistAuthoritativeState();
+
       return true;
     }
     return false;
@@ -3432,9 +2366,9 @@ class HRDatabase {
     const removed = this.notifications.filter((n) => n.user_id === userId);
     this.notifications = this.notifications.filter((n) => n.user_id !== userId);
     for (const n of removed) {
-      deleteNotificationFromFirestore(n.id).catch(() => {});
+
     }
-    this.persistAuthoritativeState();
+
     return true;
   }
 
@@ -3464,10 +2398,7 @@ class HRDatabase {
       uploaded_by_name: doc.uploaded_by_name,
     };
     this.employeeDocuments.unshift(newDoc);
-    saveEmployeeDocumentToFirestore(newDoc).catch((e) =>
-      console.error('[Firestore] Save employee document error:', e)
-    );
-    this.persistAuthoritativeState();
+
     return newDoc;
   }
 
@@ -3477,10 +2408,7 @@ class HRDatabase {
       (d) => !(d.id === docId && d.employee_id === employeeId)
     );
     if (this.employeeDocuments.length < prevLen) {
-      deleteEmployeeDocumentFromFirestore(docId).catch((e) =>
-        console.error('[Firestore] Delete employee document error:', e)
-      );
-      this.persistAuthoritativeState();
+
       return true;
     }
     return false;
@@ -3513,12 +2441,15 @@ class HRDatabase {
       ...updates,
       updated_at: new Date().toISOString(),
     };
-    saveCompanySettingsToFirestore(this.companySettings).catch((e) =>
-      console.error('[Firestore] Save company settings error:', e)
-    );
-    this.persistAuthoritativeState();
+
     return { ...this.companySettings };
   }
 }
 
-export const db = new HRDatabase();
+export const db = new Proxy({} as HRDatabase, {
+  get(_target, key) {
+    const instance = currentDatabase();
+    const value = (instance as any)[key];
+    return typeof value === 'function' ? value.bind(instance) : value;
+  },
+});

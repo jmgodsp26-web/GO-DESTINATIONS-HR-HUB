@@ -66,7 +66,7 @@ export const EmployeeManagement: React.FC = () => {
   const [newEmployee, setNewEmployee] = useState({
     full_name: '',
     email: '',
-    password: 'Welcome2026!',
+    password: '',
     phone: '',
     department: OFFICIAL_DEPARTMENTS[0],
     job_title: '',
@@ -142,19 +142,20 @@ export const EmployeeManagement: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      if (newEmployee.password.trim().length < 12) throw new Error('Temporary password must be at least 12 characters.');
       const created = await api.createEmployee(newEmployee);
       setIsAddModalOpen(false);
       setCreatedEmployeeInfo({
         full_name: created.full_name,
         email: created.email,
-        password: newEmployee.password || 'Welcome2026!',
+        password: newEmployee.password,
         role: created.role,
         employee_id: created.employee_id,
       });
       setNewEmployee({
         full_name: '',
         email: '',
-        password: 'Welcome2026!',
+        password: '',
         phone: '',
         department: OFFICIAL_DEPARTMENTS[0],
         job_title: '',
@@ -906,7 +907,7 @@ export const EmployeeManagement: React.FC = () => {
                     required
                     value={newEmployee.password}
                     onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })}
-                    placeholder="e.g. Welcome2026!"
+                    placeholder="Unique temporary password (12+ characters)"
                     className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 font-mono"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">This password allows the employee to log in immediately.</p>
@@ -1272,7 +1273,7 @@ export const EmployeeManagement: React.FC = () => {
                   className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-[#3A5D83] font-mono"
                 />
                 <p className="text-[10px] text-slate-500 mt-1">
-                  Type a new password (e.g. Welcome2026!) to immediately reset this employee's sign-in credentials.
+                  Type a unique temporary password (at least 12 characters) to immediately reset this employee's sign-in credentials.
                 </p>
               </div>
 
