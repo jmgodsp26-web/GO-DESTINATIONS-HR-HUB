@@ -431,12 +431,12 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                       }`}
                     >
                       {isExhausted
-                        ? 'Exceeds Balance'
+                        ? 'Not enough days'
                         : isZeroRemaining
-                        ? 'Exhausts Quota'
+                        ? 'Uses all days'
                         : isLowBalance
-                        ? 'Low Balance Warning'
-                        : 'Sufficient Balance'}
+                        ? 'Low balance'
+                        : 'Enough days'}
                     </span>
                   ) : (
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">
@@ -455,13 +455,13 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                         </span>
                       </div>
                       <div className="border-x border-slate-200">
-                        <span className="text-[10px] text-slate-500 font-medium block">Deduction</span>
+                        <span className="text-[10px] text-slate-500 font-medium block">Requested</span>
                         <span className="text-xs sm:text-sm font-bold text-indigo-600 tabular-nums">
                           -{calculatedDays} {calculatedDays === 1 ? 'day' : 'days'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 font-medium block">Projected Balance</span>
+                        <span className="text-[10px] text-slate-500 font-medium block">After approval</span>
                         <span
                           className={`text-xs sm:text-sm font-bold tabular-nums ${
                             isExhausted

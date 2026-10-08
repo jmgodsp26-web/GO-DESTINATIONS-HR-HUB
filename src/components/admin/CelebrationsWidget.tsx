@@ -243,7 +243,7 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
             )}
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Track employee milestones, recognize longevity, and share celebratory wishes across the team.
+            See upcoming birthdays and work anniversaries.
           </p>
         </div>
 
@@ -538,7 +538,7 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
       {onNavigateTab && (
         <div className="px-5 py-3 border-t border-slate-200 bg-slate-50/80 flex items-center justify-between text-xs">
           <span className="text-slate-500">
-            Showing milestones based on employee records and join history.
+            Dates are based on employee profiles.
           </span>
           <button
             type="button"

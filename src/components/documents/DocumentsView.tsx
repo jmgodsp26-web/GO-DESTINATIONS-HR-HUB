@@ -170,11 +170,11 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
             <span className="text-slate-300">•</span>
             <span className="text-xs font-semibold text-slate-500">GO Destinations HR</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 tracking-tight">{isAdmin ? 'HR Documents' : 'My Documents'}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 tracking-tight">{isAdmin ? 'Documents' : 'My Documents'}</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             {isAdmin
-              ? 'Access, search, and manage official employment records, contracts, and certifications across all staff.'
-              : 'Access your verified employment contracts, ID verifications, performance reviews, and certificates.'}
+              ? 'Find and manage employee contracts, records, and certificates.'
+              : 'Find your contracts, ID documents, reviews, and certificates.'}
           </p>
         </div>
 
@@ -282,12 +282,12 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
           <div className="px-5 py-3.5 border-b border-slate-200/80 bg-slate-50/60 flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <span className="text-xs font-bold text-slate-800">Archived Documents</span>
+              <span className="text-xs font-bold text-slate-800">Documents</span>
               <span className="text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
                 {filteredDocs.length} {filteredDocs.length === 1 ? 'file' : 'files'}
               </span>
             </div>
-            <span className="text-[11px] font-semibold text-slate-400">Official HR Records</span>
+            <span className="text-[11px] font-semibold text-slate-400">Employee files</span>
           </div>
 
           {/* Desktop Table */}

@@ -70,12 +70,12 @@ export const AuditLogsView: React.FC = () => {
         <div>
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-              Compliance & Security
+              HR activity
             </span>
           </div>
-          <h1 className="text-xl font-bold text-slate-900 mt-1">HR System Audit Logs</h1>
+          <h1 className="text-xl font-bold text-slate-900 mt-1">Activity Log</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Immutable tracking records of administrative actions, employee record changes, and leave approvals.
+            See who changed employee records, reviewed leave, or updated HR settings.
           </p>
         </div>
       </div>
@@ -88,7 +88,7 @@ export const AuditLogsView: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search audit details, administrator, or action..."
+            placeholder="Search by person, action, or details..."
             className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500"
           />
         </div>

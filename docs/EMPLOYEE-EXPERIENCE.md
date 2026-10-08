@@ -22,3 +22,13 @@ This pass makes existing employee tasks clearer without changing HR policy, auth
 ## Release boundary
 
 This change is held on a design branch for preview approval. Main and the production Cloud Run deployment are not updated by this design pass.
+
+## Holiday coverage and plain language revision
+
+- Replaced dense holiday tiles with full-width holiday rows: date/name, coordinator coverage, four staff counts, and one View team action. Rows stack on phones.
+- Added read-only summaries for holidays, holidays needing attention, and pending leave/shift requests. Uses the existing coverage status and required coordinator counts; no staffing or approval rule changes.
+- Preserved Cards/Table views, year selector, Add shift, and the existing holiday details modal. Clarified the Program Coordinator abbreviation.
+- Simplified navigation, page titles, help, form feedback, empty states and supporting copy across 20 components: Employees, Documents, Reports, Activity Log, My Leave and Holiday Coverage. Internal IDs, stored statuses and leave type names remain unchanged.
+- Latest validation: 60 existing tests passed; TypeScript, production build and whitespace checks passed. AST comparison found all 357 existing handler expressions preserved and all 57 API calls unchanged in the 20 updated components.
+- Desktop and 390 x 844 mobile sample preview: Cards/Table switching, opening team details, summary values and coordinator gaps checked. Cards have no horizontal overflow. Preview fixtures now include consistent working and pending sample staff for reviewing details.
+- Production remains on main; this revision updates the same draft design PR and sample preview only.

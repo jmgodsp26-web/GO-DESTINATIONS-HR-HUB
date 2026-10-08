@@ -424,7 +424,7 @@ export const HolidaysView: React.FC = () => {
         <div>
           <div className="flex items-center space-x-2">
             <h1 className="text-xl font-bold text-slate-900">
-              {isAdmin ? 'Holidays & Staff Coverage' : 'Global Holiday Calendar'}
+              {isAdmin ? 'Holidays & Shifts' : 'Company Holidays'}
             </h1>
             <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
               Multi-Country
@@ -432,8 +432,8 @@ export const HolidaysView: React.FC = () => {
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             {isAdmin
-              ? 'Configure country-specific, regional, and company-wide closures, staffing coverage, and team rosters.'
-              : 'Configure country-specific, regional, and company-wide closures, staff coverage, and holiday shift volunteering.'}
+              ? 'Manage holidays by location and plan who is working.'
+              : 'View holidays for your location and request to work a holiday shift.'}
           </p>
         </div>
 
@@ -860,7 +860,7 @@ export const HolidaysView: React.FC = () => {
                         className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors shadow-2xs cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                        <span>Staff Roster</span>
+                        <span>View team</span>
                       </button>
                     )}
 
@@ -1361,7 +1361,7 @@ export const HolidaysView: React.FC = () => {
                     Assign Staff Holiday Shift
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Roster an employee for coverage on an upcoming company holiday.
+                    Choose an employee to work a holiday shift.
                   </p>
                 </div>
               </div>

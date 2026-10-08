@@ -243,7 +243,7 @@ export const Header: React.FC<HeaderProps> = ({
                     }}
                     className="w-full text-center py-1.5 px-3 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold transition-colors"
                   >
-                    View All in Notifications Center →
+                    View All in Notifications →
                   </button>
                 </div>
               </div>

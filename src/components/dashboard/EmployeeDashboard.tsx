@@ -530,7 +530,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                 Recent requests
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Recent time off submissions and approval notes
+                Your recent requests and feedback from HR
               </p>
             </div>
             <button
@@ -797,7 +797,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
         </div>
       </div>
 
-      {/* 5. Confidential HR Documents Vault */}
+      {/* 5. Documents */}
       <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-200/70 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center space-x-2.5">
@@ -814,7 +814,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Official verified contracts, identification proofs, and appraisal forms
+                Your contracts, ID documents, and reviews
               </p>
             </div>
           </div>
@@ -834,7 +834,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
               <FileText className="w-7 h-7 text-slate-300 mx-auto mb-1.5" />
               <p className="text-xs font-semibold text-slate-700">No documents on file yet</p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                HR administrators will upload verified contracts and employee files here.
+                HR will add your documents here.
               </p>
             </div>
           ) : (

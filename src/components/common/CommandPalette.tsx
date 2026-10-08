@@ -69,8 +69,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'nav-dash',
       category: 'Navigation',
-      title: isAdmin ? 'Admin Command Center' : 'My Dashboard',
-      subtitle: 'Headquarters overview, balances, and immediate actions',
+      title: isAdmin ? 'HR Dashboard' : 'My Workspace',
+      subtitle: 'Your HR overview and quick actions',
       icon: LayoutDashboard,
       action: () => {
         onNavigate(isAdmin ? 'admin-dashboard' : 'dashboard');
@@ -82,8 +82,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {
             id: 'nav-leave',
             category: 'Navigation' as const,
-            title: 'Leave & Time Off',
-            subtitle: 'View balance breakdown, request history, and transactions ledger',
+            title: 'My Leave',
+            subtitle: 'Check your balances, leave requests, and balance history',
             icon: CalendarCheck,
             action: () => {
               onNavigate('leave');
@@ -93,8 +93,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {
             id: 'nav-profile',
             category: 'Navigation' as const,
-            title: 'My Profile & Details',
-            subtitle: 'Personal info, department, verified credentials, and emergency contacts',
+            title: 'My Profile',
+            subtitle: 'Your personal details, job information, and emergency contacts',
             icon: User,
             action: () => {
               onNavigate('profile');
@@ -106,8 +106,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {
             id: 'nav-employees',
             category: 'Navigation' as const,
-            title: 'Employee Headcount Directory',
-            subtitle: 'Directory list, status toggle, leave balance adjustments, and profiles',
+            title: 'Employees',
+            subtitle: 'Find employees, update profiles, and manage leave balances',
             icon: Users,
             action: () => {
               onNavigate('employees');
@@ -117,8 +117,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {
             id: 'nav-leave-requests',
             category: 'Navigation' as const,
-            title: 'Leave Review Queue',
-            subtitle: 'Approve or reject employee leave submissions with instant balance audits',
+            title: 'Leave Requests',
+            subtitle: 'Review employee leave requests and available balances',
             icon: ClipboardList,
             badge: 'Admin',
             action: () => {
@@ -129,8 +129,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {
             id: 'nav-calendar',
             category: 'Navigation' as const,
-            title: 'Company Calendar & Out of Office',
-            subtitle: 'Monthly visual schedule, team coverage, and planned holidays',
+            title: 'Company Calendar',
+            subtitle: 'View team availability and holidays',
             icon: CalendarIcon,
             action: () => {
               onNavigate('calendar');
@@ -140,8 +140,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {
             id: 'nav-audit',
             category: 'Navigation' as const,
-            title: 'System Audit Logs',
-            subtitle: 'Immutable record of approvals, employee updates, and system events',
+            title: 'Activity Log',
+            subtitle: 'See changes to employees, leave requests, and HR settings',
             icon: FileText,
             action: () => {
               onNavigate('audit-logs');
@@ -151,8 +151,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {
             id: 'nav-reports',
             category: 'Navigation' as const,
-            title: 'Reports & Analytics',
-            subtitle: 'Leave utilization, department absence distribution, and CSV compliance export',
+            title: 'Reports',
+            subtitle: 'View leave totals by department and download reports',
             icon: BarChart3,
             action: () => {
               onNavigate('reports');
@@ -164,7 +164,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       id: 'nav-calendar-shared',
       category: 'Navigation',
       title: 'Company Calendar',
-      subtitle: 'Monthly visual schedule, team coverage, and public holidays',
+      subtitle: 'View team availability and holidays',
       icon: CalendarIcon,
       action: () => {
         onNavigate('calendar');
@@ -174,8 +174,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'nav-holidays',
       category: 'Navigation',
-      title: 'Company Holidays & Staffing',
-      subtitle: 'Official calendar closures and designated public holiday shift rosters',
+      title: 'Holidays & Shifts',
+      subtitle: 'View holidays and plan holiday shifts',
       icon: CalendarDays,
       action: () => {
         onNavigate('holidays');
@@ -185,7 +185,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'nav-docs',
       category: 'Navigation',
-      title: 'Confidential Documents Vault',
+      title: isAdmin ? 'Documents' : 'My Documents',
       subtitle: 'Signed contracts, identity proofs, and performance reviews',
       icon: FolderOpen,
       action: () => {
@@ -196,7 +196,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'nav-notifications',
       category: 'Navigation',
-      title: 'Notifications Center',
+      title: 'Notifications',
       subtitle: 'Review leave approvals, status updates, and company announcements',
       icon: Bell,
       action: () => {
@@ -207,8 +207,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'nav-settings',
       category: 'Navigation',
-      title: isAdmin ? 'Company Settings & Policies' : 'Preferences & Policy Guidelines',
-      subtitle: 'Leave allowances, working hours, company profiles, and notification rules',
+      title: isAdmin ? 'Company Settings' : 'Settings & Policies',
+      subtitle: 'Set leave allowances, work hours, and notifications',
       icon: SettingsIcon,
       action: () => {
         onNavigate('settings');
@@ -221,8 +221,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {
             id: 'act-req-leave',
             category: 'Actions' as const,
-            title: 'Submit Leave Request',
-            subtitle: 'Apply for Annual, Sick, Casual, or Half-Day time off',
+            title: 'Request Leave',
+            subtitle: 'Request vacation, sick, emergency, medical, or half-day leave',
             icon: PlusCircle,
             action: () => {
               onRequestLeave();
@@ -238,12 +238,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             category: 'Actions' as const,
             title:
               user?.role === 'admin'
-                ? 'Assign Holiday Shift Coverage'
-                : 'Request Holiday Shift Coverage',
+                ? 'Assign Holiday Shift'
+                : 'Request Holiday Shift',
             subtitle:
               user?.role === 'admin'
-                ? 'Schedule and assign employee holiday shift coverage'
-                : 'Volunteer for public holiday coverage with compensatory credit',
+                ? 'Choose an employee for a holiday shift'
+                : 'Request to work a holiday shift and earn leave credit',
             icon: Sun,
             action: () => {
               onHolidayShift();

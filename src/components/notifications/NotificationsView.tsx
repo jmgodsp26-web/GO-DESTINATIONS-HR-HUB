@@ -86,10 +86,10 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                Your Updates
+                Notifications
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Keep track of leave decisions and holiday roster updates.
+                Keep track of leave decisions and holiday shifts.
               </p>
             </div>
           </div>
@@ -166,8 +166,8 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
             <p className="text-sm font-semibold text-slate-700">No notifications found</p>
             <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
               {activeFilter === 'unread'
-                ? "You've read all your notifications! New leave updates or roster notices will show up here."
-                : 'Activity alerts regarding leave requests and holiday rosters will appear here.'}
+                ? "You've read all your notifications! New leave and shift updates will appear here."
+                : 'Updates about leave requests and holiday shifts will appear here.'}
             </p>
           </div>
         ) : (

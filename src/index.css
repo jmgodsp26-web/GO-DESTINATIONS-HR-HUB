@@ -252,3 +252,75 @@ button:active:not(:disabled) { transform: translateY(1px); }
  .go-main .go-employee-workspace .go-welcome .go-personal-greeting { font-size:18px; }
  .go-employee-workspace .go-welcome .gap-5 { gap:12px; }
 }
+
+/* Holiday coverage: a calm summary and readable holiday rows. */
+.go-main .go-coverage { border:1px solid #CFD7E1; border-radius:22px; background:#fff; }
+.go-coverage-heading { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:24px; }
+.go-coverage-heading .go-eyebrow { color:#3A5D83; font-size:9px; }
+.go-coverage-heading h3 { font-size:22px; font-weight:800; letter-spacing:-.035em; color:#182E3F; margin-top:6px; }
+.go-coverage-heading p { font-size:13px; color:#636466; line-height:1.7; margin-top:6px; max-width:460px; }
+.go-coverage-heading > .flex { flex-shrink:0; }
+.go-coverage button { min-height:40px; }
+.go-coverage-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin:0 24px; border:1px solid #CFD7E1; border-radius:16px; background:#f4f6f9; }
+.go-coverage-summary > div { padding:18px 22px; display:grid; grid-template-columns:1fr auto; align-items:center; column-gap:12px; }
+.go-coverage-summary > div + div { border-left:1px solid #CFD7E1; }
+.go-coverage-summary span { color:#3A5D83; font-size:13px; font-weight:600; }
+.go-coverage-summary strong { grid-column:2; grid-row:1/3; font-size:30px; font-weight:800; color:#182E3F; }
+.go-coverage-summary small { font-size:11px; color:#636466; margin-top:4px; }
+.go-coverage-help { display:flex; align-items:flex-start; gap:7px; margin:16px 24px 0; font-size:12px; line-height:1.7; color:#636466; }
+.go-coverage-help svg { flex-shrink:0; margin-top:2px; color:#3A5D83; }
+.go-coverage-body { padding:22px 24px 24px; }
+.go-coverage-body > .space-y-6 > div > .flex:first-child > span:first-child { text-transform:none; color:#182E3F; font-size:14px; letter-spacing:0; }
+.go-coverage-cards { display:grid; gap:12px; }
+.go-coverage-card { display:grid; grid-template-columns:minmax(210px,1.4fr) minmax(145px,.85fr) minmax(175px,1fr) 110px; align-items:center; gap:22px; border:1px solid #CFD7E1; border-radius:16px; padding:22px; background:white; }
+.go-coverage-card.needs-attention { border-left:4px solid #ED9027; padding-left:19px; }
+.go-coverage-card.is-covered { border-left:4px solid #7087A3; padding-left:19px; }
+.go-coverage-holiday { display:flex; align-items:flex-start; gap:14px; min-width:0; }
+.go-coverage-holiday time { width:52px; min-width:52px; background:#f4f6f9; border:1px solid #CFD7E1; border-radius:12px; text-align:center; padding:9px 4px; }
+.go-coverage-holiday time span { display:block; font-size:10px; font-weight:700; text-transform:uppercase; color:#3A5D83; }
+.go-coverage-holiday time strong { display:block; font-size:23px; font-weight:800; color:#182E3F; line-height:1.2; margin-top:3px; }
+.go-coverage-holiday h4 { font-size:15px; font-weight:700; color:#182E3F; line-height:1.5; overflow-wrap:anywhere; }
+.go-coverage-holiday p { color:#636466; font-size:12px; margin-top:3px; }
+.go-coverage-status { display:inline-flex; align-items:center; gap:5px; margin-top:8px; padding:4px 7px; border-radius:7px; font-size:11px; font-weight:600; }
+.go-coverage-status.is-covered { background:#ecfdf5; color:#047857; }
+.go-coverage-status.needs-attention { background:#F8DEC1; color:#793e08; }
+.go-coverage-pcs > span { font-size:12px; color:#636466; }
+.go-coverage-pcs p { margin:5px 0 10px; white-space:nowrap; }
+.go-coverage-pcs p strong { font-size:25px; font-weight:800; color:#182E3F; }
+.go-coverage-pcs p span { font-size:12px; color:#636466; }
+.go-coverage-track { height:5px; border-radius:99px; background:#CFD7E1; overflow:hidden; }
+.go-coverage-track span { display:block; height:100%; background:#3A5D83; border-radius:99px; }
+.needs-attention .go-coverage-track span { background:#ED9027; }
+.go-coverage-pcs small { display:block; color:#636466; font-size:11px; margin-top:7px; line-height:1.5; }
+.go-coverage-people { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; padding-left:20px; border-left:1px solid #CFD7E1; }
+.go-coverage-people div { display:flex; flex-direction:column-reverse; gap:2px; }
+.go-coverage-people dt { font-size:11px; color:#636466; white-space:nowrap; }
+.go-coverage-people dd { font-size:18px; font-weight:700; color:#182E3F; }
+.go-coverage-team { display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 8px; font-size:12px; font-weight:700; color:#3A5D83; background:#f4f6f9; border:1px solid #CFD7E1; border-radius:10px; }
+.go-coverage-team:hover { background:#3A5D83; color:white; border-color:#3A5D83; }
+.go-coverage-conflict { display:flex; gap:7px; align-items:center; grid-column:1/-1; border-top:1px solid #fecdd3; padding-top:12px; color:#be123c; font-size:12px; }
+.go-coverage .hidden.md\:block { overflow-x:auto; }
+.go-coverage table { min-width:870px; }
+.go-coverage .text-\[\#ED9027\] { color:#793e08; }
+@media (max-width:1200px) {
+ .go-coverage-heading { align-items:flex-start; flex-direction:column; gap:16px; }
+ .go-coverage-card { grid-template-columns:minmax(220px,1.2fr) minmax(160px,1fr); }
+ .go-coverage-people { grid-column:1; border-left:0; padding-left:0; grid-template-columns:repeat(4,1fr); }
+ .go-coverage-team { grid-column:2; }
+}
+@media (max-width:767px) {
+ .go-coverage-heading { padding:20px 16px; }
+ .go-coverage-heading h3 { font-size:20px; }
+ .go-coverage-summary { margin:0 16px; grid-template-columns:1fr; }
+ .go-coverage-summary > div { padding:12px 16px; }
+ .go-coverage-summary > div + div { border-left:0; border-top:1px solid #CFD7E1; }
+ .go-coverage-summary strong { font-size:24px; }
+ .go-coverage-help { margin:14px 16px 0; }
+ .go-coverage-body { padding:18px 16px; }
+ .go-coverage-card { grid-template-columns:1fr; padding:18px; gap:18px; }
+ .go-coverage-card.needs-attention, .go-coverage-card.is-covered { padding-left:15px; }
+ .go-coverage-people { grid-column:1; border-top:1px solid #CFD7E1; padding-top:14px; gap:8px; }
+ .go-coverage-team { grid-column:1; min-height:44px; }
+ .go-coverage-pcs { padding-left:66px; }
+ .go-coverage-pcs small { font-size:11px; }
+}

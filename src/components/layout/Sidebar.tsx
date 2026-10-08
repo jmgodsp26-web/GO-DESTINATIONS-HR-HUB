@@ -60,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
     {
       groupTitle: 'Time & Records',
       items: [
-        { id: 'leave', label: 'Leave & Balances', icon: CalendarCheck },
+        { id: 'leave', label: 'My Leave', icon: CalendarCheck },
         { id: 'calendar', label: 'Company Calendar', icon: CalendarIcon },
         { id: 'holidays', label: 'Company Holidays', icon: CalendarDays },
         { id: 'documents', label: 'My Documents', icon: FolderOpen },
@@ -75,7 +75,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
           icon: Bell,
           badge: unreadNotifCount > 0 ? String(unreadNotifCount) : undefined,
         },
-        { id: 'settings', label: 'Preferences & Policy', icon: SettingsIcon },
+        { id: 'settings', label: 'Settings & Policies', icon: SettingsIcon },
       ],
     },
   ];
@@ -91,17 +91,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
     {
       groupTitle: 'People & Requests',
       items: [
-        { id: 'employees', label: 'Employee Headcount', icon: Users },
+        { id: 'employees', label: 'Employees', icon: Users },
         { id: 'leave-requests', label: 'Leave Requests', icon: ClipboardList },
       ],
     },
     {
-      groupTitle: 'Records & Governance',
+      groupTitle: 'Records',
       items: [
-        { id: 'holidays', label: 'Holidays & Staffing', icon: CalendarDays },
-        { id: 'documents', label: 'Documents Repository', icon: FolderOpen },
-        { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
-        { id: 'audit-logs', label: 'Audit Logs', icon: FileText },
+        { id: 'holidays', label: 'Holidays & Shifts', icon: CalendarDays },
+        { id: 'documents', label: 'Documents', icon: FolderOpen },
+        { id: 'reports', label: 'Reports', icon: BarChart3 },
+        { id: 'audit-logs', label: 'Activity Log', icon: FileText },
       ],
     },
     {
@@ -281,7 +281,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <LifeBuoy className="w-5 h-5 text-[#3A5D83]" />
-                <h3 className="text-sm font-bold text-slate-900">HR Hub Assistance &amp; Guidelines</h3>
+                <h3 className="text-sm font-bold text-slate-900">HR Help</h3>
               </div>
               <button
                 type="button"
@@ -297,13 +297,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
                 <strong className="text-slate-900">Leave Policies:</strong> Vacation leave requires 3 days advance notice for requests exceeding 3 consecutive days. Sick leave requires medical certification if exceeding 2 days.
               </p>
               <p>
-                <strong className="text-slate-900">Holiday Coverage:</strong> Employees who volunteer and are rostered for company holiday coverage receive paid holiday shift compensation upon approval.
+                <strong className="text-slate-900">Holiday Coverage:</strong> Approved holiday shifts earn leave credit under company policy.
               </p>
               <p>
-                <strong className="text-slate-900">Document Verification:</strong> Official signed contracts, identification proofs, and appraisal records are stored in the Documents repository with 256-bit encryption.
+                <strong className="text-slate-900">Documents:</strong> Find your contracts, ID documents, and reviews in Documents.
               </p>
               <p>
-                <strong className="text-slate-900">Support Desk:</strong> For payroll, tax inquiries, or system access issues, reach out to <span className="text-[#3A5D83] font-medium">hr-operations@godestinations.com</span>.
+                <strong className="text-slate-900">HR Support:</strong> For payroll, tax inquiries, or system access issues, reach out to <span className="text-[#3A5D83] font-medium">hr-operations@godestinations.com</span>.
               </p>
             </div>
 

@@ -426,7 +426,7 @@ export const LeaveHistory: React.FC = () => {
           <div>
             {transactions.length === 0 ? (
               <div className="p-12 text-center text-slate-400 text-xs">
-                No ledger transactions recorded yet.
+                No balance changes recorded yet.
               </div>
             ) : (
               <>
@@ -647,7 +647,7 @@ export const LeaveHistory: React.FC = () => {
                       <span>Calendar Integration</span>
                     </span>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-md">
-                      Verified Leave
+                      Approved Leave
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500">
@@ -749,7 +749,7 @@ export const LeaveHistory: React.FC = () => {
               <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-500 space-y-1">
                 <p><strong>Allocated days:</strong> {cancellingRequest.total_days} day(s)</p>
                 <p className="text-emerald-700 font-medium">
-                  ✓ Any reserved balance days will be restored to your annual leave ledger immediately.
+                  ✓ Any reserved balance days will be restored to your leave balance.
                 </p>
               </div>
               <div className="flex items-center justify-end space-x-2.5 pt-1">

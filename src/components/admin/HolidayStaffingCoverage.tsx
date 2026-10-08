@@ -118,7 +118,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
     return (
       <section
         id="holiday-roster-coverage-overview-section"
-        aria-label="Holiday & Roster Coverage Overview"
+        aria-label="Holiday Coverage"
         className="bg-white rounded-xl border border-rose-200 shadow-xs p-6"
       >
         <div className="flex flex-col items-center justify-center text-center py-8">
@@ -130,7 +130,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
           </h3>
           <p className="text-xs text-slate-500 mt-1 max-w-md">
             {error ||
-              'A problem occurred while retrieving holiday rosters and staffing requirements. Please try again.'}
+              'We couldn’t load holiday coverage. Please try again.'}
           </p>
           <button
             type="button"
@@ -141,7 +141,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
             <RotateCcw
               className={`w-3.5 h-3.5 ${isRetrying ? 'animate-spin' : ''}`}
             />
-            <span>{isRetrying ? 'Retrying...' : 'Retry Loading'}</span>
+            <span>{isRetrying ? 'Retrying...' : 'Try again'}</span>
           </button>
         </div>
       </section>
@@ -151,28 +151,14 @@ export const HolidayStaffingCoverageWidget: React.FC<
   return (
     <section
       id="holiday-roster-coverage-overview-section"
-      aria-label="Holiday & Roster Coverage Overview"
-      className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden"
+      aria-label="Holiday Coverage"
+      className="go-coverage bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden"
     >
-      {/* 2. SECTION HEADER */}
-      <div className="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+      <div className="go-coverage-heading">
         <div>
-          <div className="flex items-center space-x-2">
-            <span
-              className="w-2.5 h-2.5 rounded-full bg-[#3A5D83] shrink-0"
-              aria-hidden="true"
-            />
-            <h3 className="text-base font-bold text-slate-900 tracking-tight">
-              Holiday &amp; Roster Coverage Overview
-            </h3>
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#3A5D83]/10 text-[#3A5D83] border border-[#3A5D83]/30">
-              2026 Calendar
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Enterprise coverage breakdown, real-time working roster, and Program
-            Coordinator (PC) requirements
-          </p>
+          <span className="go-eyebrow">PLAN YOUR HOLIDAY TEAM</span>
+          <h3>Holiday Coverage</h3>
+          <p>See who is working, what needs attention, and which requests are waiting.</p>
         </div>
 
         {/* Compact Right Controls Area */}
@@ -210,7 +196,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Grid</span>
+              <span>Cards</span>
             </button>
             <button
               type="button"
@@ -225,7 +211,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
               }`}
             >
               <List className="w-3.5 h-3.5" />
-              <span>List</span>
+              <span>Table</span>
             </button>
           </div>
 
@@ -238,14 +224,22 @@ export const HolidayStaffingCoverageWidget: React.FC<
               className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white shadow-2xs transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Schedule Shift</span>
+              <span>Add shift</span>
             </button>
           )}
         </div>
       </div>
 
+      {!isLoading && filtered2026List.length > 0 && (
+        <div className="go-coverage-summary" aria-label="Holiday coverage summary">
+          <div><span>Holidays</span><strong>{filtered2026List.length}</strong><small>In {selectedYear}</small></div>
+          <div><span>Need attention</span><strong>{filtered2026List.filter(item => !(item.pcs_working_count >= item.pcs_required && item.coverage_status === 'Good')).length}</strong><small>Coverage or schedule to review</small></div>
+          <div><span>Pending requests</span><strong>{filtered2026List.reduce((sum, item) => sum + item.total_pending_count, 0)}</strong><small>Leave and holiday shifts</small></div>
+        </div>
+      )}
+      <p className="go-coverage-help"><ShieldCheck className="w-4 h-4" />Coordinator coverage shows scheduled Program Coordinators (PCs) compared with the number required.</p>
       {/* Main Content Area */}
-      <div className="p-5 sm:p-6">
+      <div className="go-coverage-body p-5 sm:p-6">
         {/* 13. LOADING SKELETON STATE */}
         {isLoading || coverageList === undefined ? (
           <div
@@ -289,7 +283,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
               No holidays found
             </h4>
             <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              There are no scheduled company or statutory holidays recorded for{' '}
+              No holidays have been added for{' '}
               {selectedYear}.
             </p>
           </div>
@@ -310,189 +304,31 @@ export const HolidayStaffingCoverageWidget: React.FC<
                   </span>
                 </div>
 
-                {/* Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="go-coverage-cards">
                   {group.items.map((item) => {
-                    const {
-                      holiday,
-                      total_employees,
-                      working_count,
-                      leave_count,
-                      pending_leave_count,
-                      pcs_working_count,
-                      pcs_required,
-                      coverage_status,
-                      conflicts_count,
-                    } = item;
-
-                    // 6 & 8. Coverage calculations
+                    const { holiday, total_employees, working_count, leave_count, pending_leave_count, pcs_working_count, pcs_required, coverage_status, conflicts_count } = item;
                     const isPcCoverageMet = pcs_working_count >= pcs_required;
-                    const isFullyCovered =
-                      isPcCoverageMet && coverage_status === 'Good';
-
-                    const progress =
-                      pcs_required > 0
-                        ? Math.min(
-                            (pcs_working_count / pcs_required) * 100,
-                            100
-                          )
-                        : 100;
-
-                    // 5. Date formatting: "SEP 30, 2026"
-                    const { monthShort, day, year } = formatHolidayDate(
-                      holiday.date,
-                      { showYear: true }
-                    );
-                    const formattedDate = `${monthShort.toUpperCase()} ${day}, ${year}`;
-                    const flag = getCountryFlag(holiday.country);
-
+                    const isFullyCovered = isPcCoverageMet && coverage_status === 'Good';
+                    const progress = pcs_required > 0 ? Math.min((pcs_working_count / pcs_required) * 100, 100) : 100;
+                    const { monthShort, day } = formatHolidayDate(holiday.date);
                     return (
-                      <div
-                        key={holiday.id}
-                        id={`holiday-coverage-card-${holiday.id}`}
-                        className={`rounded-xl border bg-white shadow-xs hover:shadow-md transition duration-200 p-4 sm:p-5 flex flex-col justify-between ${
-                          !isFullyCovered
-                            ? 'border-amber-200/90'
-                            : 'border-slate-200'
-                        }`}
-                      >
-                        <div>
-                          {/* 5. Date & Holiday Name */}
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                {formattedDate}
-                              </span>
-                              <h4 className="text-sm font-bold text-slate-900 mt-0.5 line-clamp-2">
-                                {holiday.name}
-                              </h4>
-                              <div className="flex items-center space-x-1.5 mt-1 text-[11px] text-slate-500">
-                                <span>{flag}</span>
-                                <span className="truncate">
-                                  {holiday.country || 'Company-wide'}
-                                </span>
-                                <span className="text-slate-300">•</span>
-                                <span className="truncate">
-                                  {holiday.holiday_type || 'Public Holiday'}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* 6. Coverage Status Badge */}
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold shrink-0 border ${
-                                isFullyCovered
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : 'bg-[#ED9027]/10 text-[#ED9027] border-[#ED9027]/30'
-                              }`}
-                            >
-                              {isFullyCovered ? (
-                                <span>✓ Fully Covered</span>
-                              ) : (
-                                <span>⚠ PC Coverage Needed</span>
-                              )}
-                            </span>
-                          </div>
-
-                          {/* Scheduling Conflicts (if any) */}
-                          {conflicts_count > 0 && (
-                            <div className="mb-2.5 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-semibold flex items-center space-x-1.5">
-                              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
-                              <span>
-                                {conflicts_count} Scheduling{' '}
-                                {conflicts_count === 1 ? 'Conflict' : 'Conflicts'}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* 7. Metrics Breakdown: Compact Mini-Stat Element */}
-                          <div className="grid grid-cols-2 gap-1.5 my-3">
-                            <div className="bg-slate-50 rounded-lg px-2.5 py-1.5 border border-slate-100 flex items-center justify-between">
-                              <span className="text-[11px] font-medium text-slate-500">
-                                Total
-                              </span>
-                              <span className="text-xs font-bold text-slate-900">
-                                {total_employees}
-                              </span>
-                            </div>
-                            <div className="bg-emerald-50/60 rounded-lg px-2.5 py-1.5 border border-emerald-100/70 flex items-center justify-between">
-                              <span className="text-[11px] font-medium text-emerald-700">
-                                Working
-                              </span>
-                              <span className="text-xs font-bold text-emerald-800">
-                                {working_count}
-                              </span>
-                            </div>
-                            <div className="bg-slate-50 rounded-lg px-2.5 py-1.5 border border-slate-100 flex items-center justify-between">
-                              <span className="text-[11px] font-medium text-slate-500">
-                                On Leave
-                              </span>
-                              <span className="text-xs font-bold text-slate-800">
-                                {leave_count}
-                              </span>
-                            </div>
-                            <div className="bg-[#ED9027]/10 rounded-lg px-2.5 py-1.5 border border-[#ED9027]/20 flex items-center justify-between">
-                              <span className="text-[11px] font-medium text-[#ED9027]">
-                                Pending
-                              </span>
-                              <span className="text-xs font-bold text-[#ED9027]">
-                                {pending_leave_count}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* 8. PC Coverage Visual Progress Bar */}
-                          <div className="space-y-1.5 pt-1">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-semibold text-slate-700 flex items-center space-x-1.5">
-                                <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-                                <span>PC Coverage</span>
-                              </span>
-                              <span className="text-[11px] font-medium text-slate-500">
-                                <strong
-                                  className={
-                                    isFullyCovered
-                                      ? 'text-emerald-700'
-                                      : 'text-[#ED9027]'
-                                  }
-                                >
-                                  {pcs_working_count}
-                                </strong>{' '}
-                                / {pcs_required} required
-                              </span>
-                            </div>
-                            <div
-                              className={`w-full h-2 rounded-full overflow-hidden ${
-                                isFullyCovered ? 'bg-emerald-100' : 'bg-[#ED9027]/20'
-                              }`}
-                              role="progressbar"
-                              aria-valuenow={pcs_working_count}
-                              aria-valuemin={0}
-                              aria-valuemax={pcs_required}
-                              aria-label={`PC Coverage ${pcs_working_count} of ${pcs_required}`}
-                            >
-                              <div
-                                className={`h-full rounded-full transition-all duration-300 ${
-                                  isFullyCovered
-                                    ? 'bg-emerald-500'
-                                    : 'bg-[#ED9027]'
-                                }`}
-                                style={{ width: `${progress}%` }}
-                              />
-                            </div>
-                          </div>
+                      <article key={holiday.id} id={`holiday-coverage-card-${holiday.id}`} className={`go-coverage-card ${isFullyCovered ? 'is-covered' : 'needs-attention'}`}>
+                        <div className="go-coverage-holiday">
+                          <time dateTime={holiday.date}><span>{monthShort}</span><strong>{day}</strong></time>
+                          <div><h4>{holiday.name}</h4><p>{getCountryFlag(holiday.country)} {holiday.country || 'Company-wide'}</p><span className={`go-coverage-status ${isFullyCovered ? 'is-covered' : 'needs-attention'}`}>{isFullyCovered ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}{isFullyCovered ? 'Covered' : !isPcCoverageMet ? 'Needs PCs' : 'Needs review'}</span></div>
                         </div>
-
-                        {/* 9. Primary Action: View Roster & Approvals */}
-                        <button
-                          type="button"
-                          onClick={() => setSelectedHolidayId(holiday.id)}
-                          className="w-full mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs sm:text-sm font-medium text-[#3A5D83] hover:text-[#182E3F] hover:underline transition group/btn text-left"
-                        >
-                          <span>View Roster &amp; Approvals</span>
-                          <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
-                        </button>
-                      </div>
+                        <div className="go-coverage-pcs">
+                          <span>Coordinator coverage</span>
+                          <p><strong>{pcs_working_count}</strong><span> / {pcs_required} needed</span></p>
+                          <div role="progressbar" aria-label={`Coordinator coverage ${pcs_working_count} of ${pcs_required}`} aria-valuenow={pcs_working_count} aria-valuemin={0} aria-valuemax={Math.max(pcs_required, pcs_working_count)} className="go-coverage-track"><span style={{ width: `${progress}%` }} /></div>
+                          <small>{isPcCoverageMet ? 'Coordinator requirement met' : `${Math.max(0, pcs_required - pcs_working_count)} more ${pcs_required - pcs_working_count === 1 ? 'PC' : 'PCs'} needed`}</small>
+                        </div>
+                        <dl className="go-coverage-people">
+                          <div><dt>Working</dt><dd>{working_count}</dd></div><div><dt>On leave</dt><dd>{leave_count}</dd></div><div><dt>Leave pending</dt><dd>{pending_leave_count}</dd></div><div><dt>Total staff</dt><dd>{total_employees}</dd></div>
+                        </dl>
+                        <button type="button" aria-label={`View team for ${holiday.name}`} onClick={() => setSelectedHolidayId(holiday.id)} className="go-coverage-team">View team <ArrowRight className="w-4 h-4" /></button>
+                        {conflicts_count > 0 && <p className="go-coverage-conflict"><AlertCircle className="w-4 h-4" />{conflicts_count} schedule {conflicts_count === 1 ? 'conflict' : 'conflicts'} to review</p>}
+                      </article>
                     );
                   })}
                 </div>
@@ -527,8 +363,8 @@ export const HolidayStaffingCoverageWidget: React.FC<
                         <th className="py-3 px-2 text-center">Total</th>
                         <th className="py-3 px-2 text-center">Working</th>
                         <th className="py-3 px-2 text-center">On Leave</th>
-                        <th className="py-3 px-2 text-center">Pending</th>
-                        <th className="py-3 px-4 min-w-[140px]">PC Coverage</th>
+                        <th className="py-3 px-2 text-center">Leave pending</th>
+                        <th className="py-3 px-4 min-w-[140px]">Coordinator coverage</th>
                         <th className="py-3 px-4 text-right">Action</th>
                       </tr>
                     </thead>
@@ -591,8 +427,8 @@ export const HolidayStaffingCoverageWidget: React.FC<
                                 }`}
                               >
                                 {isFullyCovered
-                                  ? '✓ Fully Covered'
-                                  : '⚠ PC Coverage Needed'}
+                                  ? '✓ Covered'
+                                  : '⚠ Needs review'}
                               </span>
                             </td>
                             <td className="py-3 px-2 text-center font-bold text-slate-900">
@@ -611,7 +447,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                               <div className="space-y-1">
                                 <div className="flex items-center justify-between text-[11px]">
                                   <span className="font-medium text-slate-500">
-                                    {pcs_working_count} / {pcs_required} req
+                                    {pcs_working_count} / {pcs_required} needed
                                   </span>
                                 </div>
                                 <div
@@ -638,7 +474,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                                 onClick={() => setSelectedHolidayId(holiday.id)}
                                 className="inline-flex items-center space-x-1 text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] hover:underline transition-colors"
                               >
-                                <span>View Roster</span>
+                                <span>View team</span>
                                 <ArrowRight className="w-3 h-3" />
                               </button>
                             </td>
@@ -703,8 +539,8 @@ export const HolidayStaffingCoverageWidget: React.FC<
                             }`}
                           >
                             {isFullyCovered
-                              ? '✓ Fully Covered'
-                              : '⚠ PC Coverage Needed'}
+                              ? '✓ Covered'
+                              : '⚠ Needs review'}
                           </span>
                         </div>
 
@@ -727,9 +563,9 @@ export const HolidayStaffingCoverageWidget: React.FC<
                         {/* PC Progress */}
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-[10px] text-slate-500">
-                            <span>PC Coverage</span>
+                            <span>Coordinator coverage</span>
                             <span>
-                              {pcs_working_count} / {pcs_required} req
+                              {pcs_working_count} / {pcs_required} needed
                             </span>
                           </div>
                           <div
@@ -751,7 +587,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                           onClick={() => setSelectedHolidayId(holiday.id)}
                           className="w-full pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] transition-colors"
                         >
-                          <span>View Roster &amp; Approvals</span>
+                          <span>View team</span>
                           <ChevronRight className="w-3.5 h-3.5" />
                         </button>
                       </div>

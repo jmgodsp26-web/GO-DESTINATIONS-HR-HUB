@@ -54,7 +54,7 @@ export const EmployeeProfile: React.FC = () => {
         <div className="h-28 bg-gradient-to-r from-slate-800 to-indigo-900 px-6 py-4 flex items-end">
           <div className="flex items-center space-x-2 text-white/80 text-xs">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Verified Employee Profile • Active Record</span>
+            <span>Your employee profile</span>
           </div>
         </div>
 
@@ -199,7 +199,7 @@ export const EmployeeProfile: React.FC = () => {
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
         <div className="flex items-center space-x-2 pb-3 mb-4 border-b border-slate-200">
           <Calendar className="w-4 h-4 text-indigo-600" />
-          <h2 className="text-sm font-bold text-slate-900">Current Year Leave Entitlements</h2>
+          <h2 className="text-sm font-bold text-slate-900">Leave Allowances</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
@@ -219,7 +219,7 @@ export const EmployeeProfile: React.FC = () => {
                 </div>
                 <div className="mt-2 text-[11px] text-slate-500 flex justify-between">
                   <span>Used: {bal.used_days} days</span>
-                  <span>Allocation: {bal.allocated_days} days</span>
+                  <span>Allowance: {bal.allocated_days} days</span>
                 </div>
               </div>
             );
@@ -227,12 +227,12 @@ export const EmployeeProfile: React.FC = () => {
         </div>
       </div>
 
-      {/* Employee Confidential HR Documents Section */}
+      {/* Employee Confidential Documents Section */}
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200">
           <div className="flex items-center space-x-2">
             <FolderOpen className="w-4 h-4 text-[#3A5D83]" />
-            <h2 className="text-sm font-bold text-slate-900">Confidential HR Documents & Records</h2>
+            <h2 className="text-sm font-bold text-slate-900">Confidential Documents & Records</h2>
           </div>
           <span className="text-xs font-semibold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
             {documents.length} {documents.length === 1 ? 'file' : 'files'}

@@ -240,10 +240,10 @@ export const ReportsView: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                Reports &amp; Analytics
+                Reports
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Leave utilization, department absence distribution, and exportable HR compliance data.
+                See leave totals by department and download reports.
               </p>
             </div>
           </div>
@@ -391,7 +391,7 @@ export const ReportsView: React.FC = () => {
         <div className="lg:col-span-2 go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Department Leave Utilization</h2>
+              <h2 className="text-sm font-bold text-slate-900">Leave by Department</h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Distribution of approved leave days and pending load by division
               </p>
@@ -501,7 +501,7 @@ export const ReportsView: React.FC = () => {
       <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
           <div>
-            <h2 className="text-sm font-bold text-slate-900">Leave Applications Register</h2>
+            <h2 className="text-sm font-bold text-slate-900">Leave Requests</h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Comprehensive transaction log for audit and verification
             </p>
