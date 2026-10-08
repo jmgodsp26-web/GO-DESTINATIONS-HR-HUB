@@ -43,7 +43,7 @@ interface EmployeeDashboardProps {
 }
 
 export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigateTab }) => {
-  const { user } = useAuth();
+  const { user, unreadCount } = useAuth();
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [recentRequests, setRecentRequests] = useState<LeaveRequest[]>([]);
   const [upcomingHolidays, setUpcomingHolidays] = useState<Holiday[]>([]);
@@ -193,8 +193,12 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
   }
 
   return (
-    <div className="go-dashboard space-y-6 animate-in fade-in duration-200">
-      {/* 1. 2026 SaaS Workplace Command Center Hero */}
+    <div className="go-dashboard go-employee-workspace space-y-6 animate-in fade-in duration-200">
+      <div className="go-page-intro">
+        <div><span className="go-eyebrow">YOUR EVERYDAY HR, IN ONE PLACE</span><h1>My Workspace</h1><p>Your time off, documents, and upcoming schedule.</p></div>
+        <span className="go-context-tag"><CalendarDays className="w-4 h-4" />{new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', timeZone: user.timezone || undefined }).format(new Date())}</span>
+      </div>
+      {/* Personal welcome and existing quick actions */}
       <div className="go-welcome relative overflow-hidden go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
           <div className="flex items-start sm:items-center space-x-4">
@@ -221,16 +225,16 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">
+                <h2 className="go-personal-greeting text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">
                   {getGreeting()}, {firstName}
-                </h1>
+                </h2>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 inline-block" />
                   Active
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-                Here&rsquo;s what&rsquo;s happening across your workplace today.
+                Welcome back. Everything you need to plan your next day off.
               </p>
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500 mt-2 font-normal">
                 <span className="font-semibold text-slate-700">{user.job_title}</span>
@@ -282,7 +286,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Leave Portfolio &amp; Balances
+              Your leave balances
             </h2>
           </div>
           <button
@@ -290,7 +294,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
             onClick={() => onNavigateTab('leave')}
             className="text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] transition-colors flex items-center space-x-1"
           >
-            <span>Full Balance Breakdown</span>
+            <span>See all balances</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -384,9 +388,11 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
           </div>
 
           {/* Card 4: Pending Queue */}
-          <div
+          <button
+            type="button"
+            aria-label={`${pendingCount} leave requests awaiting review. View my requests`}
             onClick={() => onNavigateTab('leave')}
-            className={`rounded-2xl border p-4 sm:p-5 shadow-xs flex flex-col justify-between cursor-pointer transition-all ${
+            className={`text-left rounded-2xl border p-4 sm:p-5 shadow-xs flex flex-col justify-between cursor-pointer transition-all ${
               pendingCount > 0
                 ? 'bg-amber-50/30 border-amber-200 hover:border-amber-300'
                 : 'bg-white border-slate-200/80 hover:border-slate-300'
@@ -394,7 +400,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
           >
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-600">Pending Submissions</span>
+                <span className="text-xs font-semibold text-slate-600">Awaiting review</span>
                 <span
                   className={`p-1.5 rounded-lg border ${
                     pendingCount > 0
@@ -422,11 +428,17 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                   <span>Awaiting HR approval</span>
                 </span>
               ) : (
-                <span className="text-slate-400">All submissions approved</span>
+                <span className="text-slate-400">No requests awaiting review</span>
               )}
             </div>
-          </div>
+          </button>
         </div>
+      </div>
+
+      <div className="go-workspace-links" aria-label="Your HR shortcuts">
+        <button type="button" onClick={() => onNavigateTab('notifications')}><span className="go-shortcut-icon"><Clock className="w-5 h-5" /></span><span><strong>Stay up to date</strong><small>{unreadCount ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : 'View your latest HR updates'}</small></span><ArrowUpRight className="w-4 h-4" /></button>
+        <button type="button" onClick={() => onNavigateTab('documents')}><span className="go-shortcut-icon"><FolderOpen className="w-5 h-5" /></span><span><strong>My documents</strong><small>Find and download your employment records</small></span><ArrowUpRight className="w-4 h-4" /></button>
+        <button type="button" onClick={() => onNavigateTab('profile')}><span className="go-shortcut-icon"><ShieldCheck className="w-5 h-5" /></span><span><strong>My profile</strong><small>Review your personal and work details</small></span><ArrowUpRight className="w-4 h-4" /></button>
       </div>
 
       {/* 3. Upcoming Holiday & Shift Status Highlight */}
@@ -515,7 +527,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
           <div className="px-5 py-4 border-b border-slate-200/70 flex items-center justify-between bg-slate-50/50">
             <div>
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                My Leave Activity
+                Recent requests
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
                 Recent time off submissions and approval notes
@@ -526,7 +538,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
               onClick={() => onNavigateTab('leave')}
               className="text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] transition-colors flex items-center space-x-1"
             >
-              <span>View All History</span>
+              <span>View all requests</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -559,6 +571,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
                         : req.status === 'Rejected'
                         ? 'bg-rose-50 text-rose-700 border-rose-200/80'
+                        : req.status === 'Cancelled' ? 'bg-slate-100 text-slate-600 border-slate-200'
                         : 'bg-amber-50 text-amber-700 border-amber-200/80';
 
                     return (
@@ -615,8 +628,8 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3.5 text-slate-500 max-w-xs truncate text-[11px]" title={req.reason}>
-                          {req.reason || '—'}
+                        <td className="px-4 py-3.5 text-slate-500 max-w-xs truncate text-[11px]" title={req.admin_note || req.reason}>
+                          {req.admin_note || req.reason || '—'}
                         </td>
                       </tr>
                     );
@@ -686,6 +699,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                       </span>
                     </div>
 
+                    {req.admin_note && <p className="go-hr-feedback"><strong>HR feedback:</strong> {req.admin_note}</p>}
                     {req.reason && (
                       <p className="text-[11px] text-slate-500 italic truncate">&ldquo;{req.reason}&rdquo;</p>
                     )}
@@ -796,7 +810,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                   Employment Documents
                 </h3>
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200/80">
-                  <Lock className="w-2.5 h-2.5 mr-1" /> Encrypted Vault
+                  <Lock className="w-2.5 h-2.5 mr-1" /> My records
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">

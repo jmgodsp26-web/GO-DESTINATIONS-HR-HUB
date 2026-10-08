@@ -76,7 +76,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="go-notifications space-y-6 animate-in fade-in duration-200">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -86,10 +86,10 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                Notifications Center
+                Your Updates
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Real-time updates regarding leave requests, holiday rosters, and company notices.
+                Keep track of leave decisions and holiday roster updates.
               </p>
             </div>
           </div>
@@ -120,11 +120,12 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
         </div>
       </div>
 
+      <div className="go-inbox-summary"><span className="go-shortcut-icon"><Bell className="w-5 h-5" /></span><div><strong>{unreadCount ? `${unreadCount} unread update${unreadCount === 1 ? '' : 's'}` : "You're all caught up"}</strong><p>Use the filters below to find the updates you need.</p></div></div>
       {/* Tabs Filter Bar */}
       <div className="flex items-center space-x-2 border-b border-slate-200 pb-2 text-xs">
         <button
           type="button"
-          onClick={() => setActiveFilter('all')}
+          aria-pressed={activeFilter === 'all'} onClick={() => setActiveFilter('all')}
           className={`px-3.5 py-2 rounded-xl font-semibold transition-all ${
             activeFilter === 'all'
               ? 'bg-slate-900 text-white shadow-2xs'
@@ -135,7 +136,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
         </button>
         <button
           type="button"
-          onClick={() => setActiveFilter('unread')}
+          aria-pressed={activeFilter === 'unread'} onClick={() => setActiveFilter('unread')}
           className={`px-3.5 py-2 rounded-xl font-semibold transition-all ${
             activeFilter === 'unread'
               ? 'bg-slate-900 text-white shadow-2xs'
@@ -146,7 +147,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
         </button>
         <button
           type="button"
-          onClick={() => setActiveFilter('leaves')}
+          aria-pressed={activeFilter === 'leaves'} onClick={() => setActiveFilter('leaves')}
           className={`px-3.5 py-2 rounded-xl font-semibold transition-all ${
             activeFilter === 'leaves'
               ? 'bg-slate-900 text-white shadow-2xs'

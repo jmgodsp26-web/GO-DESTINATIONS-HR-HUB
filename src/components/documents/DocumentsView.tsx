@@ -159,7 +159,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="go-documents space-y-6 animate-in fade-in duration-200">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -170,7 +170,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
             <span className="text-slate-300">•</span>
             <span className="text-xs font-semibold text-slate-500">GO Destinations HR</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 tracking-tight">HR Documents Library</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 tracking-tight">{isAdmin ? 'HR Documents' : 'My Documents'}</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             {isAdmin
               ? 'Access, search, and manage official employment records, contracts, and certifications across all staff.'
@@ -181,7 +181,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
         <div className="flex items-center space-x-2">
           <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100/80 text-slate-700 border border-slate-200/80">
             <Lock className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
-            256-bit Encrypted Storage
+            Restricted document access
           </span>
         </div>
       </div>
@@ -194,7 +194,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search by file name or category..."
+              aria-label="Search documents" placeholder="Search by file name or category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50/60 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 font-medium transition-all"
