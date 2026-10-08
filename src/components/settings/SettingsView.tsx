@@ -142,12 +142,12 @@ export const SettingsView: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                {isAdmin ? 'Company & System Settings' : 'Preferences & Policies'}
+                {isAdmin ? 'Company Settings' : 'Settings & Policies'}
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
                 {isAdmin
-                  ? 'Manage organizational standards, annual leave allowances, and system readiness.'
-                  : 'Review company time-off guidelines and your notification preferences.'}
+                  ? 'Set company details, leave allowances, and notifications.'
+                  : 'Check leave rules and choose your notifications.'}
               </p>
             </div>
           </div>
@@ -167,7 +167,7 @@ export const SettingsView: React.FC = () => {
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
             <Building className="w-4 h-4 text-indigo-600" />
-            <h2 className="text-sm font-bold text-slate-900">Organization Profile &amp; Operating Hours</h2>
+            <h2 className="text-sm font-bold text-slate-900">Company Details &amp; Work Hours</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -223,7 +223,7 @@ export const SettingsView: React.FC = () => {
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
             <CalendarCheck className="w-4 h-4 text-indigo-600" />
-            <h2 className="text-sm font-bold text-slate-900">Standard Leave Entitlements &amp; Policy Rules</h2>
+            <h2 className="text-sm font-bold text-slate-900">Leave Allowances &amp; Rules</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
@@ -262,7 +262,7 @@ export const SettingsView: React.FC = () => {
                 />
                 <span className="text-slate-500 font-medium">days / year</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-2">Paid medical leave allocation per calendar year.</p>
+              <p className="text-[11px] text-slate-400 mt-2">Medical leave days available each year.</p>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
@@ -281,7 +281,7 @@ export const SettingsView: React.FC = () => {
                 />
                 <span className="text-slate-500 font-medium">days / year</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-2">Short notice emergency absence entitlement.</p>
+              <p className="text-[11px] text-slate-400 mt-2">Days available for emergency leave.</p>
             </div>
           </div>
 
@@ -329,7 +329,7 @@ export const SettingsView: React.FC = () => {
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
             <Bell className="w-4 h-4 text-indigo-600" />
-            <h2 className="text-sm font-bold text-slate-900">Alerts &amp; Notification Preferences</h2>
+            <h2 className="text-sm font-bold text-slate-900">Notifications</h2>
           </div>
 
           <div className="space-y-3 text-xs">
@@ -353,7 +353,7 @@ export const SettingsView: React.FC = () => {
 
             <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
               <div>
-                <p className="font-semibold text-slate-900">In-App Notification Banner Alerts</p>
+                <p className="font-semibold text-slate-900">App Notifications</p>
                 <p className="text-slate-500 text-[11px] mt-0.5">
                   Show desktop toast alerts and pulse notification dots on status changes.
                 </p>
@@ -375,7 +375,7 @@ export const SettingsView: React.FC = () => {
           <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
             <Lock className="w-4 h-4 text-[#3A5D83]" />
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Account Security &amp; Password</h2>
+              <h2 className="text-sm font-bold text-slate-900">Password</h2>
               <p className="text-[11px] text-slate-500">Update your personal password for signing in to the HR portal</p>
             </div>
           </div>

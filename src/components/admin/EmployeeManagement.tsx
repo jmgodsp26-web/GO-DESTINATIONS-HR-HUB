@@ -318,9 +318,9 @@ export const EmployeeManagement: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Employee Management</h1>
+          <h1 className="text-xl font-bold text-slate-900">Employees</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Manage company employees, update role authorizations, and maintain leave entitlements.
+            Manage employee details, access, and leave allowances.
           </p>
         </div>
 
@@ -974,7 +974,7 @@ export const EmployeeManagement: React.FC = () => {
               {/* Leave Entitlements */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Vacation Leave Entitlement (Days)</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Vacation Leave Allowance (Days)</label>
                   <input
                     type="number"
                     min="0"
@@ -988,7 +988,7 @@ export const EmployeeManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Sick Leave Entitlement (Days)</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Sick Leave Allowance (Days)</label>
                   <input
                     type="number"
                     min="0"
@@ -1373,7 +1373,7 @@ export const EmployeeManagement: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  New Total Allocated Days (Yearly Entitlement)
+                  New Annual Leave Allowance (Days)
                 </label>
                 <input
                   type="number"
@@ -1434,7 +1434,7 @@ export const EmployeeManagement: React.FC = () => {
 
             <div className="p-6 space-y-4 text-xs">
               <p className="text-slate-600">
-                The user account and leave ledger have been successfully provisioned. Share these credentials with <span className="font-semibold text-slate-900">{createdEmployeeInfo.full_name}</span>:
+                The employee account is ready. Share these login details with <span className="font-semibold text-slate-900">{createdEmployeeInfo.full_name}</span>:
               </p>
 
               <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 space-y-2.5 font-mono">

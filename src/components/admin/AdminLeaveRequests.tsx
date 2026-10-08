@@ -165,7 +165,7 @@ export const AdminLeaveRequests: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Admin Leave Requests</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Leave Requests</h1>
             {pendingCount > 0 && (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
                 {pendingCount} Pending
@@ -306,7 +306,7 @@ export const AdminLeaveRequests: React.FC = () => {
           <div className="p-12 text-center text-xs text-slate-400">
             <ClipboardList className="w-8 h-8 text-slate-300 mx-auto mb-2" />
             <p className="font-semibold text-slate-700 text-sm">No leave requests found</p>
-            <p className="text-slate-400 text-xs mt-0.5">Try clearing or adjusting your active filter parameters.</p>
+            <p className="text-slate-400 text-xs mt-0.5">Try changing or clearing your filters.</p>
           </div>
         ) : (
           <>

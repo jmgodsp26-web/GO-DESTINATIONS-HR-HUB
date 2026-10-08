@@ -366,14 +366,14 @@ export const LoginPage: React.FC = () => {
                     <span>Protected Account Recovery</span>
                   </div>
                   <p className="text-amber-900 leading-normal">
-                    For corporate security and compliance, automated self-service password reset is disabled.
+                    To reset your password, contact HR.
                   </p>
                 </div>
 
                 <div className="space-y-2 text-slate-700">
                   <p className="font-semibold text-slate-900 text-xs">How to get access:</p>
                   <p>
-                    Please contact your designated HR Administrator to request a verified temporary access password:
+                    Ask your HR administrator for a temporary password:
                   </p>
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 font-medium text-slate-800">
                     <div>Contact your company HR administrator through your internal company directory.</div>
@@ -421,7 +421,7 @@ export const LoginPage: React.FC = () => {
                 </div>
 
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-slate-700 text-[11px] leading-relaxed">
-                  <strong>Need administrator assistance?</strong> Ask your company HR administrator to reset your password in Employee Management.
+                  <strong>Need administrator assistance?</strong> Ask your company HR administrator to reset your password in Employees.
                 </div>
 
                 <div className="pt-2 flex justify-end">

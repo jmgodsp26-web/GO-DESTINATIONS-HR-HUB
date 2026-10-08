@@ -223,16 +223,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           <div>
             <div className="flex items-center space-x-2">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200/80 uppercase tracking-wide">
-                Admin Command Center
+                HR Dashboard
               </span>
               <span className="text-slate-300">•</span>
-              <span className="text-xs text-slate-500 font-medium">Headquarters Operations</span>
+              <span className="text-xs text-slate-500 font-medium">GO Destinations HR</span>
             </div>
             <h1 className="text-lg sm:text-2xl font-bold text-slate-900 mt-1.5 tracking-tight">
               Welcome back, {user.full_name.split(' ')[0]}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-              Manage company headcount, review employee leave submissions, and oversee holiday coverage.
+              Manage employees, review leave requests, and plan holiday shifts.
             </p>
           </div>
 
@@ -242,7 +242,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
               onClick={() => onNavigateTab('employees')}
               className="px-3.5 py-2.5 text-xs font-semibold bg-white text-slate-700 border border-slate-200/90 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition-all shadow-2xs min-h-[42px]"
             >
-              Headcount Directory
+              View employees
             </button>
             <button
               type="button"
@@ -265,7 +265,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-indigo-300 cursor-pointer transition-all flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Headcount</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Employees</span>
             <span className="p-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200/70 rounded-lg">
               <Users className="w-4 h-4" />
             </span>
@@ -274,7 +274,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
             <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">{totalEmployeesCount}</span>
             <p className="text-[11px] text-slate-400 mt-1 flex items-center space-x-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>Active directory staff</span>
+              <span>Active employees</span>
             </p>
           </div>
         </div>
@@ -325,7 +325,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
               )}
             </div>
             <p className="text-[11px] text-slate-400 mt-1 truncate">
-              {pendingRequests.length === 1 ? '1 submission waiting' : `${pendingRequests.length} submissions waiting`}
+              {pendingRequests.length === 1 ? '1 request waiting' : `${pendingRequests.length} requests waiting`}
             </p>
           </div>
         </div>
@@ -355,7 +355,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         </div>
       </div>
 
-      {/* 3. Upcoming Holidays & Staff Coverage Section */}
+      {/* 3. Upcoming Holidays & Shifts Section */}
       <HolidayStaffingCoverageWidget
         coverageList={holidayCoverages}
         allEmployees={employees}
@@ -378,7 +378,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           <div>
             <div className="flex items-center space-x-2">
               <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                Pending Leave Queue
+                Pending leave requests
               </h2>
               {pendingRequests.length > 0 && (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
@@ -387,7 +387,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
               )}
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Review and approve or reject submissions with instant balance verification.
+              Review leave requests and check available balances.
             </p>
           </div>
 
@@ -405,7 +405,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           {pendingRequests.length === 0 ? (
             <div className="p-10 text-center text-xs text-slate-500">
               <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
-              <p className="font-semibold text-slate-800">All submissions reviewed</p>
+              <p className="font-semibold text-slate-800">No requests waiting for review</p>
               <p className="text-slate-400 text-[11px] mt-0.5">There are no pending leave requests awaiting approval.</p>
             </div>
           ) : (
@@ -485,10 +485,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           <div className="flex items-center space-x-2">
             <Building2 className="w-4 h-4 text-indigo-600" />
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              Department Workforce &amp; Absence Distribution
+              Team Availability
             </h3>
           </div>
-          <span className="text-xs text-slate-400 font-medium">Live Staffing Health</span>
+          <span className="text-xs text-slate-400 font-medium">By department</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -737,7 +737,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         </div>
       )}
 
-      {/* Admin Assign Holiday Shift Coverage Modal */}
+      {/* Admin Assign Holiday Shift Modal */}
       {isScheduleShiftOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
           <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
@@ -749,10 +749,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900">
-                    Assign Holiday Shift Coverage
+                    Assign Holiday Shift
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Schedule and roster an employee for an upcoming company holiday.
+                    Choose an employee to work a holiday shift.
                   </p>
                 </div>
               </div>

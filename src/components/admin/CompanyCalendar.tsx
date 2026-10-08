@@ -132,12 +132,12 @@ export const CompanyCalendar: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="go-calendar space-y-6">
       {/* Top Header */}
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Company Schedule & Calendar</h1>
+        <h1 className="text-xl font-bold text-slate-900">Company Calendar</h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          View full-day and half-day absences, holiday coverage shifts, and company holidays.
+          Plan around team availability, holiday coverage, and company holidays. Select a day to see its events.
         </p>
       </div>
 

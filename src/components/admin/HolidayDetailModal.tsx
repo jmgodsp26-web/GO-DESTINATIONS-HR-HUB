@@ -367,7 +367,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
                 {holiday.description ||
-                  'Official Company Holiday & Staff Coverage Roster'}
+                  'Holiday team and shifts'}
               </p>
             </div>
           </div>
@@ -399,6 +399,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
             </button>
             <button
               onClick={onClose}
+              aria-label="Close holiday details"
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
@@ -438,16 +439,16 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
             <div className="flex items-center space-x-2.5 text-xs">
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
               <div>
-                <span className="font-bold">⚠️ PC Coverage Needed:</span>{' '}
+                <span className="font-bold">More PCs needed:</span>{' '}
                 Required:{' '}
                 <strong className="font-semibold">{pcs_required} PCs</strong> •
-                Approved to Work:{' '}
+                Scheduled:{' '}
                 <strong className="font-semibold">{pcs_working_count} PC</strong>{' '}
                 — Please approve or assign{' '}
                 <span className="font-bold underline">
                   {pcsNeeded} more Program Coordinator
                 </span>{' '}
-                to meet mandatory coverage.
+                to meet the coverage requirement.
               </div>
             </div>
             <button
@@ -471,7 +472,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
               </span>
             </div>
             <span className="text-[11px] font-semibold text-rose-700">
-              Review in Roster
+              View team
             </span>
           </div>
         )}
@@ -490,7 +491,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                     : 'bg-amber-100 text-amber-800 border border-amber-300'
                 }`}
               >
-                Coverage: {coverage_status === 'Good' ? '✅ Good' : '⚠️ PC Coverage Needed'}
+                Coverage: {coverage_status === 'Good' ? '✅ Good' : '⚠️ Needs review'}
               </span>
             </div>
           </div>
@@ -517,7 +518,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
               }`}
             >
               <div className="flex items-center justify-between text-emerald-700 mb-1">
-                <span className="text-[11px] font-semibold">🟢 Approved Working</span>
+                <span className="text-[11px] font-semibold">🟢 Working</span>
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </div>
               <div className="text-xl font-bold text-emerald-700">
@@ -579,7 +580,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                   {pcs_working_count}
                 </span>
                 <span className="text-xs text-slate-500 font-medium">
-                  / {pcs_required} req
+                  / {pcs_required} needed
                 </span>
               </div>
             </div>
@@ -593,7 +594,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
               className="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs cursor-pointer hover:border-slate-300"
             >
               <div className="flex items-center justify-between text-slate-500 mb-1">
-                <span className="text-[11px] font-medium">⚪ Unaccounted</span>
+                <span className="text-[11px] font-medium">⚪ No request</span>
                 <AlertCircle className="w-3.5 h-3.5" />
               </div>
               <div className="text-xl font-bold text-slate-800">
@@ -615,7 +616,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
-              <span>WHO IS WORKING</span>
+              <span>WORKING</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                 {working_count}
               </span>
@@ -630,7 +631,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
-              <span>WHO IS ON LEAVE</span>
+              <span>ON LEAVE</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
                 {leave_count}
               </span>
@@ -660,7 +661,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
-              <span>ALL EMPLOYEES ROSTER</span>
+              <span>ALL EMPLOYEES</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
                 {total_employees}
               </span>
@@ -670,17 +671,16 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
 
         {/* Tab Body Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
-          {/* TAB 1: WHO IS WORKING */}
+          {/* TAB 1: WORKING */}
           {activeTab === 'working' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="text-sm font-bold text-slate-900">
-                    Approved Holiday Working Staff ({working_count})
+                    Working Employees ({working_count})
                   </h4>
                   <p className="text-xs text-slate-500">
-                    Employees whose Holiday Shift Request has been officially
-                    approved by HR.
+                    Employees with holiday shifts approved by HR.
                   </p>
                 </div>
                 <button
@@ -688,7 +688,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors flex items-center space-x-1.5"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Add Working Employee</span>
+                  <span>Add shift</span>
                 </button>
               </div>
 
@@ -696,7 +696,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                 <div className="text-center py-12 bg-white rounded-lg border border-slate-200 p-8">
                   <UserCheck className="w-10 h-10 text-slate-300 mx-auto mb-2" />
                   <h5 className="text-sm font-semibold text-slate-700">
-                    No Approved Holiday Shifts Yet
+                    No approved shifts yet
                   </h5>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
                     Approve pending shift requests or directly schedule staff to
@@ -810,7 +810,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: WHO IS ON LEAVE */}
+          {/* TAB 2: ON LEAVE */}
           {activeTab === 'leave' && (
             <div className="space-y-4">
               <div>
@@ -826,7 +826,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                 <div className="text-center py-12 bg-white rounded-lg border border-slate-200 p-8">
                   <CalendarIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
                   <h5 className="text-sm font-semibold text-slate-700">
-                    No Approved Leave on this Holiday
+                    No approved leave for this holiday
                   </h5>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
                     No employee currently has an approved leave request for this date.
@@ -1133,7 +1133,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 4: ALL EMPLOYEES ROSTER (Matrix of Workforce Status) */}
+          {/* TAB 4: ALL EMPLOYEES (Matrix of Workforce Status) */}
           {activeTab === 'roster' && (
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs">
@@ -1348,7 +1348,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
         <div className="px-6 py-3.5 border-t border-slate-200 bg-white flex items-center justify-between shrink-0">
           <div className="text-xs text-slate-500 flex items-center space-x-2">
             <span>
-              Updated in real-time as leave and shift requests change.
+              Updates when leave or shift requests change.
             </span>
           </div>
           <button

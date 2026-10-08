@@ -192,26 +192,31 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
+      <div role="dialog" aria-modal="true" aria-labelledby="leave-request-title" className="go-leave-dialog go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
               <Calendar className="w-4 h-4" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">
-              {step === 'form' ? 'Submit Leave Request' : 'Confirm Leave Request'}
+            <h3 id="leave-request-title" className="text-base font-bold text-slate-900">
+              {step === 'form' ? 'Request leave' : 'Review your request'}
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close leave request"
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
+        <ol className="go-form-steps" aria-label="Leave request progress">
+          <li aria-current={step === 'form' ? 'step' : undefined} className={step === 'form' ? 'is-current' : 'is-complete'}><span>1</span><div><strong>Request details</strong><small>Dates, balance &amp; reason</small></div></li>
+          <li aria-current={step === 'confirm' ? 'step' : undefined} className={step === 'confirm' ? 'is-current' : ''}><span>2</span><div><strong>Review &amp; submit</strong><small>Check before sending</small></div></li>
+        </ol>
         {/* Error Alert */}
         {(error || dateError) && (
           <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-start space-x-2 text-xs text-rose-700">
@@ -222,7 +227,8 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
         {/* Modal Body */}
         {step === 'form' ? (
-          <form onSubmit={handleProceedToConfirm} className="p-6 space-y-4">
+          <form onSubmit={handleProceedToConfirm} className="go-leave-form p-6 space-y-4">
+            <div className="go-form-section-title"><span>01</span><div><h4>Choose your time off</h4><p>Required fields are marked with an asterisk.</p></div></div>
             {/* Leave Type */}
             <div>
               <label htmlFor="leave-type-select" className="block text-xs font-semibold text-slate-700 mb-1">
@@ -340,6 +346,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               </div>
             )}
 
+            <div className="go-form-section-title"><span>02</span><div><h4>Set your dates</h4><p>Your calculated duration and balance appear below.</p></div></div>
             {/* Date Pickers */}
             <div className={`grid gap-4 ${isHalfDay ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
               <div>
@@ -424,12 +431,12 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                       }`}
                     >
                       {isExhausted
-                        ? 'Exceeds Balance'
+                        ? 'Not enough days'
                         : isZeroRemaining
-                        ? 'Exhausts Quota'
+                        ? 'Uses all days'
                         : isLowBalance
-                        ? 'Low Balance Warning'
-                        : 'Sufficient Balance'}
+                        ? 'Low balance'
+                        : 'Enough days'}
                     </span>
                   ) : (
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">
@@ -448,13 +455,13 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                         </span>
                       </div>
                       <div className="border-x border-slate-200">
-                        <span className="text-[10px] text-slate-500 font-medium block">Deduction</span>
+                        <span className="text-[10px] text-slate-500 font-medium block">Requested</span>
                         <span className="text-xs sm:text-sm font-bold text-indigo-600 tabular-nums">
                           -{calculatedDays} {calculatedDays === 1 ? 'day' : 'days'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 font-medium block">Projected Balance</span>
+                        <span className="text-[10px] text-slate-500 font-medium block">After approval</span>
                         <span
                           className={`text-xs sm:text-sm font-bold tabular-nums ${
                             isExhausted
@@ -515,6 +522,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
             {/* Reason */}
             <div>
+              <div className="go-form-section-title"><span>03</span><div><h4>Add the details</h4><p>Include a reason and any supporting document.</p></div></div>
               <label htmlFor="leave-reason-input" className="block text-xs font-semibold text-slate-700 mb-1">
                 Reason for Leave *
               </label>
@@ -562,7 +570,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             </div>
 
             {/* Modal Actions */}
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-3">
+            <div className="go-dialog-actions pt-3 border-t border-slate-100 flex items-center justify-end space-x-3">
               <button
                 type="button"
                 onClick={onClose}
@@ -594,6 +602,13 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               </p>
             </div>
 
+            {isPaid && remainingDays !== null && (
+              <dl className="go-review-balance" aria-label="Balance after approval">
+                <div><dt>Current balance</dt><dd>{remainingDays} days</dd></div>
+                <div><dt>Requested</dt><dd>{calculatedDays} {calculatedDays === 1 ? 'day' : 'days'}</dd></div>
+                <div><dt>After approval</dt><dd>{projectedRemaining} days</dd></div>
+              </dl>
+            )}
             <div className="bg-slate-50 rounded-lg p-4 space-y-2.5 text-xs">
               <div className="flex justify-between py-1 border-b border-slate-200/60">
                 <span className="text-slate-500">Employee:</span>
@@ -633,7 +648,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-3">
+            <div className="go-dialog-actions pt-3 border-t border-slate-100 flex items-center justify-end space-x-3">
               <button
                 type="button"
                 onClick={() => setStep('form')}
