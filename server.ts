@@ -11,6 +11,7 @@ import { transact, initializeDatabase } from './server/persistence.js';
 import { withDatabase } from './server/request-context.js';
 import { getFirestoreDb } from './server/firestore.js';
 import { UserProfile } from './src/types.js';
+import { microsoftRouter } from './server/microsoft-routes.js';
 
 // Extend Express Request to include authenticated user
 export interface AuthenticatedRequest extends Request {
@@ -101,6 +102,11 @@ function sessionToken(req: Request): string {
 }
 const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV !== 'test', sameSite: 'lax' as const, path: '/', maxAge: 8 * 60 * 60 * 1000 };
 
+// OAuth redirects do not use the HR API dispatch transaction: the one-time flow
+// is consumed before external network calls, then a separate transaction creates
+// the approved user's session. All existing private routes keep their checks.
+app.use('/api/auth/microsoft', loginLimiter, microsoftRouter(cookieOptions));
+
 // Hold the response until the entire HR operation commits. Each transaction retry
 // receives a fresh database and router dispatch; failed operations do not persist.
 app.use('/api', async (req: Request, res: Response) => {
@@ -158,7 +164,7 @@ function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunc
     return res.status(403).json({ error: 'Account disabled. Please contact HR administrator.' });
   }
 
-  if (db.requiresPasswordChange(user.id) && !['/api/auth/me', '/api/auth/change-password'].includes(req.path)) {
+  if (db.sessionRequiresPasswordChange(token) && !['/api/auth/me', '/api/auth/change-password'].includes(req.path)) {
     return res.status(403).json({ error: 'Please change your temporary password before continuing.', mustChangePassword: true });
   }
 
@@ -229,7 +235,7 @@ apiRouter.post('/api/admin/employees/:id/reset-password', adminOnlyMiddleware, (
 });
 
 apiRouter.get('/api/auth/me', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
-  res.json({ user: req.user, mustChangePassword: db.requiresPasswordChange(req.user!.id) });
+  res.json({ user: req.user, mustChangePassword: db.sessionRequiresPasswordChange(sessionToken(req)) });
 });
 
 apiRouter.post('/api/auth/logout', (req: Request, res: Response) => {

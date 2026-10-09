@@ -26,6 +26,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { PersistentData } from './persistence.js';
 import { currentDatabase } from './request-context.js';
+import { GUID, digest, type MicrosoftAttempt } from './microsoft.js';
 
 const BCRYPT_SALT_ROUNDS = 12;
 
@@ -60,6 +61,7 @@ interface SessionRecord {
   createdAt: number;
   lastActivityAt: number;
   expiresAt: number;
+  provider?: 'microsoft';
 }
 
 export function isProgramCoordinator(user: { job_title?: string; department?: string; is_pc?: boolean }): boolean {
@@ -86,6 +88,7 @@ export class HRDatabase {
   private employeeDocuments: EmployeeDocument[] = [];
   private sessions: Map<string, SessionRecord> = new Map();
   private loginAttempts: { id: string; count: number; expiresAt: number }[] = [];
+  private microsoftAttempts: MicrosoftAttempt[] = [];
   private nextEmployeeNumber = 100;
   private leaveAttachments: {id: string; employee_id: string; name: string; data: string}[] = [];
   private deletedEmployeeIds: Set<string> = new Set();
@@ -138,6 +141,7 @@ export class HRDatabase {
       companySettings: this.companySettings,
       sessions: Array.from(this.sessions.entries()),
       loginAttempts: this.loginAttempts,
+      microsoftAttempts: this.microsoftAttempts.filter(row => row.expiresAt > Date.now()),
       deletedEmployeeIds: Array.from(this.deletedEmployeeIds),
       deletedHolidayIds: Array.from(this.deletedHolidayIds),
       deletedShiftIds: Array.from(this.deletedShiftIds),
@@ -148,6 +152,7 @@ export class HRDatabase {
   private hydrateFromStore(data: PersistentData) {
     this.leaveAttachments = data.leaveAttachments || [];
     this.loginAttempts = (data.loginAttempts || []).filter(row => row.expiresAt > Date.now());
+    this.microsoftAttempts = (data.microsoftAttempts || []).filter(row => row.expiresAt > Date.now());
     this.nextEmployeeNumber = Math.max(data.nextEmployeeNumber || 100, ...((data.users || []).map(u => Number(u.profile?.employee_id?.replace('HR-', '')) + 1).filter(Number.isFinite)));
 
     for (const [hash, session] of data.sessions || []) {
@@ -244,6 +249,37 @@ export class HRDatabase {
   public requiresPasswordChange(userId: string): boolean {
     const user = this.users.find((u) => u.id === userId);
     return Boolean(user && (user.mustChangePassword || !user.passwordCustomized));
+  }
+
+  public sessionRequiresPasswordChange(token: string): boolean {
+    const session = this.sessions.get(digest(token));
+    return Boolean(session && session.provider !== 'microsoft' && this.requiresPasswordChange(session.userId));
+  }
+
+  public saveMicrosoftAttempt(attempt: MicrosoftAttempt) {
+    this.microsoftAttempts = this.microsoftAttempts.filter(row => row.expiresAt > Date.now());
+    this.microsoftAttempts.push(attempt);
+  }
+
+  public consumeMicrosoftAttempt(state: string): MicrosoftAttempt | null {
+    const id = digest(state);
+    const attempt = this.microsoftAttempts.find(row => row.id === id && row.expiresAt > Date.now());
+    this.microsoftAttempts = this.microsoftAttempts.filter(row => row.id !== id && row.expiresAt > Date.now());
+    return attempt || null;
+  }
+
+  public authenticateMicrosoft(tenant: string, objectId: string) {
+    const matches = this.users.filter(u => u.profile.microsoft_tenant_id === tenant && u.profile.microsoft_object_id === objectId);
+    const user = matches.length === 1 ? matches[0] : undefined;
+    if (!GUID.test(tenant) || !GUID.test(objectId) || !user || user.profile.status !== 'active' || !['admin', 'employee'].includes(user.profile.role)) {
+      this.logAudit({ action: 'Sign-in failed', user_id: 'anonymous', user_name: 'Unauthenticated', user_role: 'employee', target_type: 'security', target_id: digest(tenant + ':' + objectId), details: 'Microsoft sign-in denied: no unique active approved account.' });
+      return null;
+    }
+    const token = 'hr_sess_' + crypto.randomBytes(32).toString('hex');
+    const now = Date.now();
+    this.sessions.set(digest(token), { userId: user.id, createdAt: now, lastActivityAt: now, expiresAt: now + this.SESSION_ABSOLUTE_TTL, provider: 'microsoft' });
+    this.logAudit({ action: 'Signed in', user_id: user.id, user_name: user.profile.full_name, user_role: user.profile.role, target_type: 'security', target_id: user.id, details: 'Account signed in with Microsoft.' });
+    return { token, user: user.profile };
   }
 
   public getUserByToken(token: string): UserProfile | null {
@@ -437,11 +473,25 @@ export class HRDatabase {
 
     if (updates.role !== undefined && !['admin', 'employee'].includes(updates.role)) throw new Error('Role must be admin or employee.');
     if (updates.status !== undefined && !['active', 'disabled'].includes(updates.status)) throw new Error('Status must be active or disabled.');
-    for (const key of ['id', 'user_id', 'employee_id', 'passwordHash', 'passwordCustomized', 'mustChangePassword', 'created_at']) {
+    for (const key of ['id', 'user_id', 'employee_id', 'passwordHash', 'passwordCustomized', 'mustChangePassword', 'created_at', 'microsoft_tenant_id']) {
       if (key in updates) throw new Error('This account field cannot be changed.');
     }
     const previousRole = user.profile.role;
     const previousStatus = user.profile.status;
+
+    if (updates.microsoft_object_id !== undefined) {
+      if (adminUser.role !== 'admin' || adminUser.status !== 'active') throw new Error('Only an active administrator can link Microsoft accounts.');
+      if (typeof updates.microsoft_object_id !== 'string') throw new Error('Microsoft user ID must be text.');
+      const oid = updates.microsoft_object_id.trim().toLowerCase();
+      const tenant = (process.env.MICROSOFT_TENANT_ID || '').trim().toLowerCase();
+      if (oid && (!GUID.test(oid) || !GUID.test(tenant))) throw new Error('Enter a valid Microsoft user Object ID and configure the company tenant.');
+      if (oid && this.users.some(u => u.id !== employeeId && u.profile.microsoft_object_id === oid && u.profile.microsoft_tenant_id === tenant)) throw new Error('This Microsoft account is already linked to another employee.');
+      if (oid !== (user.profile.microsoft_object_id || '') || (oid && tenant !== user.profile.microsoft_tenant_id)) {
+        this.revokeAllSessionsForUser(employeeId);
+        this.logAudit({ action: 'Employee updated', user_id: adminUser.id, user_name: adminUser.full_name, user_role: adminUser.role, target_type: 'security', target_id: employeeId, details: oid ? 'Administrator linked a Microsoft identity.' : 'Administrator removed a Microsoft identity.' });
+      }
+      updates = { ...updates, microsoft_object_id: oid, microsoft_tenant_id: oid ? tenant : '' };
+    }
 
     // Sole active administrator protection: Cannot demote or deactivate the last admin
     if (
