@@ -132,3 +132,22 @@ export function getGoogleCalendarUrl(event: CalendarEventData): string {
 
   return `${base}&text=${text}&dates=${dates}&details=${details}&location=${location}`;
 }
+
+import type { CalendarEvent } from '../types';
+
+export function eventsOnDate(events: CalendarEvent[], date: string) {
+  return events.filter(event => date >= event.date && date <= (event.end_date || event.date));
+}
+export function filterCalendarEvents(events: CalendarEvent[], types: CalendarEvent['type'][], department: string) {
+  return events.filter(event => types.includes(event.type) && (department === 'all' || event.type === 'holiday' || (event.employee_department || event.department) === department));
+}
+export function monthDates(month: string) {
+  const [year, number] = month.split('-').map(Number);
+  const count = new Date(year, number, 0).getDate();
+  return Array.from({ length: count }, (_, i) => `${month}-${String(i + 1).padStart(2, '0')}`);
+}
+export function moveCalendarMonth(month: string, offset: number) {
+  const [year, number] = month.split('-').map(Number);
+  const next = new Date(year, number - 1 + offset, 1);
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+}
