@@ -85,6 +85,7 @@ export class HRDatabase {
   private notifications: NotificationItem[] = [];
   private employeeDocuments: EmployeeDocument[] = [];
   private sessions: Map<string, SessionRecord> = new Map();
+  private loginAttempts: { id: string; count: number; expiresAt: number }[] = [];
   private nextEmployeeNumber = 100;
   private leaveAttachments: {id: string; employee_id: string; name: string; data: string}[] = [];
   private deletedEmployeeIds: Set<string> = new Set();
@@ -136,6 +137,7 @@ export class HRDatabase {
       employeeDocuments: this.employeeDocuments,
       companySettings: this.companySettings,
       sessions: Array.from(this.sessions.entries()),
+      loginAttempts: this.loginAttempts,
       deletedEmployeeIds: Array.from(this.deletedEmployeeIds),
       deletedHolidayIds: Array.from(this.deletedHolidayIds),
       deletedShiftIds: Array.from(this.deletedShiftIds),
@@ -145,6 +147,7 @@ export class HRDatabase {
 
   private hydrateFromStore(data: PersistentData) {
     this.leaveAttachments = data.leaveAttachments || [];
+    this.loginAttempts = (data.loginAttempts || []).filter(row => row.expiresAt > Date.now());
     this.nextEmployeeNumber = Math.max(data.nextEmployeeNumber || 100, ...((data.users || []).map(u => Number(u.profile?.employee_id?.replace('HR-', '')) + 1).filter(Number.isFinite)));
 
     for (const [hash, session] of data.sessions || []) {
@@ -201,65 +204,41 @@ export class HRDatabase {
   // --- AUTH METHODS ---
   public authenticate(
     identifier: string,
-    passwordHash?: string
+    password?: string,
+    callerIp = 'unknown'
   ): { token: string; user: UserProfile; mustChangePassword: boolean } {
     const cleanId = (identifier || '').trim().toLowerCase();
-    if (!cleanId) {
-      throw new Error('Please enter your company email address.');
-    }
-
-    const user = this.users.find((u) => {
-      const email = (u.email || '').toLowerCase();
-      return email === cleanId;
-    });
-
-    if (!user) {
-      throw new Error('Wrong password or account not found. Please try again or reset your password.');
-    }
-
-    if (user.profile.status === 'disabled') {
-      throw new Error('This account has been disabled. Please contact your HR administrator.');
-    }
-
-    const providedPassword = typeof passwordHash === 'string' ? passwordHash.trim() : '';
-    if (!providedPassword) {
-      throw new Error('Wrong password. Please try again or reset your password.');
-    }
-
-    const storedPassword = (user.passwordHash || '').trim();
-
-    // Verify password using bcrypt with fallback for unmigrated accounts
-    let isMatch = false;
-    if (storedPassword) {
-      isMatch = verifyPassword(providedPassword, storedPassword);
-      if (!isMatch) {
-        throw new Error('Wrong password. Please try again or reset your password.');
-      }
-      // Upgrade plaintext password to bcrypt hash in memory and Firestore
-      if (!storedPassword.startsWith('$2a$') && !storedPassword.startsWith('$2b$')) {
-        user.passwordHash = hashPassword(providedPassword);
-
-      }
-    } else {
-      throw new Error('Account credentials require an HR administrator reset.');
-    }
-
-    // First time login detection
-    const isFirstTime =
-      user.mustChangePassword === true ||
-      !user.passwordCustomized;
-
-    // Cryptographically secure session token: 32 bytes of randomness (64 hex characters)
-    const token = 'hr_sess_' + crypto.randomBytes(32).toString('hex');
     const now = Date.now();
-    this.sessions.set(crypto.createHash('sha256').update(token).digest('hex'), {
-      userId: user.id,
-      createdAt: now,
-      lastActivityAt: now,
+    this.loginAttempts = this.loginAttempts.filter(row => row.expiresAt > now);
+    const fingerprint = (value: string) => crypto.createHash('sha256').update(value).digest('hex');
+    const accountKey = fingerprint('account:' + cleanId);
+    const limits = [{ id: accountKey, max: 20 }, { id: fingerprint('ip:' + callerIp), max: 1000 }];
+    // These counters are committed through the same Firestore serialization
+    // barrier as sessions, including failed logins, across all Cloud Run instances.
+    for (const limit of limits) {
+      if ((this.loginAttempts.find(row => row.id === limit.id)?.count || 0) >= limit.max) {
+        throw Object.assign(new Error('Too many login attempts. Please wait 15 minutes before trying again.'), { code: 'LOGIN_THROTTLED' });
+      }
+    }
+    for (const limit of limits) {
+      const row = this.loginAttempts.find(row => row.id === limit.id);
+      if (row) row.count++;
+      else this.loginAttempts.push({ id: limit.id, count: 1, expiresAt: now + 15 * 60 * 1000 });
+    }
+    const user = this.users.find(u => u.email.toLowerCase() === cleanId);
+    if (!user || user.profile.status !== 'active' || !['admin', 'employee'].includes(user.profile.role) || !verifyPassword(password || '', user.passwordHash)) {
+      this.logAudit({ action: 'Sign-in failed', user_id: 'anonymous', user_name: 'Unauthenticated', user_role: 'employee', target_type: 'security', target_id: accountKey, details: 'A sign-in attempt failed. Account fingerprint: ' + accountKey.slice(0, 12) });
+      throw new Error('Wrong password or account not found. Please try again or contact HR.');
+    }
+    // Successful sign-in clears the account failure budget, not the IP budget.
+    this.loginAttempts = this.loginAttempts.filter(row => row.id !== accountKey);
+    const token = 'hr_sess_' + crypto.randomBytes(32).toString('hex');
+    this.sessions.set(fingerprint(token), {
+      userId: user.id, createdAt: now, lastActivityAt: now,
       expiresAt: now + this.SESSION_ABSOLUTE_TTL,
     });
-
-    return { token, user: user.profile, mustChangePassword: isFirstTime };
+    this.logAudit({ action: 'Signed in', user_id: user.id, user_name: user.profile.full_name, user_role: user.profile.role, target_type: 'security', target_id: user.id, details: 'Account signed in successfully.' });
+    return { token, user: user.profile, mustChangePassword: this.requiresPasswordChange(user.id) };
   }
 
   public requiresPasswordChange(userId: string): boolean {
@@ -283,7 +262,7 @@ export class HRDatabase {
 
     session.lastActivityAt = now;
     const user = this.users.find((u) => u.id === session.userId);
-    return user ? user.profile : null;
+    return user && user.profile.status === 'active' && ['admin', 'employee'].includes(user.profile.role) ? user.profile : null;
   }
 
   public logout(token: string) {
@@ -346,6 +325,7 @@ export class HRDatabase {
     },
     adminUser: UserProfile
   ): UserProfile {
+    if (data.role !== undefined && !['admin', 'employee'].includes(data.role)) throw new Error('Role must be admin or employee.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email || '')) throw new Error('A valid company email is required.');
     if (!data.full_name?.trim()) throw new Error('Employee name is required.');
     if (data.password && data.password.trim().length < 12) throw new Error('Temporary password must be at least 12 characters.');
@@ -455,6 +435,11 @@ export class HRDatabase {
     const user = this.users.find((u) => u.id === employeeId);
     if (!user) throw new Error('Employee not found');
 
+    if (updates.role !== undefined && !['admin', 'employee'].includes(updates.role)) throw new Error('Role must be admin or employee.');
+    if (updates.status !== undefined && !['active', 'disabled'].includes(updates.status)) throw new Error('Status must be active or disabled.');
+    for (const key of ['id', 'user_id', 'employee_id', 'passwordHash', 'passwordCustomized', 'mustChangePassword', 'created_at']) {
+      if (key in updates) throw new Error('This account field cannot be changed.');
+    }
     const previousRole = user.profile.role;
     const previousStatus = user.profile.status;
 
@@ -568,7 +553,7 @@ export class HRDatabase {
 
     const cleanTemp = (temporaryPassword || '').trim();
     if (!cleanTemp || cleanTemp.length < 12) {
-      throw new Error('Temporary password must be at least 8 characters long.');
+      throw new Error('Temporary password must be at least 12 characters long.');
     }
 
     user.passwordHash = hashPassword(cleanTemp);
@@ -681,9 +666,10 @@ export class HRDatabase {
     user: UserProfile,
     filters?: { status?: string; employee?: string; leave_type?: string; date?: string }
   ): LeaveRequest[] {
+    if (!['admin', 'employee'].includes(user.role)) throw new Error('Access denied. Unknown account role.');
     let requests = [...this.leaveRequests];
 
-    if (user.role === 'employee') {
+    if (user.role !== 'admin') {
       requests = requests.filter((r) => r.employee_id === user.id);
     } else if (filters?.employee) {
       requests = requests.filter((r) => r.employee_id === filters.employee);

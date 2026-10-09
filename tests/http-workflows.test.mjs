@@ -9,7 +9,7 @@ test('HTTP workflow lifecycle, privacy, attachments and persistence', async () =
 const repo=fileURLToPath(new URL('..',import.meta.url));
 const dir=await mkdtemp(tmpdir()+'/hr-http-audit-');
 const socket=createServer();await new Promise(r=>socket.listen(0,'127.0.0.1',r));const port=socket.address().port;await new Promise(r=>socket.close(r));
-const child=spawn(process.execPath,['dist/server.cjs'],{cwd:repo,env:{...process.env,NODE_ENV:'test',HR_TEST_STORE:dir+'/store.json',PORT:String(port),INITIAL_ADMIN_EMAIL:'admin@example.test',INITIAL_ADMIN_PASSWORD:'Isolated-Audit-Temporary-938!'},stdio:'ignore'});
+const child=spawn(process.execPath,['build/server.cjs'],{cwd:repo,env:{...process.env,NODE_ENV:'test',HR_TEST_STORE:dir+'/store.json',PORT:String(port),INITIAL_ADMIN_EMAIL:'admin@example.test',INITIAL_ADMIN_PASSWORD:'Isolated-Audit-Temporary-938!'},stdio:'ignore'});
 const results=[];
 async function check(name,fn){await fn();results.push({name,status:'PASS'});}
 async function call(path,method='GET',body,cookie){const r=await fetch(`http://127.0.0.1:${port}${path}`,{method,headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});return {status:r.status,cookie:r.headers.get('set-cookie')?.split(';')[0],data:await r.json()};}

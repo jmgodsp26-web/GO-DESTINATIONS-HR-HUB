@@ -30,7 +30,7 @@ test('authentication lifecycle and authorization', async () => {
   }
   let child;
   const start = async () => {
-    child = spawn(process.execPath, ['dist/server.cjs'], { env, stdio: 'ignore' });
+    child = spawn(process.execPath, ['build/server.cjs'], { env, stdio: 'ignore' });
     for (let i = 0; i < 100; i++) {
       try { if ((await fetch(`http://127.0.0.1:${port}/api/health`)).ok) return; } catch {}
       await new Promise(resolve => setTimeout(resolve, 100));
