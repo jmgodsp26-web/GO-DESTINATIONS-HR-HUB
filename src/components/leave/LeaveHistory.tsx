@@ -48,8 +48,8 @@ export const LeaveHistory: React.FC = () => {
     try {
       const [balRes, reqRes, txRes] = await Promise.all([
         api.getLeaveBalances(),
-        api.getLeaveRequests(),
-        api.getLeaveTransactions(),
+        api.getLeaveRequests({ scope: 'mine' }),
+        api.getLeaveTransactions(user?.id),
       ]);
       setBalances(balRes);
       setRequests(reqRes);
@@ -61,7 +61,7 @@ export const LeaveHistory: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
   const handleConfirmCancelLeave = async () => {
     if (!cancellingRequest) return;

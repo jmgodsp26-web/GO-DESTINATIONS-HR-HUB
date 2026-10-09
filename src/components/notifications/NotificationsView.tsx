@@ -243,12 +243,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
                       type="button"
                       onClick={() => {
                         markNotificationRead(notif.id);
-                        const targetTab =
-                          notif.link_tab === 'requests' || notif.link_tab === 'leave-requests'
-                            ? (user?.role === 'admin' ? 'leave-requests' : 'leave')
-                            : notif.link_tab === 'history' || notif.link_tab === 'leave'
-                            ? (user?.role === 'admin' ? 'leave-requests' : 'leave')
-                            : notif.link_tab;
+                        const targetTab = notif.link_tab || 'notifications';
                         onNavigateTab(targetTab);
                       }}
                       className="flex items-center space-x-1 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"

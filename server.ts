@@ -261,7 +261,7 @@ apiRouter.get('/api/leave-balances', authMiddleware, (req: AuthenticatedRequest,
   try {
     // If admin provides employee_id query, return that employee's balance; otherwise current user
     const targetUserId =
-      req.user?.role === 'admin' && req.query.employee_id
+      req.query.scope === 'mine' ? req.user!.id : req.user?.role === 'admin' && req.query.employee_id
         ? (req.query.employee_id as string)
         : req.user!.id;
 
@@ -276,7 +276,7 @@ apiRouter.get('/api/leave-balances', authMiddleware, (req: AuthenticatedRequest,
 apiRouter.get(['/api/leave/transactions', '/api/leave-transactions'], authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const targetEmployeeId =
-      req.user?.role === 'admin' && req.query.employee_id
+      req.query.scope === 'mine' ? req.user!.id : req.user?.role === 'admin' && req.query.employee_id
         ? (req.query.employee_id as string)
         : req.user?.role === 'admin'
         ? undefined
@@ -315,7 +315,7 @@ apiRouter.get('/api/leave-requests', authMiddleware, (req: AuthenticatedRequest,
     const { status, employee, leave_type, date } = req.query;
     const requests = db.getLeaveRequests(req.user!, {
       status: status as string,
-      employee: employee as string,
+      employee: req.query.scope === 'mine' ? req.user!.id : employee as string,
       leave_type: leave_type as string,
       date: date as string,
     });
@@ -567,7 +567,8 @@ apiRouter.get('/api/holiday-coverage', authMiddleware, (req: AuthenticatedReques
       country: country as string,
       is_active: true,
     });
-    const coverages = holidays.map((h) => visibleCoverage(db.getHolidayStaffingCoverage(h.id), req.user!));
+    const viewer = req.query.view === 'personal' ? { ...req.user!, role: 'employee' as const } : req.user!;
+    const coverages = holidays.map((h) => visibleCoverage(db.getHolidayStaffingCoverage(h.id), viewer));
     res.json(coverages);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
@@ -576,7 +577,8 @@ apiRouter.get('/api/holiday-coverage', authMiddleware, (req: AuthenticatedReques
 
 apiRouter.get('/api/holiday-coverage/:id', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
-    const coverage = visibleCoverage(db.getHolidayStaffingCoverage(req.params.id), req.user!);
+    const viewer = req.query.view === 'personal' ? { ...req.user!, role: 'employee' as const } : req.user!;
+    const coverage = visibleCoverage(db.getHolidayStaffingCoverage(req.params.id), viewer);
     res.json(coverage);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
@@ -599,7 +601,8 @@ apiRouter.post('/api/admin/holiday-conflicts/resolve', adminOnlyMiddleware, (req
 // 6. Calendar
 apiRouter.get('/api/calendar', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
-    const events = db.getCalendarEvents(req.user!);
+    const viewer = req.query.view === 'personal' ? { ...req.user!, role: 'employee' as const } : req.user!;
+    const events = db.getCalendarEvents(viewer);
     res.json(events);
   } catch (error: any) {
     res.status(400).json({ error: error.message });

@@ -1,3 +1,4 @@
+import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -53,7 +54,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isAdmin = user?.role === 'admin';
+  const { isAdministration: isAdmin } = useWorkspace();
 
   useEffect(() => {
     if (isOpen) {
@@ -65,6 +66,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   // Build command list based on role
   const allCommands: CommandItem[] = [
+    ...(user?.role === 'admin' ? [{
+      id: 'switch-workspace', category: 'Navigation' as const,
+      title: isAdmin ? 'My Workspace' : 'Administration',
+      subtitle: isAdmin ? 'Your personal dashboard, leave and documents' : 'Employee management and approvals',
+      icon: isAdmin ? User : ShieldCheck,
+      action: () => { onNavigate(isAdmin ? 'my-workspace' : 'admin-dashboard'); onClose(); },
+    }] : []),
     // Navigation
     {
       id: 'nav-dash',

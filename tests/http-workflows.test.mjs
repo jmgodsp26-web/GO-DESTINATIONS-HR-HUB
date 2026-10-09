@@ -22,6 +22,19 @@ try{
  const employees=[];
  for(const email of ['employee@example.test','other@example.test']){const created=await call('/api/employees','POST',{full_name:'Synthetic '+email,email,password:'Isolated-Employee-Temp-938!',department:'Technology',job_title:'Employee',country:'Philippines'},admin);assert.equal(created.status,201);let cookie=await sign(email,'Isolated-Employee-Temp-938!');assert.equal((await call('/api/auth/change-password','POST',{new_password:'Personal-Isolated-Employee-938!'},cookie)).status,200);cookie=await sign(email,'Personal-Isolated-Employee-938!');employees.push({id:created.data.id,cookie});}
  const [employee,other]=employees;
+ await check('admin personal leave is scoped, another admin approves and cancellation restores balance',async()=>{
+   const myLeave=await call('/api/leave-requests','POST',request('2026-10-14'),admin);assert.equal(myLeave.status,201);const adminId=myLeave.data.employee_id;
+   assert.equal((await call(`/api/leave-requests/${myLeave.data.id}/review`,'PATCH',{action:'Approved'},admin)).status,400);
+   const second=await call('/api/employees','POST',{full_name:'Synthetic second admin',email:'second-admin@example.test',password:'Second-admin-temporary-938!',role:'admin'},admin);assert.equal(second.status,201);
+   let reviewer=await sign('second-admin@example.test','Second-admin-temporary-938!');await call('/api/auth/change-password','POST',{new_password:'Second-admin-personal-938!'},reviewer);reviewer=await sign('second-admin@example.test','Second-admin-personal-938!');
+   assert.equal((await call(`/api/leave-requests/${myLeave.data.id}/review`,'PATCH',{action:'Approved'},reviewer)).status,200);
+   const own=await call('/api/leave-requests?scope=mine&employee='+employee.id,'GET',undefined,admin);assert.ok(own.data.length>0);assert.ok(own.data.every(r=>r.employee_id===adminId));
+   const balances=await call('/api/leave-balances?scope=mine&employee_id='+employee.id,'GET',undefined,admin);assert.ok(balances.data.every(b=>b.employee_id===adminId));assert.equal(balances.data.find(b=>b.leave_type==='Vacation Leave').used_days,1);
+   const ledger=await call('/api/leave-transactions?scope=mine&employee_id='+employee.id,'GET',undefined,admin);assert.ok(ledger.data.length>0);assert.ok(ledger.data.every(t=>t.employee_id===adminId));
+   assert.equal((await call(`/api/leave-requests/${myLeave.data.id}/cancel`,'PATCH',{},admin)).status,200);
+   assert.equal((await call('/api/leave-balances','GET',undefined,admin)).data.find(b=>b.leave_type==='Vacation Leave').used_days,0);
+   assert.equal((await call('/api/auth/me','GET',undefined,admin)).data.user.role,'admin');
+ });
  await check('anonymous employee directory denied',async()=>assert.equal((await call('/api/employees')).status,401));
  await check('employee administration denied',async()=>assert.equal((await call('/api/settings','PATCH',{company_name:'Unauthorized'},employee.cookie)).status,403));
  let created;
@@ -40,6 +53,13 @@ try{
  assert.equal(privateLeave.status,201);assert.equal((await call(`/api/leave-requests/${privateLeave.data.id}/review`,'PATCH',{action:'Approved',admin_note:'SYNTHETIC_PRIVATE_ADMIN_NOTE'},admin)).status,200);
  const holiday=await call('/api/holidays','POST',{name:'Synthetic audit holiday',date:'2026-10-20',country:'Philippines'},admin);assert.equal(holiday.status,201);
  await check('calendar redacts others medical reason',async()=>{const r=await call('/api/calendar','GET',undefined,employee.cookie);assert.equal(JSON.stringify(r.data).includes('SYNTHETIC_PRIVATE_MEDICAL_REASON'),false);});
+ await check('admin personal calendar and holiday coverage use employee privacy while admin view stays available',async()=>{
+   for(const route of ['/api/calendar?view=personal','/api/holiday-coverage?upcoming_only=false&view=personal','/api/holiday-coverage/'+holiday.data.id+'?view=personal']){
+     const r=await call(route,'GET',undefined,admin);assert.equal(r.status,200);assert.equal(JSON.stringify(r.data).includes('SYNTHETIC_PRIVATE_MEDICAL_REASON'),false);assert.equal(JSON.stringify(r.data).includes('SYNTHETIC_PRIVATE_ADMIN_NOTE'),false);
+   }
+   const all=await call('/api/leave-requests','GET',undefined,admin);assert.ok(all.data.some(r=>r.employee_id===other.id));assert.ok(all.data.some(r=>r.reason==='SYNTHETIC_PRIVATE_MEDICAL_REASON'));
+   const docs=await call('/api/my-documents','GET',undefined,admin);assert.ok(docs.data.every(d=>d.employee_id!==employee.id));
+ });
  await check('single holiday coverage redacts others medical reason',async()=>{const r=await call('/api/holiday-coverage/'+holiday.data.id,'GET',undefined,employee.cookie);assert.equal(r.status,200);assert.equal(JSON.stringify(r.data).includes('SYNTHETIC_PRIVATE_MEDICAL_REASON'),false);});
  await check('bulk holiday coverage redacts others medical reason',async()=>{const r=await call('/api/holiday-coverage?upcoming_only=false','GET',undefined,employee.cookie);assert.equal(r.status,200);assert.equal(JSON.stringify(r.data).includes('SYNTHETIC_PRIVATE_MEDICAL_REASON'),false);});
  await check('half-day weekend rejected through HTTP',async()=>assert.equal((await call('/api/leave-requests','POST',request('2026-10-24',{is_half_day:true,half_day_period:'morning'}),employee.cookie)).status,400));
@@ -52,5 +72,5 @@ try{
  await check('missing or unsafe document rejected',async()=>{for(const file_data of [undefined,{},'data:text/html;base64,aGVsbG8='])assert.equal((await call(`/api/admin/employees/${employee.id}/documents`,'POST',{name:'bad-file',file_data},admin)).status,400);});
  await check('bodyless logout works and invalidates session',async()=>{assert.equal((await call('/api/auth/logout','POST',undefined,employee.cookie)).status,200);assert.equal((await call('/api/auth/me','GET',undefined,employee.cookie)).status,401);});
 }finally{const exited=new Promise(r=>child.once('exit',r));child.kill();await exited;await rm(dir,{recursive:true,force:true});}
-assert.equal(results.length,21);
+assert.equal(results.length,23);
 });

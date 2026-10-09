@@ -106,12 +106,14 @@ export const api = {
 
   // Leave Requests
   async getLeaveRequests(filters?: {
+    scope?: 'mine';
     status?: string;
     employee?: string;
     leave_type?: string;
     date?: string;
   }): Promise<LeaveRequest[]> {
     const params = new URLSearchParams();
+    if (filters?.scope) params.append('scope', filters.scope);
     if (filters?.status) params.append('status', filters.status);
     if (filters?.employee) params.append('employee', filters.employee);
     if (filters?.leave_type) params.append('leave_type', filters.leave_type);
@@ -333,11 +335,13 @@ export const api = {
   },
 
   async getAllHolidayCoverage(filters?: {
+    view?: 'personal';
     upcoming_only?: boolean;
     country?: string;
     reference_date?: string;
   }): Promise<HolidayStaffingCoverage[]> {
     const params = new URLSearchParams();
+    if (filters?.view) params.append('view', filters.view);
     if (filters?.upcoming_only !== undefined) params.append('upcoming_only', String(filters.upcoming_only));
     if (filters?.country && filters.country !== 'All') params.append('country', filters.country);
     if (filters?.reference_date) params.append('reference_date', filters.reference_date);
@@ -362,8 +366,8 @@ export const api = {
   },
 
   // Calendar
-  async getCalendarEvents(): Promise<CalendarEvent[]> {
-    return request<CalendarEvent[]>('/api/calendar');
+  async getCalendarEvents(personal = false): Promise<CalendarEvent[]> {
+    return request<CalendarEvent[]>('/api/calendar' + (personal ? '?view=personal' : ''));
   },
 
   // Audit Logs (Admin)

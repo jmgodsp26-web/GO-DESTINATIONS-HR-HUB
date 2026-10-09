@@ -59,7 +59,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
       const todayStr = getTodayDateString(user?.timezone);
       const [balRes, reqRes, holRes, shiftRes, docRes] = await Promise.all([
         api.getLeaveBalances(),
-        api.getLeaveRequests(),
+        api.getLeaveRequests({ scope: 'mine' }),
         api.getHolidays({
           country: user?.country,
           upcoming_only: true,
