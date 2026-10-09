@@ -1,3 +1,4 @@
+import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -20,7 +21,7 @@ export const SettingsView: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
 
-  const isAdmin = user?.role === 'admin';
+  const { isAdministration: isAdmin } = useWorkspace();
 
   const [settings, setSettings] = useState<CompanySettings>({
     company_name: 'GO Destinations Ltd.',

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { WorkspaceProvider } from './context/WorkspaceContext';
+import { navigateWorkspace, type WorkspaceMode } from './utils/workspace';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -23,26 +25,16 @@ import { NotificationsView } from './components/notifications/NotificationsView'
 
 const MainApp: React.FC = () => {
   const { user, isLoading } = useAuth();
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('administration');
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
 
-  // Sync default tab whenever user role changes
+  // Reset only on account/role changes, never when switching workspaces.
   useEffect(() => {
-    if (user) {
-      if (user.role === 'admin') {
-        // If current tab is an employee-only tab, switch to admin-dashboard
-        if (['dashboard', 'profile', 'leave'].includes(currentTab)) {
-          setCurrentTab('admin-dashboard');
-        }
-      } else {
-        // If current tab is an admin-only tab, switch to employee dashboard
-        if (['admin-dashboard', 'employees', 'leave-requests', 'audit-logs', 'reports'].includes(currentTab)) {
-          setCurrentTab('dashboard');
-        }
-      }
-    }
-  }, [user]);
+    setWorkspaceMode(user?.role === 'admin' ? 'administration' : 'personal');
+    setCurrentTab(user?.role === 'admin' ? 'admin-dashboard' : 'dashboard');
+  }, [user?.id, user?.role]);
 
   // Global Cmd+K / Ctrl+K keyboard shortcut
   useEffect(() => {
@@ -71,21 +63,17 @@ const MainApp: React.FC = () => {
     return <LoginPage />;
   }
 
-  const isAdmin = user.role === 'admin';
-
+  const mode: WorkspaceMode = user.role === 'admin' ? workspaceMode : 'personal';
+  const isAdministration = user.role === 'admin' && mode === 'administration';
   const handleTabChange = (targetTab: string) => {
-    let normalized = targetTab;
-    if (normalized === 'requests' || normalized === 'admin-requests') {
-      normalized = isAdmin ? 'leave-requests' : 'leave';
-    } else if (normalized === 'history' || normalized === 'my-leaves') {
-      normalized = isAdmin ? 'leave-requests' : 'leave';
-    } else if (normalized === 'dashboard') {
-      normalized = isAdmin ? 'admin-dashboard' : 'dashboard';
-    }
-    setCurrentTab(normalized);
+    const target = navigateWorkspace(user.role, mode, targetTab);
+    setWorkspaceMode(target.mode);
+    setCurrentTab(target.tab);
+    setIsMobileSidebarOpen(false);
   };
 
   return (
+    <WorkspaceProvider mode={mode}>
     <div className="go-app min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans antialiased">
       {/* First-Time Password Setup Modal for Initial Onboarding Sign-In */}
       <FirstTimePasswordModal />
@@ -108,9 +96,9 @@ const MainApp: React.FC = () => {
         />
 
         {/* Main Content Viewport */}
-        <main className="go-main flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
+        <main key={mode} className="go-main flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
           {/* Employee Views */}
-          {!isAdmin && (
+          {!isAdministration && (
             <>
               {(currentTab === 'dashboard' || currentTab === 'employee-dashboard') && (
                 <EmployeeDashboard onNavigateTab={handleTabChange} />
@@ -146,7 +134,7 @@ const MainApp: React.FC = () => {
           )}
 
           {/* Admin Views */}
-          {isAdmin && (
+          {isAdministration && (
             <>
               {(currentTab === 'admin-dashboard' || currentTab === 'dashboard') && (
                 <AdminDashboard onNavigateTab={handleTabChange} />
@@ -192,9 +180,10 @@ const MainApp: React.FC = () => {
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
-        onNavigate={(tab) => setCurrentTab(tab)}
+        onNavigate={handleTabChange}
       />
     </div>
+    </WorkspaceProvider>
   );
 };
 

@@ -1,3 +1,4 @@
+import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -39,7 +40,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
   const [deletingDoc, setDeletingDoc] = useState<EmployeeDocument | null>(null);
   const [isDeletingDoc, setIsDeletingDoc] = useState<boolean>(false);
 
-  const isAdmin = user?.role === 'admin';
+  const { isAdministration: isAdmin } = useWorkspace();
 
   const handleConfirmDeleteDoc = async () => {
     if (!deletingDoc) return;

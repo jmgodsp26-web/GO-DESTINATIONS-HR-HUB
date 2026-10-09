@@ -1,3 +1,4 @@
+import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { CalendarEvent } from '../../types';
@@ -22,6 +23,7 @@ import {
 
 export const CompanyCalendar: React.FC = () => {
   const { user } = useAuth();
+  const { isAdministration } = useWorkspace();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [typeFilter, setTypeFilter] = useState<'all' | 'holiday' | 'approved_leave' | 'holiday_shift' | 'pending_leave'>('all');
@@ -32,7 +34,7 @@ export const CompanyCalendar: React.FC = () => {
   const loadEvents = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await api.getCalendarEvents();
+      const data = await api.getCalendarEvents(!isAdministration);
       setEvents(data);
     } catch (err: any) {
       if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
@@ -41,7 +43,7 @@ export const CompanyCalendar: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isAdministration]);
 
   useEffect(() => {
     loadEvents();
@@ -194,7 +196,7 @@ export const CompanyCalendar: React.FC = () => {
           <span>Company Holidays</span>
         </button>
 
-        {user?.role === 'admin' && (
+        {isAdministration && (
           <button
             type="button"
             onClick={() => setTypeFilter('pending_leave')}

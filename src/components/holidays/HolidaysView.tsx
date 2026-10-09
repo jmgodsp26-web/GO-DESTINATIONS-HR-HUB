@@ -1,3 +1,4 @@
+import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -37,6 +38,7 @@ import {
 } from 'lucide-react';
 
 export const HolidaysView: React.FC = () => {
+  const { isAdministration: isAdmin } = useWorkspace();
   const { user } = useAuth();
   const { showToast } = useToast();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -93,8 +95,8 @@ export const HolidaysView: React.FC = () => {
       // Fetch holidays with active filters applied on backend if desired, or fetch all and filter in memory for smooth client UX
       const [holRes, covRes, empRes] = await Promise.all([
         api.getHolidays(),
-        api.getAllHolidayCoverage().catch(() => []),
-        api.getAllEmployees().catch(() => []),
+        api.getAllHolidayCoverage(isAdmin ? undefined : { view: 'personal' }).catch(() => []),
+        isAdmin ? api.getAllEmployees().catch(() => []) : Promise.resolve([]),
       ]);
       setHolidays(holRes);
       setCoverageList(covRes);
@@ -111,13 +113,13 @@ export const HolidaysView: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCoverage]);
+  }, [selectedCoverage, isAdmin]);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const isAdmin = user?.role === 'admin';
+
   const todayStr = getTodayDateString(user?.timezone);
 
   // Dynamic available countries from current holidays list + common

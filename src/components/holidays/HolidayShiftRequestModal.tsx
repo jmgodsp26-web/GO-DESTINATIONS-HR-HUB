@@ -28,7 +28,7 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
   const [userLeaves, setUserLeaves] = useState<LeaveRequest[]>([]);
 
   useEffect(() => {
-    api.getLeaveRequests()
+    api.getLeaveRequests({ scope: 'mine' })
       .then((res) => setUserLeaves(res || []))
       .catch((err: any) => {
         if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {

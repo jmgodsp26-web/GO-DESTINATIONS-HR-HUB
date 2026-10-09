@@ -1,3 +1,4 @@
+import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -60,9 +61,8 @@ export const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const { isAdministration: isAdmin } = useWorkspace();
   if (!user) return null;
-
-  const isAdmin = user.role === 'admin';
 
   return (
     <header className="go-header bg-white/95 backdrop-blur-md border-b border-slate-200/70 sticky top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-colors">
@@ -98,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({
                       : 'bg-slate-100 text-slate-700 border border-slate-200'
                   }`}
                 >
-                  {isAdmin ? 'Admin' : 'Employee'}
+                  {isAdmin ? 'Administration' : user.role === 'admin' ? 'My Workspace' : 'Employee'}
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block font-normal">
@@ -195,12 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
                         key={notif.id}
                         onClick={() => {
                           markNotificationRead(notif.id);
-                          const targetTab =
-                            notif.link_tab === 'requests' || notif.link_tab === 'leave-requests'
-                              ? (isAdmin ? 'leave-requests' : 'leave')
-                              : notif.link_tab === 'history' || notif.link_tab === 'leave'
-                              ? (isAdmin ? 'leave-requests' : 'leave')
-                              : notif.link_tab || 'notifications';
+                          const targetTab = notif.link_tab || 'notifications';
                           onTabChange(targetTab);
                           setShowNotifications(false);
                         }}

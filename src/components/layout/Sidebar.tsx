@@ -1,3 +1,4 @@
+import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -44,9 +45,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
   const { user, logout, notifications } = useAuth();
   const [showHelpModal, setShowHelpModal] = useState(false);
 
+  const { isAdministration: isAdmin } = useWorkspace();
   if (!user) return null;
-
-  const isAdmin = user.role === 'admin';
   const unreadNotifCount = notifications.filter((n) => !n.read).length;
 
   const employeeGroups: NavGroup[] = [
@@ -92,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
       groupTitle: 'People & Requests',
       items: [
         { id: 'employees', label: 'Employees', icon: Users },
-        { id: 'leave-requests', label: 'Leave Requests', icon: ClipboardList },
+        { id: 'leave-requests', label: 'Leave Approvals', icon: ClipboardList },
       ],
     },
     {
@@ -156,6 +156,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
             <span className="go-sidebar-rule" />
           </div>
           <nav className="space-y-5 flex-1">
+            {user.role === 'admin' && (
+              <div className="rounded-xl bg-slate-900/50 p-1 flex gap-1" role="group" aria-label="Choose workspace">
+                <button type="button" id="workspace-personal" aria-pressed={!isAdmin}
+                  onClick={() => { onTabChange('my-workspace'); onClose(); }}
+                  className={`flex-1 rounded-lg px-2 py-2.5 text-[11px] font-semibold transition-colors ${!isAdmin ? 'bg-white text-[#182E3F] shadow-sm' : 'text-slate-300 hover:bg-slate-800'}`}>
+                  My Workspace
+                </button>
+                <button type="button" id="workspace-administration" aria-pressed={isAdmin}
+                  onClick={() => { onTabChange('admin-dashboard'); onClose(); }}
+                  className={`flex-1 rounded-lg px-2 py-2.5 text-[11px] font-semibold transition-colors ${isAdmin ? 'bg-white text-[#182E3F] shadow-sm' : 'text-slate-300 hover:bg-slate-800'}`}>
+                  Administration
+                </button>
+              </div>
+            )}
             {navGroups.map((group, groupIdx) => (
               <div key={group.groupTitle || groupIdx} className="space-y-1">
                 {/* Group Title */}
@@ -252,7 +266,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
                 <p className="text-[10px] text-slate-400 truncate">{user.job_title}</p>
               </div>
             </div>
-            {isAdmin && (
+            {user.role === 'admin' && (
               <span
                 className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#3A5D83]/30 text-slate-200 border border-[#3A5D83]/50"
                 title="Admin Access"
