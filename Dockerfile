@@ -12,7 +12,7 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build both frontend SPA (dist/) and Express server (dist/server.cjs)
+# Build both frontend SPA (dist/) and Express server (build/server.cjs)
 RUN npm run build
 
 # --- Stage 2: Production Runtime ---
@@ -29,6 +29,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy compiled outputs from builder
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/build ./build
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/firebase-applet-config.json ./firebase-applet-config.json
 
@@ -38,4 +39,4 @@ USER node
 EXPOSE 8080
 
 # Start production server
-CMD ["node", "dist/server.cjs"]
+CMD ["node", "build/server.cjs"]

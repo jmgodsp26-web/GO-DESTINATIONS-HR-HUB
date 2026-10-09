@@ -24,22 +24,38 @@ const PORT = Number(process.env.PORT || 3000);
 // Enable trust proxy for Cloud Run and reverse proxy environments (nginx)
 app.set('trust proxy', 1);
 
-// --- PRODUCTION SECURITY HEADERS (HELMET) ---
-// Note: frameguard is disabled to ensure proper rendering within the AI Studio embedded preview iframe.
-app.use(
-  helmet({
-    frameguard: false,
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-  })
-);
+// Production and isolated tests use the same browser protections. Local Vite
+// development permits its HMR connection and the private design preview iframe.
+const development = !['production', 'test'].includes(process.env.NODE_ENV || '');
+app.use(helmet({
+  frameguard: development ? false : { action: 'deny' },
+  contentSecurityPolicy: development ? false : {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      scriptSrcAttr: ["'none'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc: ["'self'", 'https:', 'data:', 'blob:'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'same-origin' },
+}));
 
 // --- RATE LIMITING DEFENSE ---
-// 1. General API rate limiter: 300 requests per 15 minutes per IP
+// Coarse per-instance abuse guard, sized for a shared office IP. Authentication
+// also has persistent per-account and per-IP counters in the database.
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: 10000,
   standardHeaders: true,
   legacyHeaders: false,
   validate: {
@@ -52,7 +68,7 @@ const apiLimiter = rateLimit({
 // 2. Strict auth rate limiter to defend against brute-force password/identifier guessing
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
   validate: {
@@ -89,6 +105,9 @@ const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV !== 'test',
 // receives a fresh database and router dispatch; failed operations do not persist.
 app.use('/api', async (req: Request, res: Response) => {
   if (req.path === '/health') return res.json({ status: 'ok' });
+  if (!['/auth/login', '/auth/logout', '/auth/reset-password'].includes(req.path) && !sessionToken(req)) {
+    return res.status(401).json({ error: 'Authentication required. Please log in.' });
+  }
   const originalUrl = req.url;
   const send = res.send.bind(res);
   const json = res.json.bind(res);
@@ -110,7 +129,7 @@ app.use('/api', async (req: Request, res: Response) => {
         res.end = ((body: any) => capture('end', body)) as any;
         apiRouter(req, res, (error?: any) => { if (error) reject(error); else { res.statusCode = 404; capture('json', { error: 'API route not found.' }); } });
       }));
-      return { result: reply, commit: reply.status < 400 };
+      return { result: reply, commit: reply.status < 400 || (req.path === '/api/auth/login' && [401, 403, 429].includes(reply.status)) };
     });
     res.send = send; res.json = json; res.end = end as any;
     res.status(outcome.status);
@@ -135,7 +154,7 @@ function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunc
     return res.status(401).json({ error: 'Session expired or invalid token. Please log in again.' });
   }
 
-  if (user.status === 'disabled') {
+  if (!['admin', 'employee'].includes(user.role) || user.status !== 'active') {
     return res.status(403).json({ error: 'Account disabled. Please contact HR administrator.' });
   }
 
@@ -177,13 +196,13 @@ apiRouter.post('/api/auth/login', (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Company email address is required.' });
     }
 
-    const authResult = db.authenticate(loginIdentifier, password);
+    const authResult = db.authenticate(loginIdentifier, password, req.ip || 'unknown');
     res.cookie(COOKIE, authResult.token, cookieOptions);
     const { token: _secret, ...publicResult } = authResult;
     res.json(publicResult);
   } catch (error: any) {
     const msg = error.message || 'Authentication failed.';
-    const status = msg.includes('disabled') ? 403 : 401;
+    const status = error.code === 'LOGIN_THROTTLED' ? 429 : 401;
     res.status(status).json({ error: msg });
   }
 });
@@ -744,7 +763,17 @@ async function start() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    // Server code lives outside dist; reject backend/source-map URLs explicitly.
+    app.use((req, res, next) => {
+      let pathname: string;
+      try { pathname = decodeURIComponent(req.path); } catch { return res.sendStatus(400); }
+      if (/\.(?:map|cjs)(?:$|\/)/i.test(pathname) || /^\/(?:server|build)(?:[./]|$)/i.test(pathname)) return res.sendStatus(404);
+      next();
+    });
+    app.use('/assets', express.static(path.join(distPath, 'assets'), { index: false, fallthrough: false }));
+    for (const file of ['browser-compat.js', 'logo.jpg']) {
+      app.get('/' + file, (_req, res) => res.sendFile(path.join(distPath, file)));
+    }
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
