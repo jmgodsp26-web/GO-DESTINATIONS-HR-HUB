@@ -19,14 +19,13 @@ export interface PersistentData {
   companySettings?: Record<string, any>;
   sessions?: [string, any][];
   loginAttempts?: any[];
-  microsoftAttempts?: any[];
   deletedEmployeeIds?: string[];
   deletedHolidayIds?: string[];
   deletedShiftIds?: string[];
 }
 // A new namespace deliberately leaves the former project's collections untouched.
 const PREFIX = 'hr_v2_';
-const TABLES = ['users', 'leaveAttachments', 'leaveBalances', 'leaveRequests', 'leaveTransactions', 'holidays', 'holidayShifts', 'auditLogs', 'notifications', 'employeeDocuments', 'sessions', 'loginAttempts', 'microsoftAttempts'] as const;
+const TABLES = ['users', 'leaveAttachments', 'leaveBalances', 'leaveRequests', 'leaveTransactions', 'holidays', 'holidayShifts', 'auditLogs', 'notifications', 'employeeDocuments', 'sessions', 'loginAttempts'] as const;
 const clean = (value: any) => JSON.parse(JSON.stringify(value));
 const rows = (data: PersistentData, table: typeof TABLES[number]): Map<string, any> => new Map(
   table === 'sessions' ? (data.sessions || []).map(([id, value]) => [id, value]) : ((data as any)[table] || []).map((row: any) => [row.id, row])

@@ -27,28 +27,6 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
-  const [microsoftEnabled, setMicrosoftEnabled] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    fetch('/api/auth/microsoft/config', { credentials: 'same-origin' })
-      .then(response => response.ok ? response.json() : { enabled: false })
-      .then(data => { if (active) setMicrosoftEnabled(data.enabled === true); })
-      .catch(() => {});
-    const url = new URL(window.location.href);
-    const code = url.searchParams.get('ms_error');
-    const messages: Record<string, string> = {
-      not_approved: 'Your Microsoft account is not approved for HR Hub. Contact HR to link your active employee account.',
-      failed: 'Microsoft sign-in could not be completed. Please try again or contact HR.',
-      unavailable: 'Microsoft sign-in is temporarily unavailable. Please use your HR Hub login or contact HR.',
-    };
-    if (code) {
-      setError(messages[code] || messages.failed);
-      url.searchParams.delete('ms_error');
-      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
-    }
-    return () => { active = false; };
-  }, []);
 
   // Modal State
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
@@ -193,16 +171,6 @@ export const LoginPage: React.FC = () => {
           )}
 
           {/* Form */}
-          {microsoftEnabled && (
-            <div className="space-y-3">
-              <a href="/api/auth/microsoft/start" className="flex items-center justify-center gap-3 w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 transition-colors">
-                <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path fill="#f25022" d="M0 0h9v9H0z" /><path fill="#7fba00" d="M11 0h9v9h-9z" /><path fill="#00a4ef" d="M0 11h9v9H0z" /><path fill="#ffb900" d="M11 11h9v9h-9z" /></svg>
-                Sign in with Microsoft
-              </a>
-              <p className="text-center text-xs text-slate-500">For company accounts approved by HR.</p>
-              <div className="flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-slate-200" />or use your HR Hub password<span className="h-px flex-1 bg-slate-200" /></div>
-            </div>
-          )}
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label

@@ -70,8 +70,6 @@ export interface UserProfile {
   role: UserRole;
   status: EmployeeStatus;
   is_pc?: boolean;
-  microsoft_object_id?: string;
-  microsoft_tenant_id?: string;
   created_at: string;
   updated_at: string;
 }

@@ -210,7 +210,6 @@ export const EmployeeManagement: React.FC = () => {
         birthday: editingEmployee.date_of_birth || editingEmployee.birthday,
         role: editingEmployee.role,
         status: editingEmployee.status,
-        microsoft_object_id: editingEmployee.microsoft_object_id || '',
       };
       if (editPassword && editPassword.trim()) {
         payload.password = editPassword.trim();
@@ -1134,15 +1133,6 @@ export const EmployeeManagement: React.FC = () => {
                     className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900"
                   />
                 </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <label htmlFor="microsoft-user-id" className="block font-semibold text-slate-700 mb-1">Microsoft user ID</label>
-                <input id="microsoft-user-id" type="text" value={editingEmployee.microsoft_object_id || ''}
-                  onChange={e => setEditingEmployee({ ...editingEmployee, microsoft_object_id: e.target.value })}
-                  placeholder="User Object ID from Microsoft Entra"
-                  className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900" />
-                <p className="mt-2 text-xs text-slate-600">To approve Microsoft login, copy this person's Object ID from Entra → Users → their account → Overview. Use the user ID, not the HR HUB app ID. Clear this field to unlink. Changing the link signs the employee out.</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
