@@ -106,3 +106,58 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* GO sign-in: a quiet route from the team to the personal workspace. */
+.go-login { min-height: 100dvh; padding: 24px; gap: clamp(32px,6vw,96px); grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); background: #f4f6f9; }
+.go-login-story { min-height: calc(100dvh - 48px); padding: clamp(28px,4vw,60px); border-radius: 28px; background: radial-gradient(ellipse at 100% 0%,#3a5d83 0%,transparent 65%),#182e3f; }
+.go-login-story::after { width: 600px; height: 600px; left: auto; right: -400px; bottom: -380px; opacity: .5; }
+.go-story-top { animation: go-login-arrive 400ms var(--go-ease) both; }
+.go-story-copy { margin: 56px 0 12px; animation: go-login-arrive 450ms var(--go-ease) 70ms both; }
+.go-story-copy h2 { font-size: clamp(38px,4.4vw,66px); line-height: 1.1; letter-spacing: -.045em; margin-top: 20px; }
+.go-story-copy h2 em { color: #f1c48e; }
+.go-story-copy p { font-size: 15px; line-height: 1.8; max-width: 360px; margin-top: 24px; }
+.go-login-route { width: 100%; height: auto; max-height: 170px; flex-shrink: 0; margin: 10px 0 22px; overflow: visible; }
+.go-route-guide { stroke: #7087a3; stroke-width: 1.5; stroke-dasharray: 3 7; opacity: .35; }
+.go-route-line { stroke: #cfd7e1; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 0; animation: go-route-draw 1.3s var(--go-ease) 200ms both; }
+.go-route-destination { transform-origin: 530px 38px; animation: go-destination-arrive 300ms var(--go-ease) 1.25s both; }
+.go-login-form { max-width: 460px; padding: 24px 0; animation: go-login-arrive 350ms var(--go-ease) 100ms both; }
+.go-login-form > div:first-child { margin-bottom: 24px; }
+.go-login-form h1 { font-size: 26px; letter-spacing: -.03em; }
+.go-login-form > .go-surface { padding: 32px; border-radius: 24px; border-color: #dfe5ec; box-shadow: 0 16px 64px #182e3f08; }
+.go-login-form h2 { font-size: 26px; letter-spacing: -.025em; color: #182e3f; }
+.go-login-form .text-xs { font-size: 14px; line-height: 1.6; }
+.go-login-form form label:not(:has(input)) { font-size: 13px; text-transform: none; letter-spacing: 0; font-weight: 600; }
+.go-login-form input:not([type="checkbox"]) { min-height: 52px; font-size: 16px; background: #f9fafc; border-color: #d5dee8; }
+.go-login-form input:focus { background: white; }
+.go-login-form input[aria-invalid="true"] { border-color: #e11d48; }
+.go-login-form input[type="checkbox"] { accent-color: #3a5d83; min-height: 16px; }
+.go-login-form form button[type="submit"] { min-height: 52px; font-size: 15px; font-weight: 700; background: #3a5d83; box-shadow: 0 4px 12px #3a5d8320; }
+.go-login-form form button[type="submit"]:hover { background: #182e3f; }
+.go-login-form form button[type="submit"]:active:not(:disabled) { transform: scale(.99); }
+.go-login-support { display: flex; align-items: center; justify-content: center; gap: 16px; border-top: 1px solid #edf0f4; padding-top: 16px; color: #9eafc1; }
+.go-login-support button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; color: #3a5d83; font-size: 13px; font-weight: 600; }
+.go-login-support button:hover { color: #182e3f; text-decoration: underline; }
+.go-login-form [role="alert"] { animation: go-page-reveal 150ms ease; }
+@keyframes go-login-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes go-route-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes go-destination-arrive { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }
+@media (max-width: 767px) {
+  .go-login { display: block; padding: 20px 16px; }
+  .go-login-story { min-height: auto; border-radius: 20px; padding: 24px; margin-bottom: 24px; }
+  .go-login-story .go-story-top { display: flex; gap: 12px; }
+  .go-login-story .go-story-top .go-logo { padding: 7px; border-radius: 10px; }
+  .go-login-story .go-story-top .go-logo img { width: 36px; max-height: 42px; }
+  .go-login-story .go-story-top > span { font-size: 11px; }
+  .go-login-story .go-story-copy { margin: 20px 0 0; }
+  .go-login-story .go-story-copy .go-eyebrow, .go-login-story .go-story-copy p, .go-login-story .go-story-footer, .go-login-route { display: none; }
+  .go-login-story .go-story-copy h2 { font-size: 26px; margin: 0; line-height: 1.25; }
+  .go-login-story .go-story-copy h2 br { display: none; }
+  .go-login-story .go-story-copy h2 br::after { content: ' '; }
+  .go-login-form { padding: 0; }
+  .go-login-form > div:first-child { display: none; }
+  .go-login-form > .go-surface { padding: 24px; border-radius: 20px; }
+  .go-login-support { gap: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .go-login *, .go-login *::before, .go-login *::after { animation: none !important; transition: none !important; }
+}
