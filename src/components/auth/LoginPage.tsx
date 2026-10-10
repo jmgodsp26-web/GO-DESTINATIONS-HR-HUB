@@ -57,6 +57,7 @@ export const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     const cleanId = identifier.trim();
     if (!cleanId) {
       setError('Please enter your company email address.');
@@ -112,7 +113,13 @@ export const LoginPage: React.FC = () => {
 
       <aside className="go-login-story" aria-label="GO Destinations workplace">
         <div className="go-story-top"><GoDestinationsLogo variant="icon-only" size="xl" /><span>GO DESTINATIONS</span></div>
-        <div className="go-story-copy"><span className="go-eyebrow">PEOPLE MAKE THE JOURNEY</span><h2>A world of possibilities.<br /><em>One connected team.</em></h2><p>Your time, your team, and everything you need to do your best work. Welcome to your GO workplace.</p></div>
+        <div className="go-story-copy"><span className="go-eyebrow">YOUR GO WORKPLACE</span><h2>Your people. <br />Your workplace. <br /><em>Connected.</em></h2><p>Plan your time off, find your documents, and stay connected with your team.</p></div>
+        <svg className="go-login-route" viewBox="0 0 560 190" fill="none" aria-hidden="true" focusable="false">
+          <path className="go-route-guide" d="M25 147 C110 147 88 45 195 45 S290 147 365 112 S448 38 530 38" />
+          <path className="go-route-line" pathLength="1" d="M25 147 C110 147 88 45 195 45 S290 147 365 112 S448 38 530 38" />
+          <circle cx="25" cy="147" r="5" fill="#CFD7E1" /><circle cx="195" cy="45" r="5" fill="#CFD7E1" /><circle cx="365" cy="112" r="5" fill="#CFD7E1" />
+          <g className="go-route-destination"><circle cx="530" cy="38" r="17" fill="#ED9027" fillOpacity=".15" /><circle cx="530" cy="38" r="6" fill="#ED9027" /></g>
+        </svg>
         <div className="go-story-footer"><span className="go-story-dot" /> GLOBAL REACH. PERSONAL CONNECTION.</div>
       </aside>
       <div className="go-login-form relative z-10 w-full max-w-[420px] mx-auto">
@@ -121,14 +128,14 @@ export const LoginPage: React.FC = () => {
           <div className="inline-flex items-center space-x-2 mb-2">
             <span className="w-2 h-2 rounded-full bg-[#3A5D83]" />
             <span className="text-xs font-semibold tracking-widest text-[#3A5D83] uppercase">
-              Workforce Portal
+              HR HUB
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
             GO Destinations
           </h1>
           <p className="mt-1 text-xs sm:text-[13px] text-slate-500 font-normal">
-            Employee Directory &amp; Leave Administration
+            Your everyday HR, in one place.
           </p>
         </div>
 
@@ -136,10 +143,10 @@ export const LoginPage: React.FC = () => {
         <div className="go-surface bg-white rounded-2xl border border-slate-200/90 shadow-[0_4px_24px_-4px_rgba(15,23,42,0.06),0_16px_40px_-8px_rgba(15,23,42,0.04)] p-7 sm:p-9 space-y-6">
           <div>
             <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-              Sign in to your account
+              Welcome back
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Welcome back. Enter your credentials to continue.
+              Sign in with your company email and password.
             </p>
           </div>
 
@@ -158,6 +165,7 @@ export const LoginPage: React.FC = () => {
           {error && !isWrongPassword && (
             <div
               id="auth-error-banner"
+              role="alert"
               className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start space-x-2.5 text-xs text-rose-700 animate-in fade-in duration-150 shadow-xs"
             >
               <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
@@ -171,7 +179,7 @@ export const LoginPage: React.FC = () => {
           )}
 
           {/* Form */}
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit} aria-busy={isLoading}>
             <div>
               <label
                 htmlFor="identifier"
@@ -205,13 +213,7 @@ export const LoginPage: React.FC = () => {
                 >
                   Password
                 </label>
-                <button
-                  type="button"
-                  onClick={openResetModal}
-                  className="text-[12px] text-[#3A5D83] hover:text-[#182E3F] hover:underline font-semibold cursor-pointer"
-                >
-                  Forgot password?
-                </button>
+
               </div>
               <div className="relative group focus-within:ring-4 focus-within:ring-[#3A5D83]/10 rounded-xl transition-all">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#3A5D83] transition-colors">
@@ -222,6 +224,8 @@ export const LoginPage: React.FC = () => {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
+                  aria-invalid={isWrongPassword}
+                  aria-describedby={isWrongPassword ? "password-inline-error" : undefined}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={`block w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm border rounded-xl bg-slate-50/60 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none transition-all font-mono ${
@@ -249,10 +253,11 @@ export const LoginPage: React.FC = () => {
               {isWrongPassword && (
                 <div
                   id="password-inline-error"
+                  role="alert"
                   className="mt-1.5 flex items-center space-x-1.5 text-xs text-rose-600 font-medium animate-in fade-in duration-150"
                 >
                   <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
-                  <span>Wrong password. Please try again or reset your password.</span>
+                  <span>{error}</span>
                 </div>
               )}
             </div>
@@ -265,17 +270,10 @@ export const LoginPage: React.FC = () => {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 text-[#3A5D83] rounded border-slate-300 focus:ring-[#3A5D83]"
                 />
-                <span className="text-xs text-slate-600 font-medium">Remember on this device</span>
+                <span className="text-xs text-slate-600 font-medium">Remember my email</span>
               </label>
 
-              <button
-                type="button"
-                onClick={openInfoModal}
-                className="text-xs text-slate-500 hover:text-[#3A5D83] flex items-center space-x-1 cursor-pointer transition-colors"
-              >
-                <HelpCircle className="w-3.5 h-3.5" />
-                <span>Need help?</span>
-              </button>
+
             </div>
 
             <div className="pt-2">
@@ -286,19 +284,20 @@ export const LoginPage: React.FC = () => {
                 className="group relative w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-white bg-[#3A5D83] hover:bg-[#182E3F] active:bg-[#243E58] shadow-[0_2px_8px_-1px_rgba(58,93,131,0.35)] hover:shadow-[0_4px_12px_-2px_rgba(58,93,131,0.45)] disabled:opacity-50 transition-all min-h-[44px] cursor-pointer"
               >
                 {isLoading ? (
-                  <span className="flex items-center space-x-2">
+                  <span role="status" className="flex items-center space-x-2">
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     <span>Signing in...</span>
                   </span>
                 ) : (
                   <span className="flex items-center space-x-1.5">
-                    <span>Sign In to Workspace</span>
+                    <span>Sign in</span>
                     <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 )}
               </button>
             </div>
           </form>
+          <div className="go-login-support"><button type="button" onClick={openResetModal}>Forgot password?</button><span aria-hidden="true">·</span><button type="button" onClick={openInfoModal}><HelpCircle className="w-4 h-4" aria-hidden="true" />Need help?</button></div>
         </div>
 
         {/* Exterior Clean Footer */}
@@ -312,7 +311,7 @@ export const LoginPage: React.FC = () => {
       {/* Forgot Password / Account Assistance Modal */}
       {showHelpModal && (
         <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="go-surface bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+          <div role="dialog" aria-modal="true" aria-label="Account assistance" className="go-surface bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
             {/* Modal Header & Navigation Tabs */}
             <div className="border-b border-slate-100 bg-slate-50/80 px-6 pt-5 pb-3">
               <div className="flex items-center justify-between mb-3">
@@ -322,6 +321,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowHelpModal(false)}
+                  aria-label="Close account assistance"
                   className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 cursor-pointer"
                 >
                   <X className="w-4 h-4" />
