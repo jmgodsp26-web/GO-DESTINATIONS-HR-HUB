@@ -175,7 +175,7 @@ export const LoginPage: React.FC = () => {
             <div>
               <label
                 htmlFor="identifier"
-                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5"
+                className="block text-[12px] font-bold text-slate-700 uppercase tracking-wider mb-1.5"
               >
                 Company Email
               </label>
@@ -201,14 +201,14 @@ export const LoginPage: React.FC = () => {
               <div className="flex items-center justify-between mb-1.5">
                 <label
                   htmlFor="password"
-                  className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider"
+                  className="block text-[12px] font-bold text-slate-700 uppercase tracking-wider"
                 >
                   Password
                 </label>
                 <button
                   type="button"
                   onClick={openResetModal}
-                  className="text-[11px] text-[#3A5D83] hover:text-[#182E3F] hover:underline font-semibold cursor-pointer"
+                  className="text-[12px] text-[#3A5D83] hover:text-[#182E3F] hover:underline font-semibold cursor-pointer"
                 >
                   Forgot password?
                 </button>
@@ -303,7 +303,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Exterior Clean Footer */}
         <div className="text-center mt-6">
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[12px] text-slate-400">
             © {new Date().getFullYear()} GO Destinations Ltd. All rights reserved.
           </p>
         </div>
@@ -311,7 +311,7 @@ export const LoginPage: React.FC = () => {
 
       {/* Forgot Password / Account Assistance Modal */}
       {showHelpModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="go-surface bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
             {/* Modal Header & Navigation Tabs */}
             <div className="border-b border-slate-100 bg-slate-50/80 px-6 pt-5 pb-3">
@@ -378,7 +378,7 @@ export const LoginPage: React.FC = () => {
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 font-medium text-slate-800">
                     <div>Contact your company HR administrator through your internal company directory.</div>
                   </div>
-                  <p className="text-slate-500 text-[11px] pt-1">
+                  <p className="text-slate-500 text-[12px] pt-1">
                     Your HR Administrator will issue a temporary credential that requires you to choose a new private password upon signing in.
                   </p>
                 </div>
@@ -420,7 +420,7 @@ export const LoginPage: React.FC = () => {
                   </ul>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-slate-700 text-[11px] leading-relaxed">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-slate-700 text-[12px] leading-relaxed">
                   <strong>Need administrator assistance?</strong> Ask your company HR administrator to reset your password in Employees.
                 </div>
 

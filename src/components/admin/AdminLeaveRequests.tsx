@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -352,7 +353,7 @@ export const AdminLeaveRequests: React.FC = () => {
                     const isSelected = selectedRequestIds.includes(req.id);
 
                     return (
-                      <tr
+                      <motion.tr layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                         key={req.id}
                         className={`hover:bg-slate-50/70 transition-colors ${
                           isSelected ? 'bg-indigo-50/40' : ''
@@ -386,14 +387,14 @@ export const AdminLeaveRequests: React.FC = () => {
                             )}
                             <div>
                               <p className="font-bold text-slate-900">{req.employee_name}</p>
-                              <p className="text-[11px] text-slate-500">{req.employee_department}</p>
+                              <p className="text-[12px] text-slate-500">{req.employee_department}</p>
                             </div>
                           </div>
                         </td>
 
                         {/* Leave Type */}
                         <td className="px-5 py-3.5 font-semibold text-slate-800">
-                          <span className="font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md text-[11px]">
+                          <span className="font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md text-[12px]">
                             {req.leave_type}
                           </span>
                         </td>
@@ -405,7 +406,7 @@ export const AdminLeaveRequests: React.FC = () => {
                               ? req.start_date
                               : `${req.start_date} → ${req.end_date}`}
                           </div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">
+                          <div className="text-[12px] text-slate-400 mt-0.5">
                             Submitted: {new Date(req.submitted_at).toLocaleDateString()}
                           </div>
                         </td>
@@ -413,12 +414,12 @@ export const AdminLeaveRequests: React.FC = () => {
                         {/* Duration */}
                         <td className="px-5 py-3.5 text-center">
                           {req.is_half_day ? (
-                            <span className="inline-flex items-center space-x-1 font-bold text-amber-900 bg-amber-100/90 border border-amber-200 px-2 py-0.5 rounded-md text-[11px]">
+                            <span className="inline-flex items-center space-x-1 font-bold text-amber-900 bg-amber-100/90 border border-amber-200 px-2 py-0.5 rounded-md text-[12px]">
                               <span>0.5 day</span>
-                              <span className="text-[10px] text-amber-700 uppercase font-semibold">({req.half_day_period === 'morning' ? 'AM' : 'PM'})</span>
+                              <span className="text-[12px] text-amber-700 uppercase font-semibold">({req.half_day_period === 'morning' ? 'AM' : 'PM'})</span>
                             </span>
                           ) : (
-                            <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md text-[11px] tabular-nums">
+                            <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md text-[12px] tabular-nums">
                               {req.total_days} {req.total_days === 1 ? 'day' : 'days'}
                             </span>
                           )}
@@ -428,13 +429,13 @@ export const AdminLeaveRequests: React.FC = () => {
                         <td className="px-5 py-3.5 text-slate-600 max-w-xs truncate">
                           <p className="truncate font-medium text-slate-800">&ldquo;{req.reason}&rdquo;</p>
                           {req.attachment_name && (
-                            <div className="flex items-center space-x-1 text-[11px] text-indigo-600 mt-0.5">
+                            <div className="flex items-center space-x-1 text-[12px] text-indigo-600 mt-0.5">
                               <Paperclip className="w-3 h-3" />
                               <span className="truncate">{req.attachment_name}</span>
                             </div>
                           )}
                           {req.admin_note && (
-                            <p className="text-[11px] text-slate-500 italic mt-0.5 truncate">
+                            <p className="text-[12px] text-slate-500 italic mt-0.5 truncate">
                               HR: &ldquo;{req.admin_note}&rdquo;
                             </p>
                           )}
@@ -442,7 +443,7 @@ export const AdminLeaveRequests: React.FC = () => {
 
                         {/* Status */}
                         <td className="px-5 py-3.5">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${statusClass}`}>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold border ${statusClass}`}>
                             {req.status === 'Approved' && <CheckCircle2 className="w-3 h-3 mr-1" />}
                             {req.status === 'Rejected' && <XCircle className="w-3 h-3 mr-1" />}
                             {req.status === 'Pending' && <Clock className="w-3 h-3 mr-1" />}
@@ -470,12 +471,12 @@ export const AdminLeaveRequests: React.FC = () => {
                               </button>
                             </div>
                           ) : (
-                            <div className="text-[11px] text-slate-400">
+                            <div className="text-[12px] text-slate-400">
                               Reviewed by {req.reviewed_by_name?.split(' ')[0] || 'Admin'}
                             </div>
                           )}
                         </td>
-                      </tr>
+                      </motion.tr>
                     );
                   })}
                 </tbody>
@@ -522,7 +523,7 @@ export const AdminLeaveRequests: React.FC = () => {
                             className="w-4 h-4 rounded border-slate-300 text-[#3A5D83] focus:ring-[#3A5D83] cursor-pointer"
                           />
                         )}
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusClass}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-semibold border ${statusClass}`}>
                           {req.status}
                         </span>
                       </div>
@@ -540,7 +541,7 @@ export const AdminLeaveRequests: React.FC = () => {
                       </div>
                       <p className="text-slate-500 italic mt-1">&ldquo;{req.reason}&rdquo;</p>
                       {req.attachment_name && (
-                        <div className="flex items-center space-x-1 text-[11px] text-indigo-600 pt-1">
+                        <div className="flex items-center space-x-1 text-[12px] text-indigo-600 pt-1">
                           <Paperclip className="w-3 h-3" />
                           <span>{req.attachment_name}</span>
                         </div>
@@ -567,7 +568,7 @@ export const AdminLeaveRequests: React.FC = () => {
                         </button>
                       </div>
                     ) : (
-                      <div className="text-[11px] text-slate-400 text-right">
+                      <div className="text-[12px] text-slate-400 text-right">
                         Reviewed by {req.reviewed_by_name?.split(' ')[0] || 'Admin'}
                       </div>
                     )}
@@ -581,7 +582,7 @@ export const AdminLeaveRequests: React.FC = () => {
 
       {/* Review Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="go-overlay go-detail-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <h3 className="text-sm font-bold text-slate-900">
@@ -607,7 +608,7 @@ export const AdminLeaveRequests: React.FC = () => {
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-slate-900 text-sm">{selectedRequest.employee_name}</span>
-                  <span className="text-slate-500 font-mono text-[11px]">{selectedRequest.employee_department}</span>
+                  <span className="text-slate-500 font-mono text-[12px]">{selectedRequest.employee_department}</span>
                 </div>
                 <p className="text-slate-700">
                   <strong>{selectedRequest.leave_type}</strong>:{' '}
@@ -635,14 +636,14 @@ export const AdminLeaveRequests: React.FC = () => {
               {reviewAction === 'Approved' ? (
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800">
                   <p className="font-semibold">Confirming Approval</p>
-                  <p className="text-[11px] mt-0.5 leading-relaxed">
+                  <p className="text-[12px] mt-0.5 leading-relaxed">
                     {selectedRequest.total_days} day(s) will automatically be deducted from {selectedRequest.employee_name}&rsquo;s {selectedRequest.leave_type} balance.
                   </p>
                 </div>
               ) : (
                 <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800">
                   <p className="font-semibold">Confirming Rejection</p>
-                  <p className="text-[11px] mt-0.5 leading-relaxed">
+                  <p className="text-[12px] mt-0.5 leading-relaxed">
                     No balance will be deducted. Please provide an optional explanation below.
                   </p>
                 </div>

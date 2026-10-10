@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -157,24 +158,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
           </div>
           <nav className="space-y-5 flex-1">
             {user.role === 'admin' && (
-              <div className="rounded-xl bg-slate-900/50 p-1 flex gap-1" role="group" aria-label="Choose workspace">
-                <button type="button" id="workspace-personal" aria-pressed={!isAdmin}
-                  onClick={() => { onTabChange('my-workspace'); onClose(); }}
-                  className={`flex-1 rounded-lg px-2 py-2.5 text-[11px] font-semibold transition-colors ${!isAdmin ? 'bg-white text-[#182E3F] shadow-sm' : 'text-slate-300 hover:bg-slate-800'}`}>
-                  My Workspace
-                </button>
-                <button type="button" id="workspace-administration" aria-pressed={isAdmin}
-                  onClick={() => { onTabChange('admin-dashboard'); onClose(); }}
-                  className={`flex-1 rounded-lg px-2 py-2.5 text-[11px] font-semibold transition-colors ${isAdmin ? 'bg-white text-[#182E3F] shadow-sm' : 'text-slate-300 hover:bg-slate-800'}`}>
-                  Administration
-                </button>
+              <div className="go-workspace-switch" role="group" aria-label="Choose workspace">
+                {[{ id: 'personal', label: 'My Workspace', tab: 'my-workspace', active: !isAdmin }, { id: 'administration', label: 'Administration', tab: 'admin-dashboard', active: isAdmin }].map(option => (
+                  <button key={option.id} type="button" id={`workspace-${option.id}`} aria-pressed={option.active}
+                    onClick={() => { onTabChange(option.tab); onClose(); }}>
+                    {option.active && <motion.span layoutId="workspace-selection" className="go-workspace-selection" aria-hidden="true" />}
+                    <span className="relative z-10">{option.label}</span>
+                  </button>
+                ))}
               </div>
             )}
             {navGroups.map((group, groupIdx) => (
               <div key={group.groupTitle || groupIdx} className="space-y-1">
                 {/* Group Title */}
                 <div className="px-3 py-1">
-                  <span className="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">
+                  <span className="text-[12px] font-semibold tracking-wider text-slate-500 uppercase">
                     {group.groupTitle}
                   </span>
                 </div>
@@ -188,6 +186,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
                       <button
                         key={item.id}
                         id={`nav-${item.id}`}
+                        aria-current={isActive ? "page" : undefined}
                         type="button"
                         onClick={() => {
                           onTabChange(item.id);
@@ -199,7 +198,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
                             : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/40 border border-transparent'
                         }`}
                       >
-                        <div className="flex items-center space-x-2.5 min-w-0">
+                        {isActive && <motion.span layoutId="navigation-selection" className="go-nav-selection" aria-hidden="true" />}
+                        <div className="relative z-10 flex items-center space-x-2.5 min-w-0">
                           <Icon
                             className={`w-4 h-4 shrink-0 transition-colors duration-150 ${
                               isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
@@ -209,11 +209,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
                         </div>
 
                         {item.badge ? (
-                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-[#ED9027] text-white shadow-2xs">
+                          <span className="relative z-10 px-1.5 py-0.5 text-[12px] font-semibold rounded bg-[#ED9027] text-[#182E3F] shadow-2xs">
                             {item.badge}
                           </span>
                         ) : isActive ? (
-                          <ChevronRight className="w-3.5 h-3.5 text-white/80 shrink-0" />
+                          <ChevronRight className="w-3.5 h-3.5 text-white/80 shrink-0 relative z-10" />
                         ) : null}
                       </button>
                     );
@@ -248,7 +248,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
                     className="w-7 h-7 rounded-full object-cover border border-slate-700/80 ring-1 ring-slate-800"
                   />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-[#3A5D83] text-white flex items-center justify-center text-[10px] font-bold border border-slate-700/80 ring-1 ring-slate-800">
+                  <div className="w-7 h-7 rounded-full bg-[#3A5D83] text-white flex items-center justify-center text-[12px] font-bold border border-slate-700/80 ring-1 ring-slate-800">
                     {user.full_name
                       ? user.full_name
                           .split(' ')
@@ -263,12 +263,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-slate-200 truncate leading-snug">{user.full_name}</p>
-                <p className="text-[10px] text-slate-400 truncate">{user.job_title}</p>
+                <p className="text-[12px] text-slate-400 truncate">{user.job_title}</p>
               </div>
             </div>
             {user.role === 'admin' && (
               <span
-                className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#3A5D83]/30 text-slate-200 border border-[#3A5D83]/50"
+                className="shrink-0 px-1.5 py-0.5 rounded text-[12px] font-semibold bg-[#3A5D83]/30 text-slate-200 border border-[#3A5D83]/50"
                 title="Admin Access"
               >
                 Admin
@@ -290,7 +290,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
 
       {/* Help Modal */}
       {showHelpModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="go-surface bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">

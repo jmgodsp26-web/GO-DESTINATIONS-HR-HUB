@@ -1,3 +1,4 @@
+import { MotionConfig } from 'motion/react';
 import React, { useState, useEffect } from 'react';
 import { WorkspaceProvider } from './context/WorkspaceContext';
 import { navigateWorkspace, type WorkspaceMode } from './utils/workspace';
@@ -96,7 +97,7 @@ const MainApp: React.FC = () => {
         />
 
         {/* Main Content Viewport */}
-        <main key={mode} className="go-main flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
+        <main key={`${mode}:${currentTab}`} className="go-main flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
           {/* Employee Views */}
           {!isAdministration && (
             <>
@@ -189,6 +190,7 @@ const MainApp: React.FC = () => {
 
 export default function App() {
   return (
+    <MotionConfig reducedMotion="user" transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}>
     <ErrorBoundary>
       <AuthProvider>
         <ToastProvider>
@@ -196,5 +198,6 @@ export default function App() {
         </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>
+    </MotionConfig>
   );
 }

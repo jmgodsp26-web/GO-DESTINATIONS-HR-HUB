@@ -136,13 +136,13 @@ export const AuditLogsView: React.FC = () => {
                 >
                   <div className="space-y-1.5 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${getActionBadge(log.action)}`}>
+                      <span className={`px-2 py-0.5 rounded-md text-[12px] font-bold border ${getActionBadge(log.action)}`}>
                         {log.action}
                       </span>
                       <span className="text-xs font-semibold text-slate-800">
                         by {log.user_name}
                       </span>
-                      <span className="text-[11px] text-slate-400 font-mono">
+                      <span className="text-[12px] text-slate-400 font-mono">
                         ({log.user_role})
                       </span>
                     </div>
@@ -151,7 +151,7 @@ export const AuditLogsView: React.FC = () => {
                       {log.details}
                     </p>
 
-                    <div className="text-[10px] text-slate-400 font-mono">
+                    <div className="text-[12px] text-slate-400 font-mono">
                       Target Ref: {log.target_type} • ID: {log.target_id}
                     </div>
                   </div>

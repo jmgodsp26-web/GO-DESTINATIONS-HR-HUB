@@ -1,0 +1,108 @@
+/* Shared GO interface: typography, surfaces, feedback and responsive details. */
+:root {
+  --go-radius: 18px;
+  --go-shadow: 0 2px 6px #182e3f03, 0 12px 32px #182e3f05;
+  --go-ease: cubic-bezier(.22,1,.36,1);
+  --go-fast: 150ms;
+  --go-enter: 240ms;
+}
+.go-app { background: #f4f6f9; }
+.go-main { font-size: 14px; line-height: 1.6; padding: 28px 32px 48px; }
+.go-main > div { animation: go-page-reveal var(--go-enter) var(--go-ease); }
+.go-main h1 { font-size: clamp(26px,2.4vw,34px); letter-spacing: -.035em; }
+.go-main h2, .go-main h3 { line-height: 1.4; }
+.go-main .go-surface { border-color: #dfe5ec; border-radius: var(--go-radius); box-shadow: var(--go-shadow); }
+.go-main .text-xs { font-size: 14px; line-height: 1.6; }
+.go-main .text-\[12px\] { line-height: 1.5; }
+.go-main table { font-size: 14px; }
+.go-main th { font-size: 12px; letter-spacing: .025em; text-transform: none; padding-top: 14px; padding-bottom: 14px; }
+.go-main tbody tr { transition: background-color var(--go-fast) ease; }
+.go-main tbody tr:hover { background-color: #f6f8fb; }
+.go-main td { border-color: #edf0f4; }
+.go-main button { transition: color var(--go-fast), background-color var(--go-fast), border-color var(--go-fast), box-shadow var(--go-fast); }
+.go-main button:disabled { opacity: .6; }
+.go-main button:focus-visible, .go-sidebar button:focus-visible { outline-offset: 3px; }
+.go-main input:not([type="checkbox"]):not([type="radio"]), .go-main select, .go-main textarea { font-size: 14px; min-height: 44px; background-color: #fff; border-color: #d5dee8; transition: border-color var(--go-fast), box-shadow var(--go-fast); }
+.go-main input:focus, .go-main select:focus, .go-main textarea:focus { box-shadow: 0 0 0 3px #3a5d8312; }
+.go-header { box-shadow: none; }
+.go-header > div { height: 76px; }
+.go-header .go-logo img { width: 48px; max-height: 60px; }
+.go-sidebar-brand { padding-top: 10px; padding-bottom: 16px; }
+.go-sidebar-brand p { font-size: 17px; }
+.go-sidebar nav > div > div:first-child span { font-size: 11px; letter-spacing: .08em; }
+.go-sidebar .sidebar-menu-item { min-height: 46px; border: 0; overflow: visible; box-shadow: none; }
+.go-sidebar .sidebar-menu-item[aria-current="page"] { background: transparent; box-shadow: none; }
+.go-nav-selection { position: absolute; inset: 0; background: #3a5d83; border-radius: 12px; border-left: 3px solid #ed9027; pointer-events: none; }
+.go-workspace-switch { position: relative; display: flex; gap: 2px; padding: 4px; border: 1px solid #7087a350; background: #112535; border-radius: 14px; }
+.go-workspace-switch > button { position: relative; flex: 1; min-width: 0; min-height: 48px; padding: 7px 4px; font-size: 12px; line-height: 1.4; font-weight: 600; border-radius: 10px; color: #cfd7e1; }
+.go-workspace-switch > button[aria-pressed="true"] { color: #182e3f; }
+.go-workspace-selection { position: absolute; inset: 0; border-radius: 10px; background: #fff; box-shadow: 0 3px 8px #0002; pointer-events: none; }
+.go-workspace-switch > button:active { transform: none; }
+.go-main .go-welcome { background: linear-gradient(115deg,#182e3f 0%,#3a5d83 100%); padding: 28px; box-shadow: none; border-radius: 22px; }
+.go-main .go-welcome .go-personal-greeting { color: white; }
+.go-main .go-welcome::after { border-color: #cfd7e133; }
+.go-main .go-welcome button { min-height: 46px; }
+.go-main .go-welcome button.bg-white { background: #ffffff10; border: 1px solid #ffffff40; color: #fff; }
+.go-main .go-welcome button.bg-white svg { color: #cfd7e1; }
+.go-main .go-welcome button.bg-white:hover { background: #ffffff20; }
+.go-main .go-welcome button.bg-\[\#3A5D83\] { background: #ed9027; color: #182e3f; box-shadow: 0 4px 10px #11253526; }
+.go-main .go-welcome button.bg-\[\#3A5D83\]:hover { background: #f1c48e; }
+.go-dashboard .go-surface:not(.go-welcome):hover { box-shadow: var(--go-shadow); }
+.go-dashboard h2.uppercase, .go-dashboard h3.uppercase { text-transform: none; letter-spacing: -.015em; font-size: 16px; color: #182e3f; }
+.go-review-queue { border-top: 3px solid #3a5d83 !important; }
+.go-admin-workspace [id^="stat-card-"] { border-color: #dfe5ec; padding: 20px; box-shadow: none; }
+.go-admin-workspace [id^="stat-card-"] .uppercase { text-transform: none; letter-spacing: 0; }
+.go-admin-workspace [id^="stat-card-"] .tabular-nums.font-extrabold { font-size: 32px; }
+.go-admin-workspace [id^="stat-card-"][role="button"]:hover { border-color: #7087a3; background: #fafbfd; }
+.go-personal-home .go-page-intro .go-eyebrow { font-size: 11px; }
+.go-workspace-links { gap: 12px; padding-top: 4px; }
+.go-workspace-links button { border-color: #dfe5ec; border-radius: var(--go-radius); padding: 16px; }
+.go-workspace-links button:hover .go-shortcut-icon { background: #cfd7e1; }
+.go-workspace-links small { font-size: 13px; }
+/* A single panel treatment across requests, employee editing and documents. */
+.go-overlay { background-color: #11253570; backdrop-filter: blur(4px); animation: go-page-reveal var(--go-fast) ease; }
+.go-overlay > div:not(.fixed) { border-radius: 22px; border-color: #dfe5ec; box-shadow: 0 24px 100px #11253535; max-height: calc(100dvh - 32px); overflow-y: auto; animation: go-panel-reveal var(--go-enter) var(--go-ease); }
+.go-overlay > div:not(.fixed) > div:first-child { position: sticky; top: 0; z-index: 2; background: #fff; }
+.go-overlay h3 { font-size: 18px; }
+.go-overlay label { font-size: 13px; }
+.go-overlay input:not([type="checkbox"]):not([type="radio"]), .go-overlay select, .go-overlay textarea { font-size: 14px; }
+.go-overlay .go-leave-dialog { overflow: hidden; }
+.go-detail-backdrop { justify-content: flex-end; padding: 12px; }
+.go-detail-backdrop > div:not(.fixed) { height: calc(100dvh - 24px); max-height: calc(100dvh - 24px); max-width: 600px; width: 100%; border-radius: 22px; animation-name: go-drawer-reveal; }
+.go-form-steps { padding: 16px 24px; background: #f6f8fb; }
+.go-form-steps .is-current > span { box-shadow: 0 0 0 4px #3a5d830d; }
+.go-leave-dialog form > div, .go-leave-dialog form > section { animation: go-page-reveal 180ms ease; }
+.go-toast-stack { bottom: 24px; right: 24px; width: min(390px,calc(100vw - 32px)); }
+.go-toast-stack > div { border-radius: 16px; background: #fff; padding: 16px; box-shadow: 0 8px 32px #182e3f14; }
+.go-toast-stack button { min-width: 32px; min-height: 32px; }
+.go-calendar > .flex.flex-wrap { padding: 0; border: 0; border-radius: 0; background: transparent; }
+.go-calendar section[aria-label="Calendar"], .go-calendar section[aria-label="Selected day details"] { border-color: #dfe5ec; border-radius: 20px; box-shadow: var(--go-shadow); }
+.go-calendar section[aria-label="Selected day details"] { top: 92px; }
+.go-calendar .go-calendar-month { animation: go-calendar-next 200ms var(--go-ease); }
+.go-calendar[data-direction="previous"] .go-calendar-month { animation-name: go-calendar-previous; }
+.go-calendar .go-calendar-detail-content { animation: go-page-reveal 180ms ease; }
+.go-calendar button[aria-pressed="true"] { transition: background-color 150ms, box-shadow 150ms; }
+.go-documents .go-surface { border-color: #dfe5ec; }
+.go-documents button, .go-notifications button { min-height: 44px; }
+.go-main .animate-pulse { animation-duration: 2.2s; }
+@keyframes go-page-reveal { from { opacity: 0; } to { opacity: 1; } }
+@keyframes go-panel-reveal { from { opacity: 0; transform: translateY(10px) scale(.99); } to { opacity: 1; transform: none; } }
+@keyframes go-drawer-reveal { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@keyframes go-calendar-next { from { opacity: .4; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+@keyframes go-calendar-previous { from { opacity: .4; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+@media (min-width: 768px) { .go-sidebar { top: 76px; height: calc(100dvh - 76px); } }
+@media (max-width: 1100px) { .go-main { padding: 24px; } }
+@media (max-width: 767px) {
+  .go-main { padding: 20px 14px 32px; }
+  .go-header > div { height: 68px; }
+  .go-header .text-\[12px\] { font-size: 11px; }
+  .go-main .go-welcome { padding: 22px; }
+  .go-main h1 { font-size: 26px; }
+  .go-overlay { padding: 8px; align-items: flex-end; }
+  .go-overlay > div:not(.fixed) { width: 100%; border-radius: 20px 20px 12px 12px; max-height: calc(100dvh - 16px); }
+  .go-detail-backdrop > div:not(.fixed) { height: auto; animation-name: go-panel-reveal; }
+  .go-toast-stack { right: 16px; bottom: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

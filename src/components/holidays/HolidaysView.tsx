@@ -428,7 +428,7 @@ export const HolidaysView: React.FC = () => {
             <h1 className="text-xl font-bold text-slate-900">
               {isAdmin ? 'Holidays & Shifts' : 'Company Holidays'}
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+            <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
               Multi-Country
             </span>
           </div>
@@ -486,31 +486,31 @@ export const HolidaysView: React.FC = () => {
       {/* KPI / Overview Summary Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-2xs">
-          <span className="text-[11px] font-medium text-slate-500 block">Total Holidays</span>
+          <span className="text-[12px] font-medium text-slate-500 block">Total Holidays</span>
           <div className="flex items-baseline space-x-2 mt-1">
             <span className="text-xl font-bold text-slate-900 tabular-nums">{stats.total}</span>
-            <span className="text-[11px] text-slate-400">across 2026–2027</span>
+            <span className="text-[12px] text-slate-400">across 2026–2027</span>
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-2xs">
-          <span className="text-[11px] font-medium text-slate-500 block">Upcoming Active</span>
+          <span className="text-[12px] font-medium text-slate-500 block">Upcoming Active</span>
           <div className="flex items-baseline space-x-2 mt-1">
             <span className="text-xl font-bold text-emerald-600 tabular-nums">{stats.upcoming}</span>
-            <span className="text-[11px] text-slate-400">scheduled</span>
+            <span className="text-[12px] text-slate-400">scheduled</span>
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-2xs">
-          <span className="text-[11px] font-medium text-slate-500 block">Company-Wide</span>
+          <span className="text-[12px] font-medium text-slate-500 block">Company-Wide</span>
           <div className="flex items-baseline space-x-2 mt-1">
             <span className="text-xl font-bold text-indigo-600 tabular-nums">{stats.companyWide}</span>
-            <span className="text-[11px] text-slate-400">all countries</span>
+            <span className="text-[12px] text-slate-400">all countries</span>
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-2xs">
-          <span className="text-[11px] font-medium text-slate-500 block">Status Overview</span>
+          <span className="text-[12px] font-medium text-slate-500 block">Status Overview</span>
           <div className="flex items-center space-x-2 mt-1">
             <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               {stats.active} Active
@@ -662,7 +662,7 @@ export const HolidaysView: React.FC = () => {
             </button>
           )}
 
-          <div className="ml-auto text-slate-400 text-[11px] font-medium">
+          <div className="ml-auto text-slate-400 text-[12px] font-medium">
             Showing <span className="text-slate-800 font-semibold">{filteredHolidays.length}</span> of{' '}
             {holidays.length}
           </div>
@@ -720,7 +720,7 @@ export const HolidaysView: React.FC = () => {
                       }`}
                     >
                       <span
-                        className={`block text-[10px] font-bold uppercase leading-none ${
+                        className={`block text-[12px] font-bold uppercase leading-none ${
                           isActive ? 'text-indigo-600' : 'text-slate-400'
                         }`}
                       >
@@ -729,7 +729,7 @@ export const HolidaysView: React.FC = () => {
                       <span className="block text-lg font-extrabold text-slate-900 leading-tight mt-0.5">
                         {day}
                       </span>
-                      <span className="block text-[9px] text-slate-400 font-medium leading-none mt-0.5">
+                      <span className="block text-[12px] text-slate-400 font-medium leading-none mt-0.5">
                         {year}
                       </span>
                     </div>
@@ -743,12 +743,12 @@ export const HolidaysView: React.FC = () => {
 
                         {/* Country / Scope Pill */}
                         {holiday.scope === 'Company-wide' ? (
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[12px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
                             <span>🌐</span>
                             <span>Company-wide</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-800 border border-slate-200">
+                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[12px] font-semibold bg-slate-100 text-slate-800 border border-slate-200">
                             <span>{getCountryFlag(holiday.country || DEFAULT_COUNTRY)}</span>
                             <span>{holiday.country || DEFAULT_COUNTRY}</span>
                             {holiday.region && holiday.region !== 'All' && (
@@ -759,7 +759,7 @@ export const HolidaysView: React.FC = () => {
 
                         {/* Holiday Type Pill */}
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                          className={`px-2 py-0.5 rounded-full text-[12px] font-medium border ${
                             holiday.holiday_type === 'Public Holiday'
                               ? 'bg-rose-50 text-rose-700 border-rose-200/80'
                               : holiday.holiday_type === 'Company Holiday'
@@ -774,22 +774,22 @@ export const HolidaysView: React.FC = () => {
 
                         {/* Status Badge */}
                         {!isActive ? (
-                          <span className="text-[10px] text-slate-500 bg-slate-200 px-2 py-0.5 rounded font-semibold">
+                          <span className="text-[12px] text-slate-500 bg-slate-200 px-2 py-0.5 rounded font-semibold">
                             Inactive / Deactivated
                           </span>
                         ) : isPast ? (
-                          <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded font-medium">
+                          <span className="text-[12px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded font-medium">
                             Past Holiday
                           </span>
                         ) : (
-                          <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-semibold border border-emerald-200">
+                          <span className="text-[12px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-semibold border border-emerald-200">
                             Active
                           </span>
                         )}
 
                         {coverage && (
                           <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold ${
                               coverage.coverage_status === 'Good'
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : 'bg-amber-100 text-amber-800 border border-amber-300'
@@ -813,7 +813,7 @@ export const HolidaysView: React.FC = () => {
 
                       {/* Coverage Stat Pills */}
                       {coverage && (
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[12px]">
                           <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
                             👥 Total: {coverage.total_employees}
                           </span>
@@ -934,7 +934,7 @@ export const HolidaysView: React.FC = () => {
 
       {/* Add Holiday Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <div className="flex items-center space-x-2">
@@ -1032,7 +1032,7 @@ export const HolidaysView: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, region: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
                     />
-                    <p className="text-[10px] text-slate-400 mt-0.5">Use "All" for country-wide holidays.</p>
+                    <p className="text-[12px] text-slate-400 mt-0.5">Use "All" for country-wide holidays.</p>
                   </div>
                 </div>
               )}
@@ -1109,7 +1109,7 @@ export const HolidaysView: React.FC = () => {
 
       {/* Edit Holiday Modal */}
       {editingHoliday && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <div className="flex items-center space-x-2">
@@ -1297,7 +1297,7 @@ export const HolidaysView: React.FC = () => {
 
       {/* Delete Holiday Confirmation Modal */}
       {deletingHoliday && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
+        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
           <div className="go-surface bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
               <div className="flex items-center space-x-2 text-rose-700">
@@ -1318,7 +1318,7 @@ export const HolidaysView: React.FC = () => {
                 <strong className="text-slate-900 font-semibold">{deletingHoliday.name}</strong> on{' '}
                 <span className="font-semibold text-slate-800">{deletingHoliday.date}</span>?
               </p>
-              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-500 space-y-1">
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl text-[12px] text-slate-500 space-y-1">
                 <p><strong>Country / Scope:</strong> {deletingHoliday.country || 'Company-wide'} ({deletingHoliday.scope})</p>
                 <p><strong>Type:</strong> {deletingHoliday.holiday_type}</p>
                 <p className="text-rose-600 font-medium pt-1">

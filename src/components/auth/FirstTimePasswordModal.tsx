@@ -62,7 +62,7 @@ export const FirstTimePasswordModal: React.FC = () => {
   const isMatching = newPassword.length > 0 && newPassword === confirmPassword;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="go-surface bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200/90 overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-[#3A5D83] to-[#263E58] p-6 text-white text-center relative">
@@ -92,7 +92,7 @@ export const FirstTimePasswordModal: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-[12px] font-bold text-slate-700 uppercase tracking-wider mb-1">
                 New Personal Password
               </label>
               <div className="relative group">
@@ -119,7 +119,7 @@ export const FirstTimePasswordModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-[12px] font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Confirm New Password
               </label>
               <div className="relative group">
@@ -146,7 +146,7 @@ export const FirstTimePasswordModal: React.FC = () => {
             </div>
 
             {/* Password checklist indicators */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1.5 text-[11px]">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1.5 text-[12px]">
               <div className="flex items-center space-x-2">
                 <span className={hasMinLength ? 'text-emerald-600' : 'text-slate-400'}>
                   <CheckCircle2 className="w-3.5 h-3.5" />

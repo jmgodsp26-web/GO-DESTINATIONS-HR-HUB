@@ -193,7 +193,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
   }
 
   return (
-    <div className="go-dashboard go-employee-workspace space-y-6 animate-in fade-in duration-200">
+    <div className="go-dashboard go-employee-workspace go-personal-home space-y-6 animate-in fade-in duration-200">
       <div className="go-page-intro">
         <div><span className="go-eyebrow">YOUR EVERYDAY HR, IN ONE PLACE</span><h1>My Workspace</h1><p>Your time off, documents, and upcoming schedule.</p></div>
         <span className="go-context-tag"><CalendarDays className="w-4 h-4" />{new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', timeZone: user.timezone || undefined }).format(new Date())}</span>
@@ -228,7 +228,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                 <h2 className="go-personal-greeting text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">
                   {getGreeting()}, {firstName}
                 </h2>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 inline-block" />
                   Active
                 </span>
@@ -241,7 +241,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                 <span className="text-slate-300">•</span>
                 <span>{user.department}</span>
                 <span className="text-slate-300">•</span>
-                <span className="tabular-nums font-mono text-[11px] text-slate-400">ID: {user.employee_id}</span>
+                <span className="tabular-nums font-mono text-[12px] text-slate-400">ID: {user.employee_id}</span>
               </div>
             </div>
           </div>
@@ -317,9 +317,9 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
               </div>
             </div>
 
-            <div className="mt-4 pt-2.5 border-t border-indigo-100/70 text-[11px] text-indigo-700/80 flex items-center justify-between">
+            <div className="mt-4 pt-2.5 border-t border-indigo-100/70 text-[12px] text-indigo-700/80 flex items-center justify-between">
               <span>Combined balance</span>
-              <span className="font-mono text-[10px] bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-700 font-semibold">
+              <span className="font-mono text-[12px] bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-700 font-semibold">
                 {balances.length} Types
               </span>
             </div>
@@ -343,7 +343,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
             </div>
 
             <div className="mt-4 pt-2.5 border-t border-slate-100">
-              <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1.5">
+              <div className="flex items-center justify-between text-[12px] text-slate-500 mb-1.5">
                 <span>{vacUsed} days taken</span>
                 <span className="font-semibold text-slate-700">{vacPercent}% used</span>
               </div>
@@ -374,7 +374,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
             </div>
 
             <div className="mt-4 pt-2.5 border-t border-slate-100">
-              <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1.5">
+              <div className="flex items-center justify-between text-[12px] text-slate-500 mb-1.5">
                 <span>{sickUsed} days taken</span>
                 <span className="font-semibold text-slate-700">{sickPercent}% used</span>
               </div>
@@ -421,7 +421,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
               </div>
             </div>
 
-            <div className="mt-4 pt-2.5 border-t border-slate-100 text-[11px]">
+            <div className="mt-4 pt-2.5 border-t border-slate-100 text-[12px]">
               {pendingCount > 0 ? (
                 <span className="text-amber-800 font-semibold flex items-center space-x-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
@@ -435,12 +435,6 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
         </div>
       </div>
 
-      <div className="go-workspace-links" aria-label="Your HR shortcuts">
-        <button type="button" onClick={() => onNavigateTab('notifications')}><span className="go-shortcut-icon"><Clock className="w-5 h-5" /></span><span><strong>Stay up to date</strong><small>{unreadCount ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : 'View your latest HR updates'}</small></span><ArrowUpRight className="w-4 h-4" /></button>
-        <button type="button" onClick={() => onNavigateTab('documents')}><span className="go-shortcut-icon"><FolderOpen className="w-5 h-5" /></span><span><strong>My documents</strong><small>Find and download your employment records</small></span><ArrowUpRight className="w-4 h-4" /></button>
-        <button type="button" onClick={() => onNavigateTab('profile')}><span className="go-shortcut-icon"><ShieldCheck className="w-5 h-5" /></span><span><strong>My profile</strong><small>Review your personal and work details</small></span><ArrowUpRight className="w-4 h-4" /></button>
-      </div>
-
       {/* 3. Upcoming Holiday & Shift Status Highlight */}
       {nextHoliday && (
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -449,7 +443,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
               const { monthShort, day } = formatHolidayDate(nextHoliday.date);
               return (
                 <div className="w-12 h-12 rounded-xl bg-indigo-50/80 border border-indigo-100 text-indigo-700 flex flex-col items-center justify-center shrink-0 shadow-2xs">
-                  <span className="text-[9px] font-bold uppercase tracking-wider leading-none">
+                  <span className="text-[12px] font-bold uppercase tracking-wider leading-none">
                     {monthShort}
                   </span>
                   <span className="text-base font-extrabold leading-none mt-1 tabular-nums text-slate-900">
@@ -464,12 +458,12 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                   {nextHoliday.name}
                 </h3>
                 {nextHoliday.scope === 'Company-wide' ? (
-                  <span className="inline-flex items-center space-x-1 text-[10px] px-2 py-0.5 rounded-md font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  <span className="inline-flex items-center space-x-1 text-[12px] px-2 py-0.5 rounded-md font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
                     <span>🌐</span>
                     <span>Company-wide</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center space-x-1 text-[10px] px-2 py-0.5 rounded-md font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                  <span className="inline-flex items-center space-x-1 text-[12px] px-2 py-0.5 rounded-md font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                     <span>{getCountryFlag(nextHoliday.country || DEFAULT_COUNTRY)}</span>
                     <span>{nextHoliday.country || DEFAULT_COUNTRY}</span>
                     {nextHoliday.region && nextHoliday.region !== 'All' && (
@@ -478,11 +472,11 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                   </span>
                 )}
                 {nextHolidayShift?.status === 'Approved' ? (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[12px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
                     🟢 Shift Roster Approved
                   </span>
                 ) : nextHolidayShift?.status === 'Pending' ? (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[12px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                     🟡 Volunteer Request Pending
                   </span>
                 ) : null}
@@ -549,7 +543,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
               <div className="p-10 text-center text-xs text-slate-400">
                 <CalendarCheck className="w-8 h-8 mx-auto text-slate-300 mb-2" />
                 <p className="font-semibold text-slate-700">No leave requests submitted yet</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[12px] text-slate-400 mt-0.5">
                   Click &ldquo;Request Leave&rdquo; above to apply for vacation, sick, emergency, or medical time off.
                 </p>
               </div>
@@ -586,9 +580,9 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                         </td>
                         <td className="px-4 py-3.5 text-right font-semibold text-slate-800 tabular-nums">
                           {req.is_half_day ? (
-                            <span className="inline-flex items-center space-x-1 font-bold text-amber-900 bg-amber-100/90 border border-amber-200 px-1.5 py-0.5 rounded text-[10px]">
+                            <span className="inline-flex items-center space-x-1 font-bold text-amber-900 bg-amber-100/90 border border-amber-200 px-1.5 py-0.5 rounded text-[12px]">
                               <span>0.5d</span>
-                              <span className="text-[9px] uppercase font-bold text-amber-700">
+                              <span className="text-[12px] uppercase font-bold text-amber-700">
                                 {req.half_day_period === 'morning' ? 'AM' : 'PM'}
                               </span>
                             </span>
@@ -599,7 +593,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                         <td className="px-4 py-3.5">
                           <div className="flex items-center space-x-1.5">
                             <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium border ${statusBadgeClass}`}
+                              className={`inline-flex items-center px-2 py-0.5 rounded-md text-[12px] font-medium border ${statusBadgeClass}`}
                             >
                               {req.status === 'Approved' && <CheckCircle2 className="w-3 h-3 mr-1" />}
                               {req.status === 'Rejected' && <XCircle className="w-3 h-3 mr-1" />}
@@ -628,7 +622,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3.5 text-slate-500 max-w-xs truncate text-[11px]" title={req.admin_note || req.reason}>
+                        <td className="px-4 py-3.5 text-slate-500 max-w-xs truncate text-[12px]" title={req.admin_note || req.reason}>
                           {req.admin_note || req.reason || '—'}
                         </td>
                       </tr>
@@ -645,7 +639,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
               <div className="p-6 text-center text-xs text-slate-400">
                 <CalendarCheck className="w-7 h-7 mx-auto text-slate-300 mb-2" />
                 <p className="font-semibold text-slate-700">No leave requests yet</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Click &ldquo;Request Leave&rdquo; above to apply.</p>
+                <p className="text-[12px] text-slate-400 mt-0.5">Click &ldquo;Request Leave&rdquo; above to apply.</p>
               </div>
             ) : (
               recentRequests.slice(0, 5).map((req) => {
@@ -661,7 +655,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xs text-slate-900">{req.leave_type}</span>
                       <div className="flex items-center space-x-1.5">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${statusBadgeClass}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-semibold border ${statusBadgeClass}`}>
                           {req.status === 'Approved' && <CheckCircle2 className="w-3 h-3 mr-1" />}
                           {req.status === 'Rejected' && <XCircle className="w-3 h-3 mr-1" />}
                           {req.status === 'Pending' && <Clock className="w-3 h-3 mr-1" />}
@@ -701,7 +695,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
 
                     {req.admin_note && <p className="go-hr-feedback"><strong>HR feedback:</strong> {req.admin_note}</p>}
                     {req.reason && (
-                      <p className="text-[11px] text-slate-500 italic truncate">&ldquo;{req.reason}&rdquo;</p>
+                      <p className="text-[12px] text-slate-500 italic truncate">&ldquo;{req.reason}&rdquo;</p>
                     )}
                   </div>
                 );
@@ -721,7 +715,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                     Upcoming Holidays — 2026
                   </h3>
                 </div>
-                <div className="flex items-center space-x-1 text-[11px] text-slate-500 mt-0.5">
+                <div className="flex items-center space-x-1 text-[12px] text-slate-500 mt-0.5">
                   <span>{getCountryFlag(user.country || DEFAULT_COUNTRY)}</span>
                   <span>{user.country || DEFAULT_COUNTRY} Calendar (2026)</span>
                 </div>
@@ -740,7 +734,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                 <div className="text-center py-7 px-4 bg-slate-50/70 rounded-xl border border-dashed border-slate-200">
                   <CalendarX2 className="w-7 h-7 text-slate-300 mx-auto mb-2" />
                   <p className="text-xs font-bold text-slate-700">No More Upcoming Holidays</p>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                  <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">
                     There are no upcoming holidays remaining for 2026.
                   </p>
                 </div>
@@ -754,7 +748,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                       className="flex items-start space-x-3 p-3 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors"
                     >
                       <div className="bg-white border border-slate-200 rounded-lg p-1.5 text-center w-12 shrink-0 shadow-2xs">
-                        <span className="block text-[9px] font-bold text-indigo-600 uppercase leading-none">
+                        <span className="block text-[12px] font-bold text-indigo-600 uppercase leading-none">
                           {monthShort}
                         </span>
                         <span className="block text-sm font-bold text-slate-900 leading-tight mt-0.5 tabular-nums">
@@ -764,22 +758,22 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-1.5 flex-wrap">
                           <p className="text-xs font-semibold text-slate-900 truncate">{holiday.name}</p>
-                          <span className="text-[10px] text-slate-400">({weekday})</span>
+                          <span className="text-[12px] text-slate-400">({weekday})</span>
                         </div>
                         <div className="flex items-center space-x-1.5 mt-0.5">
                           {holiday.scope === 'Company-wide' ? (
-                            <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded font-medium">
+                            <span className="text-[12px] text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded font-medium">
                               🌐 Company-wide
                             </span>
                           ) : (
-                            <span className="text-[10px] text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded font-medium">
+                            <span className="text-[12px] text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded font-medium">
                               {getCountryFlag(holiday.country || DEFAULT_COUNTRY)} {holiday.country || DEFAULT_COUNTRY}
                               {holiday.region && holiday.region !== 'All' ? ` (${holiday.region})` : ''}
                             </span>
                           )}
                         </div>
                         {holiday.description && (
-                          <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
+                          <p className="text-[12px] text-slate-500 mt-0.5 line-clamp-1">
                             {holiday.description}
                           </p>
                         )}
@@ -791,7 +785,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-400 text-center">
+          <div className="mt-4 pt-3 border-t border-slate-100 text-[12px] text-slate-400 text-center">
             {user.country ? `${user.country} & Global Closures` : 'GO Destinations official closure calendar'}
           </div>
         </div>
@@ -809,7 +803,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                   Employment Documents
                 </h3>
-                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[12px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200/80">
                   <Lock className="w-2.5 h-2.5 mr-1" /> My records
                 </span>
               </div>
@@ -833,7 +827,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
             <div className="py-8 text-center border border-dashed border-slate-200 rounded-xl bg-slate-50/30">
               <FileText className="w-7 h-7 text-slate-300 mx-auto mb-1.5" />
               <p className="text-xs font-semibold text-slate-700">No documents on file yet</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[12px] text-slate-400 mt-0.5">
                 HR will add your documents here.
               </p>
             </div>
@@ -851,22 +845,22 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                          <span className="px-2 py-0.5 rounded text-[12px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                             {doc.category}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-mono">{doc.file_size}</span>
+                          <span className="text-[12px] text-slate-400 font-mono">{doc.file_size}</span>
                         </div>
                         <h4 className="text-xs font-semibold text-slate-900 truncate" title={doc.name}>
                           {doc.name}
                         </h4>
-                        <p className="text-[11px] text-slate-400 mt-0.5 tabular-nums">
+                        <p className="text-[12px] text-slate-400 mt-0.5 tabular-nums">
                           {new Date(doc.uploaded_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
 
                     <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
+                      <span className="text-[12px] text-slate-400 truncate max-w-[120px]">
                         By {doc.uploaded_by_name || 'HR Admin'}
                       </span>
                       <button
@@ -887,6 +881,12 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
       </div>
 
       {/* Leave Request Modal */}
+      <div className="go-workspace-links" aria-label="Your HR shortcuts">
+        <button type="button" onClick={() => onNavigateTab('notifications')}><span className="go-shortcut-icon"><Clock className="w-5 h-5" /></span><span><strong>Stay up to date</strong><small>{unreadCount ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}` : 'View your latest HR updates'}</small></span><ArrowUpRight className="w-4 h-4" /></button>
+        <button type="button" onClick={() => onNavigateTab('documents')}><span className="go-shortcut-icon"><FolderOpen className="w-5 h-5" /></span><span><strong>My documents</strong><small>Find and download your employment records</small></span><ArrowUpRight className="w-4 h-4" /></button>
+        <button type="button" onClick={() => onNavigateTab('profile')}><span className="go-shortcut-icon"><ShieldCheck className="w-5 h-5" /></span><span><strong>My profile</strong><small>Review your personal and work details</small></span><ArrowUpRight className="w-4 h-4" /></button>
+      </div>
+
       <LeaveRequestModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

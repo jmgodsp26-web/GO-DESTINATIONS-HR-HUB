@@ -92,7 +92,7 @@ export const Header: React.FC<HeaderProps> = ({
                   GO Destinations <span className="font-medium text-slate-500">HR Hub</span>
                 </span>
                 <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium tracking-wide uppercase ${
+                  className={`text-[12px] px-2 py-0.5 rounded-full font-medium tracking-wide uppercase ${
                     isAdmin
                       ? 'bg-[#3A5D83]/10 text-[#3A5D83] border border-[#3A5D83]/30'
                       : 'bg-slate-100 text-slate-700 border border-slate-200'
@@ -101,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {isAdmin ? 'Administration' : user.role === 'admin' ? 'My Workspace' : 'Employee'}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block font-normal">
+              <p className="text-[12px] text-slate-400 hidden sm:block font-normal">
                 Your people. Your workplace. Your GO.
               </p>
             </div>
@@ -120,7 +120,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-slate-500 font-normal">Search or jump to...</span>
             </div>
             <div className="flex items-center space-x-1">
-              <kbd className="px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-white border border-slate-200/90 rounded shadow-2xs">
+              <kbd className="px-1.5 py-0.5 text-[12px] font-mono text-slate-400 bg-white border border-slate-200/90 rounded shadow-2xs">
                 ⌘K
               </kbd>
             </div>
@@ -156,7 +156,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#ED9027] text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white shadow-xs tabular-nums leading-none">
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#ED9027] text-white text-[12px] font-bold rounded-full flex items-center justify-center ring-2 ring-white shadow-xs tabular-nums leading-none">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
@@ -168,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="flex items-center space-x-2">
                     <span className="font-semibold text-slate-900 text-xs">Notifications</span>
                     {unreadCount > 0 && (
-                      <span className="text-[10px] bg-[#ED9027]/10 text-[#ED9027] border border-[#ED9027]/30 px-2 py-0.2 rounded-full font-medium">
+                      <span className="text-[12px] bg-[#ED9027]/10 text-[#ED9027] border border-[#ED9027]/30 px-2 py-0.2 rounded-full font-medium">
                         {unreadCount} unread
                       </span>
                     )}
@@ -177,7 +177,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                       type="button"
                       onClick={markAllNotificationsRead}
-                      className="text-[11px] text-[#3A5D83] hover:text-[#182E3F] font-medium transition-colors"
+                      className="text-[12px] text-[#3A5D83] hover:text-[#182E3F] font-medium transition-colors"
                     >
                       Mark all as read
                     </button>
@@ -217,7 +217,7 @@ export const Header: React.FC<HeaderProps> = ({
                             {notif.title}
                           </p>
                           <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{notif.message}</p>
-                          <p className="text-[10px] text-slate-400 mt-1 tabular-nums">
+                          <p className="text-[12px] text-slate-400 mt-1 tabular-nums">
                             {new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
@@ -268,7 +268,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
             <div className="hidden lg:block text-left">
               <p className="text-xs font-semibold text-slate-900 leading-tight truncate max-w-[130px]">{user.full_name}</p>
-              <p className="text-[10px] text-slate-400 truncate max-w-[130px]">
+              <p className="text-[12px] text-slate-400 truncate max-w-[130px]">
                 {user.job_title || (user.role === 'admin' ? 'Administrator' : 'Employee')}
               </p>
             </div>

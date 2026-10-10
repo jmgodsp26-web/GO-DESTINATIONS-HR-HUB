@@ -71,6 +71,7 @@ export const CompanyCalendar: React.FC = () => {
   const { user } = useAuth();
   const { isAdministration } = useWorkspace();
   const today = getTodayDateString(user?.timezone);
+  const [direction, setDirection] = useState("next");
   const [month, setMonth] = useState(today.slice(0, 7));
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [types, setTypes] = useState<EventType[]>(eventTypes);
@@ -134,6 +135,7 @@ export const CompanyCalendar: React.FC = () => {
       });
   };
   const changeMonth = (next: string) => {
+    setDirection(next < month ? "previous" : "next");
     setMonth(next);
     setSelectedDate(next + "-01");
     setSelectedEventKey(null);
@@ -162,7 +164,7 @@ export const CompanyCalendar: React.FC = () => {
         type="button"
         onClick={() => selectDay(date, event)}
         aria-label={`View ${event.title} on ${prettyDate(date)}`}
-        className={`w-full rounded-lg border text-left transition-colors hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3A5D83] ${category.color} ${compact ? "px-1.5 py-1 text-[10px]" : "p-3 text-xs"} ${selectedDate === date && selectedEventKey === eventKey(event) ? "ring-2 ring-[#3A5D83] ring-offset-1" : ""}`}
+        className={`w-full rounded-lg border text-left transition-colors hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3A5D83] ${category.color} ${compact ? "px-1.5 py-1 text-[12px]" : "p-3 text-xs"} ${selectedDate === date && selectedEventKey === eventKey(event) ? "ring-2 ring-[#3A5D83] ring-offset-1" : ""}`}
       >
         <span className="flex items-start gap-1.5">
           <Icon
@@ -176,7 +178,7 @@ export const CompanyCalendar: React.FC = () => {
           </span>
         </span>
         {!compact && (
-          <span className="block mt-1 text-[11px]">
+          <span className="block mt-1 text-[12px]">
             {category.label}
             {event.is_half_day
               ? ` · Half day (${event.half_day_period === "morning" ? "AM" : "PM"})`
@@ -191,7 +193,7 @@ export const CompanyCalendar: React.FC = () => {
   };
 
   return (
-    <div className="go-calendar space-y-5">
+    <div className="go-calendar space-y-5" data-direction={direction}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Company Calendar</h1>
@@ -352,12 +354,12 @@ export const CompanyCalendar: React.FC = () => {
             </p>
           )}
           <div className={view === "month" ? "hidden sm:block" : "hidden"}>
-            <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200 text-center text-[11px] font-semibold text-slate-500 py-3">
+            <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200 text-center text-[12px] font-semibold text-slate-500 py-3">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                 <span key={day}>{day}</span>
               ))}
             </div>
-            <div className="grid grid-cols-7">
+            <div key={month} className="go-calendar-month grid grid-cols-7">
               {Array.from({ length: cellCount }, (_, index) => {
                 const date = dates[index - firstDay];
                 if (!date)
@@ -383,7 +385,7 @@ export const CompanyCalendar: React.FC = () => {
                       className={`w-full mb-1 rounded-lg text-left px-2 text-xs font-semibold ${date === today ? "bg-[#3A5D83] text-white" : "text-slate-700 hover:bg-slate-100"}`}
                     >
                       {Number(date.slice(-2))}
-                      <span className="float-right text-[10px] font-normal">
+                      <span className="float-right text-[12px] font-normal">
                         {schedule.length || ""}
                       </span>
                     </button>
@@ -396,7 +398,7 @@ export const CompanyCalendar: React.FC = () => {
                           type="button"
                           onClick={() => selectDay(date)}
                           aria-label={`View all ${schedule.length} events on ${prettyDate(date)}`}
-                          className="w-full px-1 text-left text-[10px] font-semibold text-[#3A5D83]"
+                          className="w-full px-1 text-left text-[12px] font-semibold text-[#3A5D83]"
                         >
                           +{schedule.length - 2} more
                         </button>
@@ -463,7 +465,7 @@ export const CompanyCalendar: React.FC = () => {
           className="scroll-mt-20 rounded-2xl border border-slate-200 bg-white overflow-hidden lg:sticky lg:top-4"
         >
           <div className="p-5 bg-[#182E3F] text-white">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-300">
+            <p className="text-[12px] font-semibold uppercase tracking-widest text-slate-300">
               Day overview
             </p>
             <h3 className="mt-2 text-lg font-bold">
@@ -474,7 +476,7 @@ export const CompanyCalendar: React.FC = () => {
               {dayEvents.length === 1 ? "event" : "events"}
             </p>
           </div>
-          <div className="p-4 space-y-3" aria-live="polite">
+          <div key={`${selectedDate}:${selectedEventKey || "day"}`} className="go-calendar-detail-content p-4 space-y-3" aria-live="polite">
             {selectedEvent ? (
               <>
                 <button
@@ -488,7 +490,7 @@ export const CompanyCalendar: React.FC = () => {
                 <div
                   className={`rounded-xl border p-4 ${categories[selectedEvent.type].color}`}
                 >
-                  <span className="text-[10px] font-semibold uppercase">
+                  <span className="text-[12px] font-semibold uppercase">
                     {categories[selectedEvent.type].label}
                   </span>
                   <h4 className="font-bold text-sm mt-2 break-words">
@@ -573,7 +575,7 @@ export const CompanyCalendar: React.FC = () => {
                   renderEventButton(event, selectedDate),
                 )}
                 {dayEvents.length > 0 && (
-                  <p className="text-[11px] text-slate-500 pt-1">
+                  <p className="text-[12px] text-slate-500 pt-1">
                     Select an event to see the details.
                   </p>
                 )}
