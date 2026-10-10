@@ -81,31 +81,14 @@ export const Header: React.FC<HeaderProps> = ({
             </svg>
           </button>
 
-          <div
-            className="flex items-center space-x-3 cursor-pointer select-none"
-            onClick={() => onTabChange(isAdmin ? 'admin-dashboard' : 'dashboard')}
-          >
+          <button type="button" className="go-header-brand" aria-label={`HR Hub home — ${isAdmin ? 'Administration' : 'My Workspace'}`}
+            onClick={() => onTabChange(isAdmin ? 'admin-dashboard' : 'dashboard')}>
             <GoDestinationsLogo size="md" variant="icon-only" />
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-bold text-slate-900 text-sm sm:text-[15px] tracking-tight">
-                  GO Destinations <span className="font-medium text-slate-500">HR Hub</span>
-                </span>
-                <span
-                  className={`text-[12px] px-2 py-0.5 rounded-full font-medium tracking-wide uppercase ${
-                    isAdmin
-                      ? 'bg-[#3A5D83]/10 text-[#3A5D83] border border-[#3A5D83]/30'
-                      : 'bg-slate-100 text-slate-700 border border-slate-200'
-                  }`}
-                >
-                  {isAdmin ? 'Administration' : user.role === 'admin' ? 'My Workspace' : 'Employee'}
-                </span>
-              </div>
-              <p className="text-[12px] text-slate-400 hidden sm:block font-normal">
-                Your people. Your workplace. Your GO.
-              </p>
-            </div>
-          </div>
+            <span className="go-header-brand-copy">
+              <span className="go-header-company">GO DESTINATIONS</span>
+              <span className="go-header-product"><strong>HR Hub</strong><span className="go-header-context"><span aria-hidden="true" />{isAdmin ? 'Administration' : 'My Workspace'}</span></span>
+            </span>
+          </button>
         </div>
 
         {/* Center: Modern 2026 SaaS Command Bar Search Trigger */}
