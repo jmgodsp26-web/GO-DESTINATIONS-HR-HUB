@@ -144,7 +144,7 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
               ))}
             </select>
             {selectedHoliday && (
-              <p className="text-[11px] text-indigo-600 mt-1.5 font-medium flex items-center space-x-1">
+              <p className="text-[12px] text-indigo-600 mt-1.5 font-medium flex items-center space-x-1">
                 <Clock className="w-3 h-3" />
                 <span>
                   Date:{' '}
@@ -167,7 +167,7 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
                 <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
                 <div>
                   <p className="font-bold text-rose-800">Scheduling Conflict Detected</p>
-                  <p className="text-[11px] text-rose-700 mt-0.5 leading-relaxed">
+                  <p className="text-[12px] text-rose-700 mt-0.5 leading-relaxed">
                     You have an <strong>approved {conflictingLeave.leave_type}</strong> spanning this date ({selectedHoliday?.date}). Volunteering for a holiday shift while on approved leave will create a scheduling conflict.
                   </p>
                 </div>
@@ -179,7 +179,7 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
                 <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
                 <div>
                   <p className="font-bold text-amber-800">Pending Leave Overlap</p>
-                  <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
+                  <p className="text-[12px] text-amber-700 mt-0.5 leading-relaxed">
                     You have a pending {pendingConflictingLeave.leave_type} request for this date currently awaiting HR review.
                   </p>
                 </div>
@@ -203,7 +203,7 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
                 className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-hidden transition-all font-medium"
               />
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">
+            <p className="text-[12px] text-slate-500 mt-1">
               Standard company holiday shift is 8 hours (e.g. 9:00 AM – 5:00 PM).
             </p>
           </div>
@@ -222,7 +222,7 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
             />
           </div>
 
-          <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 text-[11px] text-indigo-900 space-y-1">
+          <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 text-[12px] text-indigo-900 space-y-1">
             <div className="font-semibold flex items-center space-x-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
               <span>Holiday Shift Approval Policy</span>

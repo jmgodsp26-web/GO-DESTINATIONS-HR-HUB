@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'motion/react';
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
@@ -104,15 +105,16 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {children}
       {/* Floating Toast Container */}
       <div
-        aria-live="assertive"
-        className="fixed bottom-5 right-5 z-50 flex flex-col space-y-2.5 max-w-sm w-full pointer-events-none"
+        aria-live="polite" aria-relevant="additions"
+        className="go-toast-stack fixed z-50 flex flex-col space-y-2.5 pointer-events-none"
       >
+        <AnimatePresence initial={false}>
         {toasts.map((toast) => {
           const isSuccess = toast.type === 'success';
           const isError = toast.type === 'error';
 
           return (
-            <div
+            <motion.div layout="position" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               key={toast.id}
               className={`pointer-events-auto flex items-start space-x-3 p-3.5 rounded-xl border shadow-lg backdrop-blur-md transition-all duration-200 animate-in slide-in-from-bottom-2 fade-in ${
                 isSuccess
@@ -128,9 +130,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 {!isSuccess && !isError && <Info className="w-4 h-4 text-indigo-600" />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-slate-900 leading-tight">{toast.title}</p>
+                <p className="text-sm font-semibold text-slate-900 leading-tight">{toast.title}</p>
                 {toast.message && (
-                  <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{toast.message}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{toast.message}</p>
                 )}
               </div>
               <button
@@ -141,9 +143,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               >
                 <X className="w-3.5 h-3.5" />
               </button>
-            </div>
+            </motion.div>
           );
         })}
+        </AnimatePresence>
       </div>
     </ToastContext.Provider>
   );

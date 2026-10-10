@@ -237,7 +237,7 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
               Upcoming Birthdays & Work Anniversaries
             </h2>
             {todayCelebrations.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-700 border border-rose-200 animate-pulse">
+              <span className="px-2 py-0.5 rounded-full text-[12px] font-bold bg-rose-100 text-rose-700 border border-rose-200 animate-pulse">
                 {todayCelebrations.length} Today! 🎉
               </span>
             )}
@@ -296,14 +296,14 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
                       <span className="font-bold text-slate-900 text-xs truncate">
                         {item.employeeName}
                       </span>
-                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-800 shrink-0">
+                      <span className="px-1.5 py-0.2 rounded text-[12px] font-bold bg-amber-100 text-amber-800 shrink-0">
                         TODAY!
                       </span>
                     </div>
-                    <p className="text-[11px] font-semibold text-indigo-700 mt-0.5 truncate">
+                    <p className="text-[12px] font-semibold text-indigo-700 mt-0.5 truncate">
                       {item.milestoneTitle}
                     </p>
-                    <p className="text-[10px] text-slate-500 truncate">
+                    <p className="text-[12px] text-slate-500 truncate">
                       {item.employeeDepartment} • {item.employeeJobTitle}
                     </p>
                   </div>
@@ -455,11 +455,11 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
                         ({item.employeeDepartment})
                       </span>
                       {item.type === 'birthday' ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-pink-100 text-pink-800 border border-pink-200">
+                        <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-pink-100 text-pink-800 border border-pink-200">
                           Birthday
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                        <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
                           Work Anniversary
                         </span>
                       )}
@@ -470,7 +470,7 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
                         {item.milestoneTitle}
                       </span>
                       <span className="text-slate-300">•</span>
-                      <span className="text-slate-500 text-[11px]">
+                      <span className="text-slate-500 text-[12px]">
                         {item.type === 'birthday'
                           ? `Born on ${item.rawDate}`
                           : `Hired on ${item.rawDate}`}
@@ -488,24 +488,24 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
                         {item.nextOccurrenceStr}
                       </span>
                       {isToday ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white animate-pulse">
+                        <span className="px-2 py-0.5 rounded text-[12px] font-bold bg-amber-500 text-white animate-pulse">
                           Today! 🎉
                         </span>
                       ) : isTomorrow ? (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700">
+                        <span className="px-1.5 py-0.5 rounded text-[12px] font-bold bg-purple-100 text-purple-700">
                           Tomorrow
                         </span>
                       ) : isWithinAWeek ? (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                        <span className="px-1.5 py-0.5 rounded text-[12px] font-bold bg-blue-100 text-blue-700">
                           In {item.daysUntil} days
                         </span>
                       ) : (
-                        <span className="text-[11px] text-slate-400 font-medium">
+                        <span className="text-[12px] text-slate-400 font-medium">
                           In {item.daysUntil} days
                         </span>
                       )}
                     </div>
-                    <span className="block text-[10px] text-slate-400">
+                    <span className="block text-[12px] text-slate-400">
                       {item.employeeJobTitle}
                     </span>
                   </div>

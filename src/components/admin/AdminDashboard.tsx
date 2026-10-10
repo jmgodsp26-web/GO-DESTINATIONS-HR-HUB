@@ -216,13 +216,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
   }
 
   return (
-    <div className="go-dashboard space-y-6 animate-in fade-in duration-200">
+    <div className="go-dashboard go-admin-workspace space-y-6 animate-in fade-in duration-200">
       {/* 1. Operational Command Center Hero */}
       <div className="go-welcome relative overflow-hidden go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
           <div>
             <div className="flex items-center space-x-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200/80 uppercase tracking-wide">
+              <span className="px-2.5 py-0.5 rounded-full text-[12px] font-semibold bg-purple-50 text-purple-700 border border-purple-200/80 uppercase tracking-wide">
                 HR Dashboard
               </span>
               <span className="text-slate-300">•</span>
@@ -260,7 +260,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* Total Employees */}
         <div
-          id="stat-card-workforce"
+          id="stat-card-workforce" role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateTab("employees"); } } }
           onClick={() => onNavigateTab('employees')}
           className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-indigo-300 cursor-pointer transition-all flex flex-col justify-between"
         >
@@ -272,7 +272,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           </div>
           <div className="mt-3">
             <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">{totalEmployeesCount}</span>
-            <p className="text-[11px] text-slate-400 mt-1 flex items-center space-x-1">
+            <p className="text-[12px] text-slate-400 mt-1 flex items-center space-x-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               <span>Active employees</span>
             </p>
@@ -281,7 +281,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
         {/* Employees Currently on Leave */}
         <div
-          id="stat-card-on-leave"
+          id="stat-card-on-leave" role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateTab("calendar"); } } }
           onClick={() => onNavigateTab('calendar')}
           className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-emerald-300 cursor-pointer transition-all flex flex-col justify-between"
         >
@@ -293,7 +293,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           </div>
           <div className="mt-3">
             <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">{currentlyOnLeave.length}</span>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[12px] text-slate-400 mt-1">
               {currentlyOnLeave.length === 1 ? '1 team member absent' : `${currentlyOnLeave.length} away today`}
             </p>
           </div>
@@ -301,7 +301,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
         {/* Pending Leave Requests */}
         <div
-          id="stat-card-pending-requests"
+          id="stat-card-pending-requests" role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateTab("leave-requests"); } } }
           onClick={() => onNavigateTab('leave-requests')}
           className={`rounded-2xl border p-4 sm:p-5 shadow-xs cursor-pointer transition-all flex flex-col justify-between ${
             pendingRequests.length > 0
@@ -319,12 +319,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
             <div className="flex items-baseline space-x-2">
               <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">{pendingRequests.length}</span>
               {pendingRequests.length > 0 && (
-                <span className="text-[10px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[12px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full font-bold">
                   Action Required
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1 truncate">
+            <p className="text-[12px] text-slate-400 mt-1 truncate">
               {pendingRequests.length === 1 ? '1 request waiting' : `${pendingRequests.length} requests waiting`}
             </p>
           </div>
@@ -332,7 +332,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
         {/* Holiday Coverage Target */}
         <div
-          id="stat-card-pc-coverage"
+          id="stat-card-pc-coverage" role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateTab("holidays"); } } }
           onClick={() => onNavigateTab('holidays')}
           className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-sky-300 cursor-pointer transition-all flex flex-col justify-between"
         >
@@ -348,40 +348,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                 ? `${holidayCoverages[0].pcs_working_count}/${holidayCoverages[0].pcs_required}`
                 : '2/2'}
             </span>
-            <p className="text-[11px] text-slate-400 mt-1 truncate">
+            <p className="text-[12px] text-slate-400 mt-1 truncate">
               {upcomingHolidays[0] ? `${upcomingHolidays[0].name}` : 'Staffing target'}
             </p>
           </div>
         </div>
       </div>
 
-      {/* 3. Upcoming Holidays & Shifts Section */}
-      <HolidayStaffingCoverageWidget
-        coverageList={holidayCoverages}
-        allEmployees={employees}
-        onRefresh={loadData}
-        onOpenScheduleShift={(holidayId) => {
-          setAssignShiftForm({
-            employee_id: employees[0]?.id || '',
-            holiday_id: holidayId || upcomingHolidays[0]?.id || holidays[0]?.id || '',
-            working_hours: '9:00 AM – 5:00 PM',
-            status: 'Approved',
-            admin_note: '',
-          });
-          setIsScheduleShiftOpen(true);
-        }}
-      />
-
       {/* 4. Quick Approval Queue */}
-      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="go-review-queue go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-200/70 flex items-center justify-between bg-slate-50/50">
           <div>
             <div className="flex items-center space-x-2">
               <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                Pending leave requests
+                Needs your review
               </h2>
               {pendingRequests.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
+                <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
                   {pendingRequests.length} pending
                 </span>
               )}
@@ -406,7 +389,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
             <div className="p-10 text-center text-xs text-slate-500">
               <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
               <p className="font-semibold text-slate-800">No requests waiting for review</p>
-              <p className="text-slate-400 text-[11px] mt-0.5">There are no pending leave requests awaiting approval.</p>
+              <p className="text-slate-400 text-[12px] mt-0.5">There are no pending leave requests awaiting approval.</p>
             </div>
           ) : (
             pendingRequests.map((req) => (
@@ -432,13 +415,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                       <span className="text-xs text-slate-400">({req.employee_department})</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-2 text-xs mt-1">
-                      <span className="font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md text-[11px]">
+                      <span className="font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md text-[12px]">
                         {req.leave_type}
                       </span>
                       <span className="text-slate-600 font-medium tabular-nums">
                         {req.start_date === req.end_date ? req.start_date : `${req.start_date} → ${req.end_date}`}
                       </span>
-                      <span className="font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded-md text-[11px] tabular-nums">
+                      <span className="font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded-md text-[12px] tabular-nums">
                         {req.is_half_day ? '0.5 day' : `${req.total_days} ${req.total_days === 1 ? 'day' : 'days'}`}
                       </span>
                     </div>
@@ -446,7 +429,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                       &ldquo;{req.reason}&rdquo;
                     </p>
                     {req.attachment_name && (
-                      <div className="flex items-center space-x-1 text-[11px] text-indigo-600 mt-1">
+                      <div className="flex items-center space-x-1 text-[12px] text-indigo-600 mt-1">
                         <Paperclip className="w-3 h-3" />
                         <span>Attached: {req.attachment_name}</span>
                       </div>
@@ -479,6 +462,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         </div>
       </div>
 
+      {/* 3. Upcoming Holidays & Shifts Section */}
+      <HolidayStaffingCoverageWidget
+        coverageList={holidayCoverages}
+        allEmployees={employees}
+        onRefresh={loadData}
+        onOpenScheduleShift={(holidayId) => {
+          setAssignShiftForm({
+            employee_id: employees[0]?.id || '',
+            holiday_id: holidayId || upcomingHolidays[0]?.id || holidays[0]?.id || '',
+            working_hours: '9:00 AM – 5:00 PM',
+            status: 'Approved',
+            admin_note: '',
+          });
+          setIsScheduleShiftOpen(true);
+        }}
+      />
+
       {/* 5. Department Absence Heatmap & Distribution */}
       <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
         <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
@@ -502,11 +502,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-900">{dept}</span>
-                    <span className="text-[10px] font-semibold text-slate-500">{data.total} Staff</span>
+                    <span className="text-[12px] font-semibold text-slate-500">{data.total} Staff</span>
                   </div>
                   <div className="mt-2.5 flex items-baseline justify-between">
                     <span className="text-sm font-semibold text-slate-700">{presenceRate}% Present</span>
-                    <span className="text-[11px] text-slate-500 tabular-nums">
+                    <span className="text-[12px] text-slate-500 tabular-nums">
                       {data.onLeave > 0 ? `${data.onLeave} out` : 'Full capacity'}
                     </span>
                   </div>
@@ -569,7 +569,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                     )}
                     <div>
                       <p className="text-xs font-bold text-slate-900">{item.employee_name}</p>
-                      <p className="text-[11px] text-slate-500">{item.employee_department} • {item.leave_type}</p>
+                      <p className="text-[12px] text-slate-500">{item.employee_department} • {item.leave_type}</p>
                     </div>
                   </div>
 
@@ -577,7 +577,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                     <span className="text-xs font-semibold text-emerald-800 tabular-nums">
                       Until {item.end_date}
                     </span>
-                    <span className="block text-[10px] text-emerald-600">
+                    <span className="block text-[12px] text-emerald-600">
                       {item.total_days} {item.total_days === 1 ? 'day' : 'days'} duration
                     </span>
                   </div>
@@ -616,7 +616,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                 >
                   <div className="flex items-center space-x-3">
                     <div className="bg-white border border-slate-200 rounded-lg p-1.5 text-center w-11 shadow-2xs">
-                      <span className="block text-[9px] font-bold text-indigo-600 uppercase leading-none">
+                      <span className="block text-[12px] font-bold text-indigo-600 uppercase leading-none">
                         {monthShort}
                       </span>
                       <span className="block text-xs font-bold text-slate-900 leading-tight mt-0.5 tabular-nums">
@@ -625,10 +625,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                     </div>
                     <div>
                       <p className="text-xs font-bold text-slate-900">{holiday.name}</p>
-                      <p className="text-[11px] text-slate-500 line-clamp-1">{holiday.description || 'Company wide closure'}</p>
+                      <p className="text-[12px] text-slate-500 line-clamp-1">{holiday.description || 'Company wide closure'}</p>
                     </div>
                   </div>
-                  <span className="text-[11px] text-slate-400 font-medium tabular-nums">{holiday.date}</span>
+                  <span className="text-[12px] text-slate-400 font-medium tabular-nums">{holiday.date}</span>
                 </div>
               );
             })}
@@ -638,7 +638,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
       {/* Review Action Modal */}
       {reviewingRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="go-overlay go-detail-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <h3 className="text-sm font-bold text-slate-900">
@@ -674,14 +674,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
               {reviewAction === 'Approved' ? (
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800">
                   <p className="font-semibold">Confirming Approval</p>
-                  <p className="text-[11px] mt-0.5 leading-relaxed">
+                  <p className="text-[12px] mt-0.5 leading-relaxed">
                     Upon approval, {reviewingRequest.total_days} day(s) will automatically be deducted from {reviewingRequest.employee_name}&rsquo;s {reviewingRequest.leave_type} balance.
                   </p>
                 </div>
               ) : (
                 <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800">
                   <p className="font-semibold">Confirming Rejection</p>
-                  <p className="text-[11px] mt-0.5 leading-relaxed">
+                  <p className="text-[12px] mt-0.5 leading-relaxed">
                     No leave days will be deducted. You can provide an explanation note below for the employee.
                   </p>
                 </div>

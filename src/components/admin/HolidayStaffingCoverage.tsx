@@ -165,7 +165,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
         <div className="flex items-center flex-wrap gap-2">
           {/* Year Selector */}
           <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-white rounded-lg border border-slate-200 shadow-2xs text-xs font-semibold text-slate-700">
-            <span className="text-[11px] font-medium text-slate-400">Year:</span>
+            <span className="text-[12px] font-medium text-slate-400">Year:</span>
             <select
               id="holiday-coverage-year-selector"
               value={selectedYear}
@@ -298,7 +298,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                     {group.monthTitle}
                   </span>
                   <div className="h-px bg-slate-200/80 flex-1" />
-                  <span className="text-[11px] font-semibold text-slate-400">
+                  <span className="text-[12px] font-semibold text-slate-400">
                     {group.items.length}{' '}
                     {group.items.length === 1 ? 'holiday' : 'holidays'}
                   </span>
@@ -346,7 +346,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                     {group.monthTitle}
                   </span>
                   <div className="h-px bg-slate-200/80 flex-1" />
-                  <span className="text-[11px] font-semibold text-slate-400">
+                  <span className="text-[12px] font-semibold text-slate-400">
                     {group.items.length}{' '}
                     {group.items.length === 1 ? 'holiday' : 'holidays'}
                   </span>
@@ -356,7 +356,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                 <div className="hidden md:block rounded-xl border border-slate-200 overflow-hidden shadow-2xs bg-white">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      <tr className="bg-slate-50 border-b border-slate-200 text-[12px] font-bold text-slate-500 uppercase tracking-wider">
                         <th className="py-3 px-4">Date</th>
                         <th className="py-3 px-4">Holiday</th>
                         <th className="py-3 px-3">Status</th>
@@ -413,14 +413,14 @@ export const HolidayStaffingCoverageWidget: React.FC<
                               <div className="font-bold text-slate-900">
                                 {holiday.name}
                               </div>
-                              <div className="text-[11px] text-slate-500 flex items-center space-x-1.5 mt-0.5">
+                              <div className="text-[12px] text-slate-500 flex items-center space-x-1.5 mt-0.5">
                                 <span>{flag}</span>
                                 <span>{holiday.country || 'Company-wide'}</span>
                               </div>
                             </td>
                             <td className="py-3 px-3 whitespace-nowrap">
                               <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border ${
+                                className={`inline-flex items-center px-2 py-0.5 rounded-md text-[12px] font-bold border ${
                                   isFullyCovered
                                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                     : 'bg-[#ED9027]/10 text-[#ED9027] border-[#ED9027]/30'
@@ -445,7 +445,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                             </td>
                             <td className="py-3 px-4">
                               <div className="space-y-1">
-                                <div className="flex items-center justify-between text-[11px]">
+                                <div className="flex items-center justify-between text-[12px]">
                                   <span className="font-medium text-slate-500">
                                     {pcs_working_count} / {pcs_required} needed
                                   </span>
@@ -524,7 +524,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                            <span className="text-[12px] font-bold uppercase tracking-wider text-slate-500">
                               {formattedDate}
                             </span>
                             <h4 className="text-xs font-bold text-slate-900">
@@ -532,7 +532,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                             </h4>
                           </div>
                           <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 ${
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold border shrink-0 ${
                               isFullyCovered
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : 'bg-[#ED9027]/10 text-[#ED9027] border-[#ED9027]/30'
@@ -545,7 +545,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
                         </div>
 
                         {/* Mobile Metrics Strip */}
-                        <div className="flex items-center justify-between text-[11px] bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <div className="flex items-center justify-between text-[12px] bg-slate-50 p-2 rounded-lg border border-slate-100">
                           <span className="text-slate-600">
                             <strong>{total_employees}</strong> Total
                           </span>
@@ -562,7 +562,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
 
                         {/* PC Progress */}
                         <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[10px] text-slate-500">
+                          <div className="flex items-center justify-between text-[12px] text-slate-500">
                             <span>Coordinator coverage</span>
                             <span>
                               {pcs_working_count} / {pcs_required} needed

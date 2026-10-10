@@ -310,7 +310,7 @@ export const ReportsView: React.FC = () => {
             </select>
           </div>
 
-          <div className="text-slate-500 text-[11px] font-normal">
+          <div className="text-slate-500 text-[12px] font-normal">
             Matching records: <span className="font-semibold text-slate-800">{filteredRequests.length}</span>
           </div>
         </div>
@@ -331,7 +331,7 @@ export const ReportsView: React.FC = () => {
             </span>
             <span className="text-xs font-semibold text-slate-500">days taken</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Across {approvedRequests.length} approved applications</p>
+          <p className="text-[12px] text-slate-400 mt-1">Across {approvedRequests.length} approved applications</p>
         </div>
 
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
@@ -347,7 +347,7 @@ export const ReportsView: React.FC = () => {
             </span>
             <span className="text-xs font-semibold text-slate-500">requests</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">{totalPendingDays} days currently awaiting sign-off</p>
+          <p className="text-[12px] text-slate-400 mt-1">{totalPendingDays} days currently awaiting sign-off</p>
         </div>
 
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
@@ -363,7 +363,7 @@ export const ReportsView: React.FC = () => {
             </span>
             <span className="text-xs font-semibold text-slate-500">team members</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">
+          <p className="text-[12px] text-slate-400 mt-1">
             {departments.length} functional operational divisions
           </p>
         </div>
@@ -381,7 +381,7 @@ export const ReportsView: React.FC = () => {
             </span>
             <span className="text-xs font-semibold text-slate-500">days/staff</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Average leave consumed per employee</p>
+          <p className="text-[12px] text-slate-400 mt-1">Average leave consumed per employee</p>
         </div>
       </div>
 
@@ -396,7 +396,7 @@ export const ReportsView: React.FC = () => {
                 Distribution of approved leave days and pending load by division
               </p>
             </div>
-            <span className="text-[11px] font-medium text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/70">
+            <span className="text-[12px] font-medium text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/70">
               {departmentStats.length} departments
             </span>
           </div>
@@ -407,11 +407,11 @@ export const ReportsView: React.FC = () => {
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center space-x-2">
                     <span className="font-semibold text-slate-800">{dept.department}</span>
-                    <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded font-medium">
+                    <span className="text-[12px] text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded font-medium">
                       {dept.totalStaff} staff
                     </span>
                     {dept.pendingCount > 0 && (
-                      <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.2 rounded font-medium">
+                      <span className="text-[12px] text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.2 rounded font-medium">
                         {dept.pendingCount} pending
                       </span>
                     )}
@@ -490,7 +490,7 @@ export const ReportsView: React.FC = () => {
 
           <div className="mt-5 p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 text-indigo-900 text-xs flex items-start space-x-2">
             <Sparkles className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-            <p className="leading-relaxed text-[11px]">
+            <p className="leading-relaxed text-[12px]">
               Vacation Leave accounts for the largest proportion of planned absences, aligned with standard company time-off pacing.
             </p>
           </div>
@@ -519,7 +519,7 @@ export const ReportsView: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-600 border-collapse">
               <thead>
-                <tr className="border-b border-slate-200/80 text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
+                <tr className="border-b border-slate-200/80 text-slate-400 text-[12px] font-semibold uppercase tracking-wider">
                   <th className="pb-3 pr-4">Employee</th>
                   <th className="pb-3 px-4">Department</th>
                   <th className="pb-3 px-4">Leave Type</th>
@@ -538,7 +538,7 @@ export const ReportsView: React.FC = () => {
                     <td className="py-3 px-4 text-slate-600 whitespace-nowrap">{r.employee_department}</td>
                     <td className="py-3 px-4 whitespace-nowrap">
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                        className={`px-2 py-0.5 rounded-full text-[12px] font-semibold ${
                           getLeaveTypeConfig(r.leave_type).badgeClass
                         }`}
                       >
@@ -553,7 +553,7 @@ export const ReportsView: React.FC = () => {
                     </td>
                     <td className="py-3 px-4 text-center whitespace-nowrap">
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
+                        className={`px-2 py-0.5 rounded-full text-[12px] font-semibold uppercase tracking-wider ${
                           r.status === 'Approved'
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
                             : r.status === 'Rejected'

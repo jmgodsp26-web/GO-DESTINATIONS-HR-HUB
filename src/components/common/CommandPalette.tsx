@@ -323,7 +323,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             </button>
           )}
           <div className="flex items-center space-x-1 pl-2 ml-2 border-l border-slate-200 shrink-0">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-white border border-slate-200 rounded shadow-2xs">
+            <kbd className="px-1.5 py-0.5 text-[12px] font-mono text-slate-400 bg-white border border-slate-200 rounded shadow-2xs">
               ESC
             </kbd>
           </div>
@@ -335,7 +335,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             <div className="py-12 text-center text-xs text-slate-400">
               <Search className="w-6 h-6 mx-auto text-slate-300 mb-2" />
               <p className="font-medium text-slate-600">No commands matching &ldquo;{query}&rdquo;</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Try searching for dashboard, leave, employees, or holidays</p>
+              <p className="text-[12px] text-slate-400 mt-0.5">Try searching for dashboard, leave, employees, or holidays</p>
             </div>
           ) : (
             filteredCommands.map((cmd, idx) => {
@@ -370,7 +370,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                         </span>
                         {cmd.badge && (
                           <span
-                            className={`text-[9px] px-1.5 py-0.2 rounded font-medium ${
+                            className={`text-[12px] px-1.5 py-0.2 rounded font-medium ${
                               cmd.badge === 'Admin'
                                 ? 'bg-purple-100 text-purple-700'
                                 : 'bg-slate-100 text-slate-600'
@@ -381,14 +381,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                         )}
                       </div>
                       {cmd.subtitle && (
-                        <p className="text-[11px] text-slate-400 truncate mt-0.5">{cmd.subtitle}</p>
+                        <p className="text-[12px] text-slate-400 truncate mt-0.5">{cmd.subtitle}</p>
                       )}
                     </div>
                   </div>
 
                   {isSelected && (
                     <div className="flex items-center space-x-1 text-[#3A5D83] text-xs font-medium pl-2 shrink-0">
-                      <span className="hidden sm:inline text-[11px]">Select</span>
+                      <span className="hidden sm:inline text-[12px]">Select</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </div>
                   )}
@@ -399,7 +399,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         </div>
 
         {/* Footer info */}
-        <div className="px-4 py-2.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+        <div className="px-4 py-2.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between text-[12px] text-slate-400">
           <div className="flex items-center space-x-3">
             <span>
               Use <kbd className="font-mono bg-white border border-slate-200 px-1 py-0.2 rounded shadow-2xs">↑</kbd> <kbd className="font-mono bg-white border border-slate-200 px-1 py-0.2 rounded shadow-2xs">↓</kbd> to navigate

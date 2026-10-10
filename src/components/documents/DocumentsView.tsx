@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -288,7 +289,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                 {filteredDocs.length} {filteredDocs.length === 1 ? 'file' : 'files'}
               </span>
             </div>
-            <span className="text-[11px] font-semibold text-slate-400">Employee files</span>
+            <span className="text-[12px] font-semibold text-slate-400">Employee files</span>
           </div>
 
           {/* Desktop Table */}
@@ -308,7 +309,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                 {filteredDocs.map((doc) => {
                   const empMatch = isAdmin ? employees.find((e) => e.id === doc.employee_id) : null;
                   return (
-                    <tr key={doc.id} className="hover:bg-slate-50/70 transition-colors">
+                    <motion.tr layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={doc.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="px-5 py-3.5">
                         <div className="flex items-center space-x-3">
                           <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
@@ -318,14 +319,14 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                             <span className="font-bold text-slate-900 block truncate max-w-xs sm:max-w-sm" title={doc.name}>
                               {doc.name}
                             </span>
-                            <span className="text-[11px] text-slate-400 block">
+                            <span className="text-[12px] text-slate-400 block">
                               Uploaded by {doc.uploaded_by_name || 'HR Admin'}
                             </span>
                           </div>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${getCategoryBadgeClass(doc.category)}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[12px] font-semibold border ${getCategoryBadgeClass(doc.category)}`}>
                           {doc.category}
                         </span>
                       </td>
@@ -340,7 +341,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                                   className="w-6 h-6 rounded-full object-cover border border-slate-200"
                                 />
                               ) : (
-                                <div className="w-6 h-6 rounded-full bg-[#3A5D83]/10 text-[#3A5D83] flex items-center justify-center font-bold text-[9px] border border-[#3A5D83]/20 shrink-0">
+                                <div className="w-6 h-6 rounded-full bg-[#3A5D83]/10 text-[#3A5D83] flex items-center justify-center font-bold text-[12px] border border-[#3A5D83]/20 shrink-0">
                                   {empMatch.full_name?.split(' ').map((n) => n[0]).join('').slice(0, 2) || 'EM'}
                                 </div>
                               )}
@@ -349,7 +350,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                               </span>
                             </div>
                           ) : (
-                            <span className="text-slate-400 font-mono text-[11px]">ID: {doc.employee_id}</span>
+                            <span className="text-slate-400 font-mono text-[12px]">ID: {doc.employee_id}</span>
                           )}
                         </td>
                       )}
@@ -360,7 +361,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                           year: 'numeric',
                         })}
                       </td>
-                      <td className="px-5 py-3.5 text-slate-500 tabular-nums font-mono text-[11px]">
+                      <td className="px-5 py-3.5 text-slate-500 tabular-nums font-mono text-[12px]">
                         {doc.file_size}
                       </td>
                       <td className="px-5 py-3.5 text-right">
@@ -385,7 +386,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                           )}
                         </div>
                       </td>
-                    </tr>
+                    </motion.tr>
                   );
                 })}
               </tbody>
@@ -405,13 +406,13 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                       {doc.name}
                     </span>
                   </div>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${getCategoryBadgeClass(doc.category)}`}>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-semibold border ${getCategoryBadgeClass(doc.category)}`}>
                     {doc.category}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                  <span className="font-mono text-[10px]">{doc.file_size}</span>
+                <div className="flex items-center justify-between text-[12px] text-slate-500 pt-1">
+                  <span className="font-mono text-[12px]">{doc.file_size}</span>
                   <span className="flex items-center space-x-1">
                     <Clock className="w-3 h-3 text-slate-400" />
                     <span>{new Date(doc.uploaded_at).toLocaleDateString()}</span>
@@ -446,7 +447,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
 
       {/* Delete Document Confirmation Modal */}
       {deletingDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
+        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
           <div className="go-surface bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
               <div className="flex items-center space-x-2 text-rose-700">
@@ -466,7 +467,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                 Are you sure you want to permanently delete{' '}
                 <strong className="text-slate-900 font-semibold">{deletingDoc.name}</strong>?
               </p>
-              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-500 space-y-1">
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl text-[12px] text-slate-500 space-y-1">
                 <p><strong>Category:</strong> {deletingDoc.category}</p>
                 <p><strong>File Size:</strong> {deletingDoc.file_size}</p>
                 <p className="text-rose-600 font-medium pt-1">

@@ -216,7 +216,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
                     <p className="text-xs text-slate-600 mt-1 leading-relaxed max-w-2xl">
                       {notif.message}
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-1.5 tabular-nums">
+                    <p className="text-[12px] text-slate-400 mt-1.5 tabular-nums">
                       {new Date(notif.created_at).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',

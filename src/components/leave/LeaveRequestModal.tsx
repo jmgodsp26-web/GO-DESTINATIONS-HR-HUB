@@ -13,6 +13,7 @@ import {
 } from '../../constants/masterData';
 import { api } from '../../services/api';
 import {
+  LoaderCircle,
   Calendar,
   Clock,
   AlertCircle,
@@ -191,7 +192,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
       <div role="dialog" aria-modal="true" aria-labelledby="leave-request-title" className="go-leave-dialog go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
@@ -227,7 +228,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
         {/* Modal Body */}
         {step === 'form' ? (
-          <form onSubmit={handleProceedToConfirm} className="go-leave-form p-6 space-y-4">
+          <form aria-busy={isSubmitting} onSubmit={handleProceedToConfirm} className="go-leave-form p-6 space-y-4">
             <div className="go-form-section-title"><span>01</span><div><h4>Choose your time off</h4><p>Required fields are marked with an asterisk.</p></div></div>
             {/* Leave Type */}
             <div>
@@ -252,7 +253,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               </select>
 
               {isPaid && remainingDays !== null && (
-                <p className="text-[11px] text-slate-500 mt-1 flex items-center space-x-1">
+                <p className="text-[12px] text-slate-500 mt-1 flex items-center space-x-1">
                   <Info className="w-3.5 h-3.5 text-indigo-500" />
                   <span>
                     Current Balance: <strong className="text-slate-800">{remainingDays} day(s)</strong> remaining
@@ -260,7 +261,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 </p>
               )}
               {!isPaid && (
-                <p className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200/80 mt-1.5 flex items-start space-x-1.5">
+                <p className="text-[12px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200/80 mt-1.5 flex items-start space-x-1.5">
                   <Info className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                   <span>
                     <strong>Unpaid Leave:</strong> Authorized leave without salary compensation. Submitting unpaid leave will <em>not</em> reduce your paid Vacation or Sick leave balances.
@@ -323,7 +324,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                     <Sun className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                     <div>
                       <p className="text-xs font-bold text-slate-900">Morning</p>
-                      <p className="text-[10px] text-slate-500">9:00 AM – 1:00 PM</p>
+                      <p className="text-[12px] text-slate-500">9:00 AM – 1:00 PM</p>
                     </div>
                   </button>
 
@@ -339,7 +340,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                     <Sunset className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
                     <div>
                       <p className="text-xs font-bold text-slate-900">Afternoon</p>
-                      <p className="text-[10px] text-slate-500">1:00 PM – 5:00 PM</p>
+                      <p className="text-[12px] text-slate-500">1:00 PM – 5:00 PM</p>
                     </div>
                   </button>
                 </div>
@@ -420,7 +421,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                   </div>
                   {isPaid && remainingDays !== null ? (
                     <span
-                      className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                      className={`text-[12px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
                         isExhausted
                           ? 'bg-rose-200 text-rose-800'
                           : isZeroRemaining
@@ -439,7 +440,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                         : 'Enough days'}
                     </span>
                   ) : (
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">
+                    <span className="text-[12px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">
                       Unpaid Leave
                     </span>
                   )}
@@ -449,19 +450,19 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                   <>
                     <div className="grid grid-cols-3 gap-2 text-center py-2 px-1 bg-white/90 rounded-lg border border-slate-200/70 shadow-2xs">
                       <div>
-                        <span className="text-[10px] text-slate-500 font-medium block">Current Balance</span>
+                        <span className="text-[12px] text-slate-500 font-medium block">Current Balance</span>
                         <span className="text-xs sm:text-sm font-bold text-slate-800 tabular-nums">
                           {remainingDays} {remainingDays === 1 ? 'day' : 'days'}
                         </span>
                       </div>
                       <div className="border-x border-slate-200">
-                        <span className="text-[10px] text-slate-500 font-medium block">Requested</span>
+                        <span className="text-[12px] text-slate-500 font-medium block">Requested</span>
                         <span className="text-xs sm:text-sm font-bold text-indigo-600 tabular-nums">
                           -{calculatedDays} {calculatedDays === 1 ? 'day' : 'days'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 font-medium block">After approval</span>
+                        <span className="text-[12px] text-slate-500 font-medium block">After approval</span>
                         <span
                           className={`text-xs sm:text-sm font-bold tabular-nums ${
                             isExhausted
@@ -476,7 +477,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="text-[11px] mt-2 leading-relaxed">
+                    <div className="text-[12px] mt-2 leading-relaxed">
                       {isExhausted && (
                         <div className="text-rose-700 font-medium flex items-start space-x-1.5">
                           <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-600" />
@@ -513,7 +514,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                     </div>
                   </>
                 ) : (
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <p className="text-[12px] text-slate-500 mt-1">
                     Unpaid leave does not deduct from your paid leave quotas and is evaluated based on departmental staffing coverage.
                   </p>
                 )}
@@ -597,7 +598,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 You are requesting <strong className="text-base font-bold text-amber-950">{calculatedDays} day(s)</strong>
                 {isHalfDay && ` (${halfDayPeriod === 'morning' ? 'Morning' : 'Afternoon'})`} of {leaveType}.
               </p>
-              <p className="text-[11px] text-amber-800 mt-1">
+              <p className="text-[12px] text-amber-800 mt-1">
                 Please confirm the details below before submitting to HR.
               </p>
             </div>
@@ -665,7 +666,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 className="px-5 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] transition-colors flex items-center space-x-2 disabled:opacity-50"
               >
                 {isSubmitting ? (
-                  <span>Submitting...</span>
+                  <span role="status" className="inline-flex items-center gap-2"><LoaderCircle className="w-4 h-4 animate-spin" aria-hidden="true" />Submitting…</span>
                 ) : (
                   <>
                     <CheckCircle className="w-3.5 h-3.5" />

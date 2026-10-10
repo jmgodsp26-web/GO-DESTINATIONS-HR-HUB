@@ -244,7 +244,7 @@ export const SettingsView: React.FC = () => {
                 />
                 <span className="text-slate-500 font-medium">days / year</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-2">Assigned to newly created employee accounts.</p>
+              <p className="text-[12px] text-slate-400 mt-2">Assigned to newly created employee accounts.</p>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
@@ -263,7 +263,7 @@ export const SettingsView: React.FC = () => {
                 />
                 <span className="text-slate-500 font-medium">days / year</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-2">Medical leave days available each year.</p>
+              <p className="text-[12px] text-slate-400 mt-2">Medical leave days available each year.</p>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
@@ -282,7 +282,7 @@ export const SettingsView: React.FC = () => {
                 />
                 <span className="text-slate-500 font-medium">days / year</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-2">Days available for emergency leave.</p>
+              <p className="text-[12px] text-slate-400 mt-2">Days available for emergency leave.</p>
             </div>
           </div>
 
@@ -337,7 +337,7 @@ export const SettingsView: React.FC = () => {
             <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
               <div>
                 <p className="font-semibold text-slate-900">Email Notifications</p>
-                <p className="text-slate-500 text-[11px] mt-0.5">
+                <p className="text-slate-500 text-[12px] mt-0.5">
                   Email delivery is not available yet. Leave updates are shown in your in-app notifications.
                 </p>
               </div>
@@ -355,7 +355,7 @@ export const SettingsView: React.FC = () => {
             <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
               <div>
                 <p className="font-semibold text-slate-900">App Notifications</p>
-                <p className="text-slate-500 text-[11px] mt-0.5">
+                <p className="text-slate-500 text-[12px] mt-0.5">
                   Show desktop toast alerts and pulse notification dots on status changes.
                 </p>
               </div>
@@ -377,7 +377,7 @@ export const SettingsView: React.FC = () => {
             <Lock className="w-4 h-4 text-[#3A5D83]" />
             <div>
               <h2 className="text-sm font-bold text-slate-900">Password</h2>
-              <p className="text-[11px] text-slate-500">Update your personal password for signing in to the HR portal</p>
+              <p className="text-[12px] text-slate-500">Update your personal password for signing in to the HR portal</p>
             </div>
           </div>
 
@@ -408,7 +408,7 @@ export const SettingsView: React.FC = () => {
                   placeholder="Enter current password"
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83] font-mono"
                 />
-                <span className="text-[10px] text-slate-400 mt-0.5 block">Use your current personal password</span>
+                <span className="text-[12px] text-slate-400 mt-0.5 block">Use your current personal password</span>
               </div>
 
               <div>

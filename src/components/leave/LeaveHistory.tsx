@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { LeaveBalance, LeaveRequest, LeaveTransaction, LeaveStatus } from '../../types';
@@ -143,7 +144,7 @@ export const LeaveHistory: React.FC = () => {
                   {bal.leave_type}
                 </span>
                 <span
-                  className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
+                  className={`text-[12px] font-semibold px-2 py-0.5 rounded-md ${
                     !isPaid
                       ? 'bg-slate-100 text-slate-600 border border-slate-200'
                       : 'text-slate-600 bg-slate-100'
@@ -164,12 +165,12 @@ export const LeaveHistory: React.FC = () => {
                 {isPaid && (
                   <div className="text-right">
                     <span className="text-xs font-bold text-slate-700 tabular-nums">{bal.used_days}</span>
-                    <span className="text-[11px] text-slate-400 block">days used</span>
+                    <span className="text-[12px] text-slate-400 block">days used</span>
                   </div>
                 )}
                 {!isPaid && (
                   <div className="text-right">
-                    <span className="text-[10px] text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded">
+                    <span className="text-[12px] text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded">
                       No paid quota deduction
                     </span>
                   </div>
@@ -283,14 +284,14 @@ export const LeaveHistory: React.FC = () => {
                             : 'bg-amber-50 text-amber-700 border-amber-200/80';
 
                         return (
-                          <tr
+                          <motion.tr layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                             key={req.id}
                             onClick={() => setSelectedRequest(req)}
                             className="hover:bg-slate-50/70 cursor-pointer transition-colors"
                           >
                             <td className="px-5 py-3.5">
                               <div className="font-bold text-slate-900">{req.leave_type}</div>
-                              <div className="text-[11px] text-slate-400 mt-0.5">
+                              <div className="text-[12px] text-slate-400 mt-0.5">
                                 Submitted: {new Date(req.submitted_at).toLocaleDateString()}
                               </div>
                             </td>
@@ -301,12 +302,12 @@ export const LeaveHistory: React.FC = () => {
                             </td>
                             <td className="px-5 py-3.5 text-center">
                               {req.is_half_day ? (
-                                <span className="inline-flex items-center space-x-1 font-bold text-amber-900 bg-amber-100/90 border border-amber-200 px-2 py-0.5 rounded-md text-[11px]">
+                                <span className="inline-flex items-center space-x-1 font-bold text-amber-900 bg-amber-100/90 border border-amber-200 px-2 py-0.5 rounded-md text-[12px]">
                                   <span>0.5 day</span>
-                                  <span className="text-[10px] text-amber-700 uppercase font-semibold">({req.half_day_period === 'morning' ? 'AM' : 'PM'})</span>
+                                  <span className="text-[12px] text-amber-700 uppercase font-semibold">({req.half_day_period === 'morning' ? 'AM' : 'PM'})</span>
                                 </span>
                               ) : (
-                                <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md text-[11px] tabular-nums">
+                                <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md text-[12px] tabular-nums">
                                   {req.total_days} {req.total_days === 1 ? 'day' : 'days'}
                                 </span>
                               )}
@@ -315,14 +316,14 @@ export const LeaveHistory: React.FC = () => {
                               <div className="truncate font-medium text-slate-800">&ldquo;{req.reason}&rdquo;</div>
                               {req.admin_note && <p className="go-hr-feedback"><strong>HR feedback:</strong> {req.admin_note}</p>}
                               {req.attachment_name && (
-                                <div className="flex items-center space-x-1 text-[11px] text-indigo-600 mt-0.5">
+                                <div className="flex items-center space-x-1 text-[12px] text-indigo-600 mt-0.5">
                                   <Paperclip className="w-3 h-3" />
                                   <span className="truncate">{req.attachment_name}</span>
                                 </div>
                               )}
                             </td>
                             <td className="px-5 py-3.5">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${statusClass}`}>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold border ${statusClass}`}>
                                 {req.status === 'Approved' && <CheckCircle2 className="w-3 h-3 mr-1" />}
                                 {req.status === 'Rejected' && <XCircle className="w-3 h-3 mr-1" />}
                                 {req.status === 'Pending' && <Clock className="w-3 h-3 mr-1" />}
@@ -346,7 +347,7 @@ export const LeaveHistory: React.FC = () => {
                                     });
                                   }}
                                   title="Export .ics calendar file"
-                                  className="inline-flex items-center space-x-1 px-2 py-1 text-[11px] font-semibold text-[#3A5D83] bg-indigo-50/70 hover:bg-indigo-100/80 rounded-md mr-1.5 transition-colors"
+                                  className="inline-flex items-center space-x-1 px-2 py-1 text-[12px] font-semibold text-[#3A5D83] bg-indigo-50/70 hover:bg-indigo-100/80 rounded-md mr-1.5 transition-colors"
                                 >
                                   <Calendar className="w-3 h-3" />
                                   <span className="hidden xl:inline">.ics</span>
@@ -361,7 +362,7 @@ export const LeaveHistory: React.FC = () => {
                                 <ChevronRight className="w-4 h-4" />
                               </button>
                             </td>
-                          </tr>
+                          </motion.tr>
                         );
                       })}
                     </tbody>
@@ -388,9 +389,9 @@ export const LeaveHistory: React.FC = () => {
                         <div className="flex items-start justify-between">
                           <div>
                             <span className="font-bold text-slate-900 text-sm">{req.leave_type}</span>
-                            <p className="text-[11px] text-slate-400">Submitted: {new Date(req.submitted_at).toLocaleDateString()}</p>
+                            <p className="text-[12px] text-slate-400">Submitted: {new Date(req.submitted_at).toLocaleDateString()}</p>
                           </div>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusClass}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-semibold border ${statusClass}`}>
                             {req.status}
                           </span>
                         </div>
@@ -452,7 +453,7 @@ export const LeaveHistory: React.FC = () => {
                           <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors">
                             <td className="px-5 py-3.5 text-slate-700 font-medium tabular-nums">
                               <div>{txDate.toLocaleDateString()}</div>
-                              <div className="text-[10px] text-slate-400">
+                              <div className="text-[12px] text-slate-400">
                                 {txDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
                             </td>
@@ -461,7 +462,7 @@ export const LeaveHistory: React.FC = () => {
                             </td>
                             <td className="px-5 py-3.5">
                               <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                                className={`inline-flex items-center px-2 py-0.5 rounded-md text-[12px] font-semibold ${
                                   tx.transaction_type === 'holiday_credit'
                                     ? 'bg-emerald-100 text-emerald-800'
                                     : tx.transaction_type === 'leave_deduction'
@@ -489,13 +490,13 @@ export const LeaveHistory: React.FC = () => {
                               </span>
                             </td>
                             <td className="px-5 py-3.5 text-center">
-                              <span className="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md text-[11px] tabular-nums">
+                              <span className="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md text-[12px] tabular-nums">
                                 {tx.balance_after} days
                               </span>
                             </td>
                             <td className="px-5 py-3.5 text-slate-600 max-w-sm">
                               <div className="font-medium text-slate-800">{tx.description}</div>
-                              {tx.notes && <div className="text-[11px] text-slate-400 italic mt-0.5">&ldquo;{tx.notes}&rdquo;</div>}
+                              {tx.notes && <div className="text-[12px] text-slate-400 italic mt-0.5">&ldquo;{tx.notes}&rdquo;</div>}
                             </td>
                             <td className="px-5 py-3.5 text-right text-slate-500 font-medium">
                               {tx.performed_by_name || tx.created_by_name || 'System'}
@@ -524,7 +525,7 @@ export const LeaveHistory: React.FC = () => {
                           </span>
                         </div>
                         <p className="text-xs text-slate-600">{tx.description}</p>
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                        <div className="flex items-center justify-between text-[12px] text-slate-400 pt-1">
                           <span>{new Date(tx.created_at || tx.timestamp || Date.now()).toLocaleDateString()}</span>
                           <span>Balance: <strong className="text-slate-700">{tx.balance_after}d</strong></span>
                         </div>
@@ -540,7 +541,7 @@ export const LeaveHistory: React.FC = () => {
 
       {/* Request Details Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <h3 className="text-sm font-bold text-slate-900">Leave Request Details</h3>
@@ -626,7 +627,7 @@ export const LeaveHistory: React.FC = () => {
               {/* Admin Review info */}
               {selectedRequest.reviewed_by_name && (
                 <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <p className="text-[11px] font-semibold text-slate-700">
+                  <p className="text-[12px] font-semibold text-slate-700">
                     Reviewed by {selectedRequest.reviewed_by_name} on{' '}
                     {selectedRequest.reviewed_at ? new Date(selectedRequest.reviewed_at).toLocaleDateString() : ''}
                   </p>
@@ -646,11 +647,11 @@ export const LeaveHistory: React.FC = () => {
                       <Calendar className="w-4 h-4 text-[#3A5D83]" />
                       <span>Calendar Integration</span>
                     </span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-md">
+                    <span className="text-[12px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-md">
                       Approved Leave
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[12px] text-slate-500">
                     Export to your personal or work calendar (.ics file compatible with Outlook &amp; Apple Calendar) or push directly to Google Calendar.
                   </p>
                   <div className="flex items-center space-x-2 pt-1">
@@ -746,7 +747,7 @@ export const LeaveHistory: React.FC = () => {
                     : `${cancellingRequest.start_date} → ${cancellingRequest.end_date}`}
                 </span>?
               </p>
-              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-500 space-y-1">
+              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[12px] text-slate-500 space-y-1">
                 <p><strong>Allocated days:</strong> {cancellingRequest.total_days} day(s)</p>
                 <p className="text-emerald-700 font-medium">
                   ✓ Any reserved balance days will be restored to your leave balance.

@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -421,7 +422,7 @@ export const EmployeeManagement: React.FC = () => {
                 const sickRem = (sickBal?.allocated_days ?? 10) - (sickBal?.used_days ?? 0);
 
                 return (
-                  <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
+                  <motion.tr layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={emp.id} className="hover:bg-slate-50/70 transition-colors">
                     {/* Employee avatar & name */}
                     <td className="px-5 py-3.5">
                       <div className="flex items-center space-x-3">
@@ -438,7 +439,7 @@ export const EmployeeManagement: React.FC = () => {
                         )}
                         <div>
                           <p className="font-bold text-slate-900">{emp.full_name}</p>
-                          <span className="font-mono text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                          <span className="font-mono text-[12px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
                             {emp.employee_id}
                           </span>
                         </div>
@@ -448,7 +449,7 @@ export const EmployeeManagement: React.FC = () => {
                     {/* Department & title */}
                     <td className="px-5 py-3.5">
                       <p className="font-semibold text-slate-800">{emp.job_title}</p>
-                      <p className="text-[11px] text-slate-500">{emp.department}</p>
+                      <p className="text-[12px] text-slate-500">{emp.department}</p>
                     </td>
 
                     {/* Location */}
@@ -459,7 +460,7 @@ export const EmployeeManagement: React.FC = () => {
                         </span>
                         <div>
                           <p className="font-semibold text-slate-800">{emp.country || DEFAULT_COUNTRY}</p>
-                          <p className="text-[11px] text-slate-400">
+                          <p className="text-[12px] text-slate-400">
                             {emp.region && emp.region !== 'All' ? emp.region : 'Nationwide'}
                           </p>
                         </div>
@@ -469,24 +470,24 @@ export const EmployeeManagement: React.FC = () => {
                     {/* Contact */}
                     <td className="px-5 py-3.5 text-slate-600">
                       <p className="font-medium text-slate-800">{emp.email}</p>
-                      <p className="text-[11px] text-slate-400">{emp.phone}</p>
+                      <p className="text-[12px] text-slate-400">{emp.phone}</p>
                     </td>
 
                     {/* Vacation Leave balance */}
                     <td className="px-5 py-3.5">
                       <span className="font-bold text-slate-900 tabular-nums">{vacationRem}</span>
-                      <span className="text-[11px] text-slate-500"> / {vacationBal?.allocated_days ?? policyDefaults.annual} days</span>
+                      <span className="text-[12px] text-slate-500"> / {vacationBal?.allocated_days ?? policyDefaults.annual} days</span>
                     </td>
 
                     {/* Sick Leave balance */}
                     <td className="px-5 py-3.5">
                       <span className="font-bold text-slate-900 tabular-nums">{sickRem}</span>
-                      <span className="text-[11px] text-slate-500"> / {sickBal?.allocated_days ?? 10} days</span>
+                      <span className="text-[12px] text-slate-500"> / {sickBal?.allocated_days ?? 10} days</span>
                     </td>
 
                     {/* Role badge */}
                     <td className="px-5 py-3.5">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-semibold border ${
                         emp.role === 'admin'
                           ? 'bg-purple-50 text-purple-700 border-purple-200/80'
                           : 'bg-slate-100 text-slate-700 border-slate-200/80'
@@ -497,7 +498,7 @@ export const EmployeeManagement: React.FC = () => {
 
                     {/* Status badge */}
                     <td className="px-5 py-3.5">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-semibold border ${
                         emp.status === 'active'
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
                           : 'bg-rose-50 text-rose-700 border-rose-200/80'
@@ -578,7 +579,7 @@ export const EmployeeManagement: React.FC = () => {
                         </button>
                       )}
                     </td>
-                  </tr>
+                  </motion.tr>
                 );
               })}
             </tbody>
@@ -617,10 +618,10 @@ export const EmployeeManagement: React.FC = () => {
                         <h4 className="text-sm font-bold text-slate-900">{emp.full_name}</h4>
                         <p className="text-xs text-slate-500">{emp.job_title} • {emp.department}</p>
                         <div className="flex items-center space-x-2 mt-0.5">
-                          <span className="font-mono text-[10px] text-slate-400">
+                          <span className="font-mono text-[12px] text-slate-400">
                             {emp.employee_id}
                           </span>
-                          <span className="inline-flex items-center space-x-1 text-[11px] text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">
+                          <span className="inline-flex items-center space-x-1 text-[12px] text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">
                             <span>{getCountryFlag(emp.country || DEFAULT_COUNTRY)}</span>
                             <span>{emp.country || DEFAULT_COUNTRY}</span>
                           </span>
@@ -629,7 +630,7 @@ export const EmployeeManagement: React.FC = () => {
                     </div>
 
                     <div className="flex items-center space-x-1">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                      <span className={`px-2 py-0.5 rounded-full text-[12px] font-semibold border ${
                         emp.role === 'admin'
                           ? 'bg-purple-50 text-purple-700 border-purple-200/80'
                           : 'bg-slate-100 text-slate-700 border-slate-200/80'
@@ -642,22 +643,22 @@ export const EmployeeManagement: React.FC = () => {
                   {/* Leave Balances Pill Grid */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 flex justify-between items-center">
-                      <span className="text-slate-500 text-[11px]">Vacation:</span>
+                      <span className="text-slate-500 text-[12px]">Vacation:</span>
                       <span className="font-bold text-slate-800 tabular-nums">
-                        {vacationRem} <span className="text-[10px] text-slate-400 font-normal">/ {vacationBal?.allocated_days ?? policyDefaults.annual}d</span>
+                        {vacationRem} <span className="text-[12px] text-slate-400 font-normal">/ {vacationBal?.allocated_days ?? policyDefaults.annual}d</span>
                       </span>
                     </div>
                     <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 flex justify-between items-center">
-                      <span className="text-slate-500 text-[11px]">Sick:</span>
+                      <span className="text-slate-500 text-[12px]">Sick:</span>
                       <span className="font-bold text-slate-800 tabular-nums">
-                        {sickRem} <span className="text-[10px] text-slate-400 font-normal">/ {sickBal?.allocated_days ?? 10}d</span>
+                        {sickRem} <span className="text-[12px] text-slate-400 font-normal">/ {sickBal?.allocated_days ?? 10}d</span>
                       </span>
                     </div>
                   </div>
 
                   {/* Mobile Action Buttons Bar */}
                   <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-                    <span className="text-[11px] text-slate-400 truncate max-w-[140px]">{emp.email}</span>
+                    <span className="text-[12px] text-slate-400 truncate max-w-[140px]">{emp.email}</span>
                     <div className="flex items-center space-x-1">
                       <button
                         type="button"
@@ -730,7 +731,7 @@ export const EmployeeManagement: React.FC = () => {
 
       {/* 1. Add Employee Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <h3 className="text-base font-semibold text-slate-900">Add New Employee</h3>
@@ -787,7 +788,7 @@ export const EmployeeManagement: React.FC = () => {
                       </button>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-400">JPG, PNG, or WebP up to 2MB</p>
+                  <p className="text-[12px] text-slate-400">JPG, PNG, or WebP up to 2MB</p>
                   <input
                     ref={addFileInputRef}
                     type="file"
@@ -882,7 +883,7 @@ export const EmployeeManagement: React.FC = () => {
                     ))}
                     <option value="Other">🌍 Other / International</option>
                   </select>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Determines the employee's applicable holiday calendar.</p>
+                  <p className="text-[12px] text-slate-400 mt-0.5">Determines the employee's applicable holiday calendar.</p>
                 </div>
 
                 <div>
@@ -894,7 +895,7 @@ export const EmployeeManagement: React.FC = () => {
                     placeholder="e.g. California, Metro Manila, Ontario"
                     className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500"
                   />
-                  <p className="text-[10px] text-slate-400 mt-0.5">Regional or state office (optional).</p>
+                  <p className="text-[12px] text-slate-400 mt-0.5">Regional or state office (optional).</p>
                 </div>
               </div>
 
@@ -920,7 +921,7 @@ export const EmployeeManagement: React.FC = () => {
                     placeholder="Unique temporary password (12+ characters)"
                     className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 font-mono"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">This password allows the employee to log in immediately.</p>
+                  <p className="text-[12px] text-slate-400 mt-1">This password allows the employee to log in immediately.</p>
                 </div>
               </div>
 
@@ -1025,7 +1026,7 @@ export const EmployeeManagement: React.FC = () => {
 
       {/* 2. Edit Employee Modal */}
       {editingEmployee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+        <div className="go-overlay go-detail-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <h3 className="text-base font-semibold text-slate-900">
@@ -1084,7 +1085,7 @@ export const EmployeeManagement: React.FC = () => {
                       </button>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-400">JPG, PNG, or WebP up to 2MB</p>
+                  <p className="text-[12px] text-slate-400">JPG, PNG, or WebP up to 2MB</p>
                   <input
                     ref={editFileInputRef}
                     type="file"
@@ -1186,7 +1187,7 @@ export const EmployeeManagement: React.FC = () => {
                     ))}
                     <option value="Other">🌍 Other / International</option>
                   </select>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Used for personalizing Upcoming Holidays.</p>
+                  <p className="text-[12px] text-slate-400 mt-0.5">Used for personalizing Upcoming Holidays.</p>
                 </div>
 
                 <div>
@@ -1282,7 +1283,7 @@ export const EmployeeManagement: React.FC = () => {
                   placeholder="Leave blank to keep current password"
                   className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-[#3A5D83] font-mono"
                 />
-                <p className="text-[10px] text-slate-500 mt-1">
+                <p className="text-[12px] text-slate-500 mt-1">
                   Type a unique temporary password (at least 12 characters) to immediately reset this employee's sign-in credentials.
                 </p>
               </div>
@@ -1328,7 +1329,7 @@ export const EmployeeManagement: React.FC = () => {
 
       {/* 3. Adjust Leave Balance Modal */}
       {adjustingBalanceEmployee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <h3 className="text-base font-semibold text-slate-900">
@@ -1383,7 +1384,7 @@ export const EmployeeManagement: React.FC = () => {
                   onChange={(e) => setNewAllocatedDays(parseInt(e.target.value) || 0)}
                   className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 font-bold"
                 />
-                <p className="text-[11px] text-slate-500 mt-1">
+                <p className="text-[12px] text-slate-500 mt-1">
                   Remaining balance is automatically calculated as allocated minus approved used.
                 </p>
               </div>
@@ -1411,7 +1412,7 @@ export const EmployeeManagement: React.FC = () => {
 
       {/* 4. Employee Created Credentials Notification Modal */}
       {createdEmployeeInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-100 bg-emerald-50/70 flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -1420,7 +1421,7 @@ export const EmployeeManagement: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">Employee Account Created!</h3>
-                  <p className="text-[11px] text-emerald-700 font-medium">Ready for immediate login</p>
+                  <p className="text-[12px] text-emerald-700 font-medium">Ready for immediate login</p>
                 </div>
               </div>
               <button
@@ -1439,28 +1440,28 @@ export const EmployeeManagement: React.FC = () => {
 
               <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 space-y-2.5 font-mono">
                 <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-sans text-[11px]">Employee ID</span>
+                  <span className="text-slate-500 font-sans text-[12px]">Employee ID</span>
                   <span className="font-bold text-slate-800">{createdEmployeeInfo.employee_id}</span>
                 </div>
                 <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-sans text-[11px]">Work Email / Login</span>
+                  <span className="text-slate-500 font-sans text-[12px]">Work Email / Login</span>
                   <span className="font-bold text-[#3A5D83]">{createdEmployeeInfo.email}</span>
                 </div>
                 <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-sans text-[11px]">Temporary Password</span>
+                  <span className="text-slate-500 font-sans text-[12px]">Temporary Password</span>
                   <span className="font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded text-xs">
                     {createdEmployeeInfo.password}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-1">
-                  <span className="text-slate-500 font-sans text-[11px]">Role</span>
-                  <span className="font-sans capitalize bg-slate-200 text-slate-800 px-2 py-0.5 rounded text-[11px]">
+                  <span className="text-slate-500 font-sans text-[12px]">Role</span>
+                  <span className="font-sans capitalize bg-slate-200 text-slate-800 px-2 py-0.5 rounded text-[12px]">
                     {createdEmployeeInfo.role}
                   </span>
                 </div>
               </div>
 
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-[11px] leading-relaxed">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-[12px] leading-relaxed">
                 The employee can now open the login page, enter their email and password, and instantly access their leave portal dashboard.
               </div>
 
@@ -1495,7 +1496,7 @@ export const EmployeeManagement: React.FC = () => {
 
       {/* 4. Delete Employee Confirmation Modal */}
       {deletingEmployee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
+        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
           <div className="go-surface bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
               <div className="flex items-center space-x-2 text-rose-700">
@@ -1516,7 +1517,7 @@ export const EmployeeManagement: React.FC = () => {
                 <strong className="text-slate-900 font-semibold">{deletingEmployee.full_name}</strong> (
                 {deletingEmployee.employee_id})?
               </p>
-              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-500 space-y-1">
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl text-[12px] text-slate-500 space-y-1">
                 <p><strong>Department:</strong> {deletingEmployee.department}</p>
                 <p><strong>Role:</strong> {deletingEmployee.role === 'admin' ? 'Administrator' : 'Employee'}</p>
                 <p className="text-rose-600 font-medium pt-1">⚠️ This will delete their profile and leave balance records. This action cannot be undone.</p>

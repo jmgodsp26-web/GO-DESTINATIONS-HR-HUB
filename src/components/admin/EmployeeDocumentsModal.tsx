@@ -210,7 +210,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+    <div className="go-overlay go-detail-backdrop fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
       <div className="go-surface bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150">
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
@@ -221,7 +221,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
             <div>
               <div className="flex items-center space-x-2">
                 <h3 className="text-base font-bold text-slate-900">Employee Documents</h3>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                   <Shield className="w-3 h-3 mr-1" /> Admin Access Only
                 </span>
               </div>
@@ -281,14 +281,14 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
                 <div className="flex items-center justify-center space-x-2 text-emerald-800">
                   <FileCheck className="w-5 h-5 text-emerald-600" />
                   <span className="text-xs font-bold">{selectedFile.name}</span>
-                  <span className="text-[10px] text-emerald-600">({formatFileSize(selectedFile.size)})</span>
+                  <span className="text-[12px] text-emerald-600">({formatFileSize(selectedFile.size)})</span>
                 </div>
               ) : (
                 <div className="space-y-1">
                   <p className="text-xs text-slate-700 font-medium">
                     <span className="text-indigo-600 font-semibold underline">Click to choose a file</span> or drag and drop here
                   </p>
-                  <p className="text-[11px] text-slate-400">PDF, Word (.doc, .docx), Images, or Excel files (up to 450 KB)</p>
+                  <p className="text-[12px] text-slate-400">PDF, Word (.doc, .docx), Images, or Excel files (up to 450 KB)</p>
                 </div>
               )}
             </div>
@@ -363,7 +363,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
               <div className="py-8 text-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
                 <FileText className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                 <p className="text-xs font-medium text-slate-600">No documents uploaded yet</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[12px] text-slate-400 mt-0.5">
                   Use the upload section above to attach contracts, certifications, or IDs.
                 </p>
               </div>
@@ -382,15 +382,15 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
                         <div className="flex items-center space-x-2">
                           <p className="text-xs font-bold text-slate-900 truncate">{doc.name}</p>
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${getCategoryColor(
+                            className={`px-2 py-0.5 rounded text-[12px] font-semibold border ${getCategoryColor(
                               doc.category
                             )}`}
                           >
                             {doc.category}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-3 text-[11px] text-slate-400 mt-0.5">
-                          <span className="font-mono text-[10px]">{doc.file_size}</span>
+                        <div className="flex items-center space-x-3 text-[12px] text-slate-400 mt-0.5">
+                          <span className="font-mono text-[12px]">{doc.file_size}</span>
                           <span>•</span>
                           <span className="flex items-center space-x-1">
                             <Clock className="w-3 h-3" />

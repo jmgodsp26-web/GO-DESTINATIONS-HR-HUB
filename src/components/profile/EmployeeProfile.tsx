@@ -209,7 +209,7 @@ export const EmployeeProfile: React.FC = () => {
               <div key={bal.id} className="p-4 rounded-lg bg-slate-50 border border-slate-200">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold text-slate-900">{bal.leave_type}</span>
-                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[11px] font-medium">
+                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[12px] font-medium">
                     {bal.allocated_days} days allocated
                   </span>
                 </div>
@@ -217,7 +217,7 @@ export const EmployeeProfile: React.FC = () => {
                   <span className="text-2xl font-bold text-slate-900">{remaining}</span>
                   <span className="text-slate-500 font-medium">days remaining</span>
                 </div>
-                <div className="mt-2 text-[11px] text-slate-500 flex justify-between">
+                <div className="mt-2 text-[12px] text-slate-500 flex justify-between">
                   <span>Used: {bal.used_days} days</span>
                   <span>Allowance: {bal.allocated_days} days</span>
                 </div>
@@ -243,7 +243,7 @@ export const EmployeeProfile: React.FC = () => {
           <div className="py-8 text-center border border-dashed border-slate-200 rounded-lg bg-slate-50/50">
             <FileText className="w-8 h-8 text-slate-300 mx-auto mb-2" />
             <p className="text-xs font-semibold text-slate-700">No documents on file</p>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-[12px] text-slate-400 mt-0.5">
               Official company contracts, tax certificates, and identification files provided by HR will appear here.
             </p>
           </div>
@@ -297,26 +297,26 @@ export const EmployeeProfile: React.FC = () => {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1 mb-1">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${getCategoryStyle(doc.category)}`}>
+                        <span className={`px-2 py-0.5 rounded text-[12px] font-semibold border ${getCategoryStyle(doc.category)}`}>
                           {doc.category}
                         </span>
-                        <span className="text-[10px] text-slate-400">{doc.file_size}</span>
+                        <span className="text-[12px] text-slate-400">{doc.file_size}</span>
                       </div>
                       <h4 className="text-xs font-bold text-slate-900 truncate" title={doc.name}>
                         {doc.name}
                       </h4>
-                      <p className="text-[11px] text-slate-400 mt-1">
+                      <p className="text-[12px] text-slate-400 mt-1">
                         Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
 
                   <div className="mt-3 pt-2.5 border-t border-slate-200 flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400">By {doc.uploaded_by_name}</span>
+                    <span className="text-[12px] text-slate-400">By {doc.uploaded_by_name}</span>
                     <button
                       type="button"
                       onClick={handleDownload}
-                      className="inline-flex items-center space-x-1 text-[11px] font-semibold text-[#3A5D83] hover:text-[#182E3F] hover:underline"
+                      className="inline-flex items-center space-x-1 text-[12px] font-semibold text-[#3A5D83] hover:text-[#182E3F] hover:underline"
                     >
                       <Download className="w-3 h-3" />
                       <span>Download</span>
