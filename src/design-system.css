@@ -216,3 +216,40 @@
   .go-header-product strong { font-size: 18px; }
   .go-header-context { font-size: 11px; }
 }
+
+/* Full-page GO welcome; the opaque form remains the visual anchor. */
+.go-login.go-login-immersive {
+  isolation: isolate;
+  background: radial-gradient(ellipse at 15% 10%,#3a5d8380,transparent 55%), radial-gradient(ellipse at 100% 100%,#3a5d83,transparent 65%),#182e3f;
+}
+.go-login-immersive::before { content: ''; position: absolute; width: min(80vw,1100px); aspect-ratio: 1; left: -28vw; bottom: -65vw; border: 1px solid #cfd7e11c; border-radius: 50%; box-shadow: 0 0 0 80px #cfd7e106,0 0 0 160px #cfd7e104; pointer-events: none; z-index: 0; }
+.go-login-immersive .go-login-story { background: none; border: 0; border-radius: 0; box-shadow: none; position: relative; z-index: 1; }
+.go-login-immersive .go-login-story::after { display: none; }
+.go-login-immersive .go-login-form > div:first-child h1 { color: #fff; }
+.go-login-immersive .go-login-form > div:first-child p { color: #cfd7e1; }
+.go-login-immersive .go-login-form > div:first-child .inline-flex { color: #f1c48e; }
+.go-login-immersive .go-login-form > div:first-child .inline-flex > span:last-child { color: #f1c48e; }
+.go-login-immersive .go-login-form > div:first-child .inline-flex > span:first-child { background: #ed9027; }
+.go-login-immersive .go-login-form > .go-surface { background: #fff; border: 1px solid #fff; box-shadow: 0 20px 65px #08172133; }
+.go-login-immersive .go-login-form > div:last-child p { color: #cfd7e1; }
+@media (min-width: 768px) {
+  .go-login.go-login-immersive { padding: 24px clamp(24px,6vw,100px); gap: clamp(24px,5vw,80px); }
+  .go-login-immersive .go-login-story { height: calc(100dvh - 48px); padding: clamp(20px,4vh,36px) 0; }
+  .go-login-immersive .go-story-copy h2 { max-width: 540px; font-size: clamp(32px,5.7vh,54px); }
+  .go-login-immersive .go-login-route { max-width: 530px; opacity: .85; }
+  .go-login-immersive .go-login-form { max-width: 430px; }
+}
+@media (min-width: 768px) and (max-height: 680px) {
+  .go-login.go-login-immersive { padding-top: 12px; padding-bottom: 12px; }
+  .go-login-immersive .go-login-story { height: calc(100dvh - 24px); padding: 18px 0; }
+}
+@media (min-width: 768px) and (max-height: 560px) {
+  .go-login-immersive .go-login-story { height: auto; min-height: 510px; }
+}
+@media (max-width: 767px) {
+  .go-login.go-login-immersive { padding: 24px 16px; display: flex; flex-direction: column; justify-content: center; gap: 0; }
+  .go-login-immersive .go-login-story { min-height: 0; height: auto; padding: 0; margin: 0 auto 24px; align-self: center; }
+  .go-login-immersive .go-login-story .go-story-copy, .go-login-immersive .go-login-route, .go-login-immersive .go-story-footer { display: none; }
+  .go-login-immersive .go-login-story .go-story-top { justify-content: center; }
+  .go-login-immersive .go-login-form { margin: 0 auto; }
+}
