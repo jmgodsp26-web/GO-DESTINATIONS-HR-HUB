@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 /** Decorative examples only: no employee records or account data are loaded. */
-export const LoginHRScene: React.FC = () => (
-  <div className="go-hr-scene">
+export const LoginHRScene: React.FC = () => {
+  const [paused, setPaused] = useState(false);
+  return (
+  <div className="go-hr-scene" data-paused={paused}>
     <svg viewBox="0 0 560 240" role="img" aria-labelledby="go-hr-scene-title" focusable="false">
       <title id="go-hr-scene-title">Plan your leave, stay connected, and keep your documents in one place.</title>
       <path className="go-hr-route-guide" d="M84 196 C155 196 180 180 280 180 S405 196 476 196" />
@@ -36,5 +38,7 @@ export const LoginHRScene: React.FC = () => (
       </g>
       <text x="280" y="230" textAnchor="middle" className="go-hr-scene-caption">YOUR EVERYDAY HR, CONNECTED.</text>
     </svg>
+    <button type="button" className="go-hr-motion-toggle" aria-pressed={paused} onClick={() => setPaused(value => !value)}>{paused ? 'Resume animation' : 'Pause animation'}</button>
   </div>
-);
+  );
+};
