@@ -254,45 +254,29 @@
   .go-login-immersive .go-login-form { margin: 0 auto; }
 }
 
-/* Gentle repeating HR illustration with a user-controlled pause. */
-.go-hr-scene { width: 100%; max-width: 560px; align-self: flex-start; }
-.go-hr-scene svg { display: block; width: 100%; height: auto; max-height: 230px; overflow: visible; font-family: 'Open Sans',Arial,sans-serif; }
-.go-hr-card-surface { fill: #274459; stroke: #7087a3; stroke-opacity: .45; }
-.go-hr-feature-title { fill: #fff; font-size: 13px; font-weight: 700; }
-.go-hr-feature-copy { fill: #cfd7e1; font-size: 10px; }
-.go-hr-scene-caption { fill: #9eafc1; font-size: 9px; letter-spacing: 1.5px; font-weight: 600; }
-.go-hr-route-guide { fill: none; stroke: #7087a3; stroke-opacity: .25; stroke-width: 2; }
-.go-hr-route { fill: none; stroke: #9eafc1; stroke-width: 1.5; stroke-dasharray: 1; stroke-dashoffset: 0; animation: go-route-draw 1.8s var(--go-ease) .35s both; }
-.go-hr-card { animation: go-hr-card-enter .45s var(--go-ease) both; }
-.go-hr-card-leave { animation-delay: .15s; }
-.go-hr-card-team { animation-delay: .35s; }
-.go-hr-card-docs { animation-delay: .55s; }
-.go-hr-date { fill: #7087a3; fill-opacity: .5; }
-.go-hr-date-selected { fill: #ed9027; animation: go-hr-date-highlight 6s ease .8s infinite both; }
-.go-hr-person { transform-box: fill-box; transform-origin: center bottom; animation: go-hr-person-enter 6s var(--go-ease) infinite both; }
-.go-hr-person-0 { animation-delay: .9s; }
-.go-hr-person-1 { animation-delay: 1.05s; }
-.go-hr-person-2 { animation-delay: 1.2s; }
-.go-hr-paper { animation: go-hr-paper-file 6s var(--go-ease) 1.4s infinite both; }
-.go-hr-traveler { offset-path: path('M84 196 C155 196 180 180 280 180 S405 196 476 196'); offset-distance: 100%; animation: go-hr-travel 6s var(--go-ease) .4s infinite both; }
-@keyframes go-hr-card-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes go-hr-date-highlight { 0%,100% { fill: #7087a3; } 15%,75% { fill: #ed9027; } }
-@keyframes go-hr-person-enter { 0%,100% { opacity: .65; transform: scale(.94); } 15%,75% { opacity: 1; transform: scale(1); } }
-@keyframes go-hr-paper-file { 0%,100% { transform: translateY(-8px); } 18%,75% { transform: translateY(0); } }
-@keyframes go-hr-travel { 0%,5% { offset-distance: 0%; opacity: 0; } 10% { opacity: 1; } 65%,85% { offset-distance: 100%; opacity: 1; } 95%,100% { offset-distance: 100%; opacity: 0; } }
+/* Dimensional SVG objects: continuous, lightweight motion in GO brand colors. */
+.go-hr-scene { width: 100%; max-width: 640px; align-self: flex-start; }
+.go-hr-scene svg { display: block; width: 100%; height: auto; max-height: 280px; overflow: visible; font-family: 'Open Sans',Arial,sans-serif; }
+.go-hr-feature-title { fill: #e9eef4; font-size: 13px; font-weight: 600; letter-spacing: .15px; }
+.go-hr-float { animation: go-hr-float 7s ease-in-out infinite; }
+.go-hr-float-team { animation-delay: -2.3s; }
+.go-hr-float-docs { animation-delay: -4.6s; }
+.go-hr-paper { animation: go-hr-file 7s ease-in-out infinite; }
+.go-hr-date-selected { animation: go-hr-date-glow 7s ease-in-out infinite; }
+.go-hr-energy { stroke-dasharray: .12 .88; animation: go-hr-flow 6s linear infinite; }
+.go-hr-spark { animation: go-hr-spark 5s ease-in-out infinite; }
+@keyframes go-hr-float { 0%,100% { transform: translateY(3px); } 50% { transform: translateY(-7px); } }
+@keyframes go-hr-file { 0%,100% { transform: translateY(1px); } 50% { transform: translateY(-7px); } }
+@keyframes go-hr-date-glow { 0%,100% { fill: #ed9027; } 50% { fill: #f1c48e; } }
+@keyframes go-hr-flow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -1; } }
+@keyframes go-hr-spark { 0%,100% { opacity: .4; } 50% { opacity: 1; } }
 @media (min-width: 768px) {
   .go-login.go-login-immersive { gap: clamp(28px,4vw,64px); grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); padding-inline: clamp(28px,7vw,120px); }
   .go-login-immersive .go-story-copy h2 { font-size: clamp(32px,5.4vh,50px); }
   .go-login-immersive .go-story-copy p { max-width: 420px; }
   .go-login-immersive .go-login-story { gap: 14px; }
-  .go-hr-scene svg { height: clamp(145px,27vh,230px); }
+  .go-hr-scene svg { height: clamp(160px,30vh,280px); }
 }
-@media (min-width: 768px) and (max-height: 680px) { .go-hr-scene svg { height: 150px; } .go-login-immersive .go-login-story { gap: 10px; } }
+@media (min-width: 768px) and (max-height: 680px) { .go-hr-scene svg { height: 160px; } .go-login-immersive .go-login-story { gap: 10px; } }
 @media (max-width: 767px) { .go-hr-scene { display: none; } }
 @media (prefers-reduced-motion: reduce) { .go-hr-scene * { animation: none !important; } }
-
-.go-hr-scene[data-paused="true"] * { animation-play-state: paused !important; }
-.go-hr-motion-toggle { display: block; margin: 6px auto 0; padding: 6px 12px; border: 1px solid #7087a3; border-radius: 999px; color: #cfd7e1; background: transparent; font-size: 11px; cursor: pointer; }
-.go-hr-motion-toggle:hover { background: #ffffff10; color: #fff; }
-.go-hr-motion-toggle:focus-visible { outline: 2px solid #ed9027; outline-offset: 3px; }
-@media (prefers-reduced-motion: reduce) { .go-hr-motion-toggle { display: none; } }
