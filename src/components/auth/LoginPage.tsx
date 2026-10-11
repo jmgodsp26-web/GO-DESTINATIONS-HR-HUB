@@ -100,7 +100,7 @@ export const LoginPage: React.FC = () => {
   );
 
   return (
-    <div className="go-login relative min-h-screen bg-[#fafbfc] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased overflow-hidden select-none">
+    <div className="go-login go-login-immersive relative min-h-screen bg-[#fafbfc] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased overflow-hidden select-none">
       {/* Refined Ambient Background Lighting & Subtle Pattern */}
       <div
         className="absolute inset-0 bg-[radial-gradient(ellipse_75%_50%_at_50%_-10%,rgba(58,93,131,0.08),rgba(255,255,255,0))] pointer-events-none"
