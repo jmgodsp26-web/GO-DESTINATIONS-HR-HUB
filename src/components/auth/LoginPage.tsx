@@ -1,3 +1,4 @@
+import { LoginHRScene } from './LoginHRScene';
 import { GoDestinationsLogo } from '../common/GoDestinationsLogo';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -113,13 +114,8 @@ export const LoginPage: React.FC = () => {
 
       <aside className="go-login-story" aria-label="GO Destinations workplace">
         <div className="go-story-top"><GoDestinationsLogo variant="icon-only" size="xl" /><span>GO DESTINATIONS</span></div>
-        <div className="go-story-copy"><span className="go-eyebrow">YOUR GO WORKPLACE</span><h2>Your people. <br />Your workplace. <br /><em>Connected.</em></h2><p>Plan your time off, find your documents, and stay connected with your team.</p></div>
-        <svg className="go-login-route" viewBox="0 0 560 190" fill="none" aria-hidden="true" focusable="false">
-          <path className="go-route-guide" d="M25 147 C110 147 88 45 195 45 S290 147 365 112 S448 38 530 38" />
-          <path className="go-route-line" pathLength="1" d="M25 147 C110 147 88 45 195 45 S290 147 365 112 S448 38 530 38" />
-          <circle cx="25" cy="147" r="5" fill="#CFD7E1" /><circle cx="195" cy="45" r="5" fill="#CFD7E1" /><circle cx="365" cy="112" r="5" fill="#CFD7E1" />
-          <g className="go-route-destination"><circle cx="530" cy="38" r="17" fill="#ED9027" fillOpacity=".15" /><circle cx="530" cy="38" r="6" fill="#ED9027" /></g>
-        </svg>
+        <div className="go-story-copy"><span className="go-eyebrow">YOUR GO WORKPLACE</span><h2>Your workday. <br /><em>Connected.</em></h2><p>Plan your time off, find your documents, and stay connected with your team.</p></div>
+        <LoginHRScene />
         <div className="go-story-footer"><span className="go-story-dot" /> GLOBAL REACH. PERSONAL CONNECTION.</div>
       </aside>
       <div className="go-login-form relative z-10 w-full max-w-[420px] mx-auto">
