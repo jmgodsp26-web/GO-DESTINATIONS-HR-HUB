@@ -1,3 +1,4 @@
+import { prepareProfilePhoto, normalizeProfilePhoto } from '../../utils/profilePhoto';
 import { employeeReportCsv } from '../../utils/employeeReport';
 import { employeeCalendar } from '../../utils/employeeCalendar';
 import { motion } from 'motion/react';
@@ -106,6 +107,7 @@ export const EmployeeManagement: React.FC = () => {
   const [newAllocatedDays, setNewAllocatedDays] = useState<number>(15);
 
   const [formError, setFormError] = useState<string | null>(null);
+  const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const loadEmployees = useCallback(async () => {
@@ -152,13 +154,14 @@ export const EmployeeManagement: React.FC = () => {
   // 1. Create Employee Handler
   const handleCreateEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPhotoProcessing) return;
     setFormError(null);
     setIsSubmitting(true);
 
     try {
       if (!policyReady) throw new Error('Please wait for company leave defaults to load.');
       if (newEmployee.password.trim().length < 12) throw new Error('Temporary password must be at least 12 characters.');
-      const created = await api.createEmployee(newEmployee);
+      const created = await api.createEmployee({ ...newEmployee, avatar_url: await normalizeProfilePhoto(newEmployee.avatar_url) });
       setIsAddModalOpen(false);
       setCreatedEmployeeInfo({
         full_name: created.full_name,
@@ -197,7 +200,7 @@ export const EmployeeManagement: React.FC = () => {
   // 2. Edit Employee Handler
   const handleUpdateEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingEmployee) return;
+    if (!editingEmployee || isPhotoProcessing) return;
     setFormError(null);
     setIsSubmitting(true);
 
@@ -213,7 +216,7 @@ export const EmployeeManagement: React.FC = () => {
         holiday_region: employeeCalendar(editingEmployee).region,
         region: editingEmployee.region || '',
         timezone: editingEmployee.timezone || '',
-        avatar_url: editingEmployee.avatar_url,
+        avatar_url: await normalizeProfilePhoto(editingEmployee.avatar_url),
         hire_date: editingEmployee.hire_date || editingEmployee.date_joined,
         date_joined: editingEmployee.hire_date || editingEmployee.date_joined,
         date_of_birth: editingEmployee.date_of_birth || editingEmployee.birthday,
@@ -815,24 +818,30 @@ export const EmployeeManagement: React.FC = () => {
                       </button>
                     )}
                   </div>
-                  <p className="text-[12px] text-slate-400">JPG, PNG, or WebP up to 2MB</p>
+                  <p className="text-[12px] text-slate-400">JPG, PNG, or WebP up to 2MB. Photos are resized automatically.</p>
                   <input
                     ref={addFileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp" disabled={isPhotoProcessing || isSubmitting}
                     className="hidden"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       if (file.size > 2 * 1024 * 1024) {
                         setFormError('Photo must be under 2MB.');
                         return;
                       }
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        setNewEmployee({ ...newEmployee, avatar_url: reader.result as string });
-                      };
-                      reader.readAsDataURL(file);
+                      setFormError(null);
+                      setIsPhotoProcessing(true);
+                      try {
+                        const avatar_url = await prepareProfilePhoto(file);
+                        setNewEmployee(current => current ? { ...current, avatar_url } : current);
+                      } catch (error: any) {
+                        setFormError(error.message || 'Could not process the photo.');
+                      } finally {
+                        setIsPhotoProcessing(false);
+                        e.target.value = '';
+                      }
                     }}
                   />
                 </div>
@@ -1053,10 +1062,10 @@ export const EmployeeManagement: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isPhotoProcessing}
                   className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Employee'}
+                  {isPhotoProcessing ? 'Preparing photo...' : isSubmitting ? 'Creating...' : 'Create Employee'}
                 </button>
               </div>
             </form>
@@ -1125,24 +1134,30 @@ export const EmployeeManagement: React.FC = () => {
                       </button>
                     )}
                   </div>
-                  <p className="text-[12px] text-slate-400">JPG, PNG, or WebP up to 2MB</p>
+                  <p className="text-[12px] text-slate-400">JPG, PNG, or WebP up to 2MB. Photos are resized automatically.</p>
                   <input
                     ref={editFileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp" disabled={isPhotoProcessing || isSubmitting}
                     className="hidden"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       if (file.size > 2 * 1024 * 1024) {
                         setFormError('Photo must be under 2MB.');
                         return;
                       }
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        setEditingEmployee({ ...editingEmployee, avatar_url: reader.result as string });
-                      };
-                      reader.readAsDataURL(file);
+                      setFormError(null);
+                      setIsPhotoProcessing(true);
+                      try {
+                        const avatar_url = await prepareProfilePhoto(file);
+                        setEditingEmployee(current => current ? { ...current, avatar_url } : current);
+                      } catch (error: any) {
+                        setFormError(error.message || 'Could not process the photo.');
+                      } finally {
+                        setIsPhotoProcessing(false);
+                        e.target.value = '';
+                      }
                     }}
                   />
                 </div>
@@ -1369,10 +1384,10 @@ export const EmployeeManagement: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isPhotoProcessing}
                     className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] disabled:opacity-50 cursor-pointer"
                   >
-                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                    {isPhotoProcessing ? 'Preparing photo...' : isSubmitting ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </div>
@@ -1453,7 +1468,7 @@ export const EmployeeManagement: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isPhotoProcessing}
                   className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] disabled:opacity-50"
                 >
                   {isSubmitting ? 'Updating...' : 'Update Balance'}
@@ -1580,7 +1595,7 @@ export const EmployeeManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setDeletingEmployee(null)}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isPhotoProcessing}
                   className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
                 >
                   Cancel
@@ -1588,7 +1603,7 @@ export const EmployeeManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleDeleteEmployee}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isPhotoProcessing}
                   className="px-4 py-2 text-xs font-semibold bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-xs"
                 >
                   {isSubmitting ? 'Deleting...' : 'Delete Employee'}
