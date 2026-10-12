@@ -43,7 +43,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { EmployeeDocumentsModal } from './EmployeeDocumentsModal';
-import { EMPLOYEE_COUNTRIES, COMMON_COUNTRIES, getCountryFlag, DEFAULT_COUNTRY } from '../../utils/countryUtils';
+import { EMPLOYEE_COUNTRIES, getCountryFlag, DEFAULT_COUNTRY } from '../../utils/countryUtils';
 
 export const EmployeeManagement: React.FC = () => {
   const { user: currentAdmin } = useAuth();
@@ -932,19 +932,10 @@ export const EmployeeManagement: React.FC = () => {
                   <select id="newEmployee-calendar" value={newEmployee.holiday_calendar}
                     onChange={(e) => setNewEmployee({ ...newEmployee, holiday_calendar: e.target.value, holiday_region: '' })}
                     className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900">
-                    <option value="">Company-wide holidays only</option>
-                    {newEmployee.holiday_calendar && !COMMON_COUNTRIES.includes(newEmployee.holiday_calendar) && <option value={newEmployee.holiday_calendar}>{newEmployee.holiday_calendar} (existing)</option>}
-                    {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{getCountryFlag(c)} {c}</option>)}
+                    {newEmployee.holiday_calendar && !EMPLOYEE_COUNTRIES.includes(newEmployee.holiday_calendar) && <option value={newEmployee.holiday_calendar}>{newEmployee.holiday_calendar} (existing)</option>}
+                    {EMPLOYEE_COUNTRIES.map(c => <option key={c} value={c}>{getCountryFlag(c)} {c}</option>)}
                   </select>
                   <p className="text-[12px] text-slate-500 mt-1">Controls holiday dates and leave-day calculations, independently of country.</p>
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1" htmlFor="newEmployee-holiday-region">Holiday Calendar Region (optional)</label>
-                  <input id="newEmployee-holiday-region" value={newEmployee.holiday_region}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, holiday_calendar: newEmployee.holiday_calendar, holiday_region: e.target.value })}
-                    placeholder="e.g. California or Ontario"
-                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900" />
-                  <p className="text-[12px] text-slate-500 mt-1">Leave blank for national and company-wide holidays.</p>
                 </div>
               </div>
 
@@ -1260,19 +1251,10 @@ export const EmployeeManagement: React.FC = () => {
                   <select id="editingEmployee-calendar" value={employeeCalendar(editingEmployee).country}
                     onChange={(e) => setEditingEmployee({ ...editingEmployee, holiday_calendar: e.target.value, holiday_region: '' })}
                     className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900">
-                    <option value="">Company-wide holidays only</option>
-                    {employeeCalendar(editingEmployee).country && !COMMON_COUNTRIES.includes(employeeCalendar(editingEmployee).country) && <option value={employeeCalendar(editingEmployee).country}>{employeeCalendar(editingEmployee).country} (existing)</option>}
-                    {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{getCountryFlag(c)} {c}</option>)}
+                    {!EMPLOYEE_COUNTRIES.includes(employeeCalendar(editingEmployee).country) && <option value={employeeCalendar(editingEmployee).country}>{employeeCalendar(editingEmployee).country || 'Company-wide only'} (existing)</option>}
+                    {EMPLOYEE_COUNTRIES.map(c => <option key={c} value={c}>{getCountryFlag(c)} {c}</option>)}
                   </select>
                   <p className="text-[12px] text-slate-500 mt-1">Controls holiday dates and leave-day calculations, independently of country.</p>
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1" htmlFor="editingEmployee-holiday-region">Holiday Calendar Region (optional)</label>
-                  <input id="editingEmployee-holiday-region" value={employeeCalendar(editingEmployee).region}
-                    onChange={(e) => setEditingEmployee({ ...editingEmployee, holiday_calendar: employeeCalendar(editingEmployee).country, holiday_region: e.target.value })}
-                    placeholder="e.g. California or Ontario"
-                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900" />
-                  <p className="text-[12px] text-slate-500 mt-1">Leave blank for national and company-wide holidays.</p>
                 </div>
               </div>
 
