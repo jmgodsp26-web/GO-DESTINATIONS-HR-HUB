@@ -1,3 +1,4 @@
+import { employeeCalendar } from '../../utils/employeeCalendar';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { LeaveBalance, LeaveRequest, Holiday, EmployeeDocument, HolidayShiftRequest } from '../../types';
@@ -61,7 +62,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
         api.getLeaveBalances(),
         api.getLeaveRequests({ scope: 'mine' }),
         api.getHolidays({
-          country: user?.country,
+          country: employeeCalendar(user).country,
           upcoming_only: true,
           year: '2026',
           is_active: true,
@@ -77,7 +78,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
 
       // Filter upcoming holidays (strictly 2026 calendar year and strictly future dates holiday.date > todayStr)
       // Only applicable to user's country or Company-wide/Global
-      const userLoc = { country: user?.country, region: user?.region };
+      const userLoc = employeeCalendar(user);
       const futureHols = getUpcomingHolidays(holRes, {
         referenceDateStr: todayStr,
         strictFutureOnly: true,
@@ -92,7 +93,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, user?.country, user?.region, user?.timezone]);
+  }, [user?.id, user?.country, user?.region, user?.holiday_calendar, user?.holiday_region, user?.timezone]);
 
   useEffect(() => {
     loadDashboardData();
@@ -716,8 +717,8 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
                   </h3>
                 </div>
                 <div className="flex items-center space-x-1 text-[12px] text-slate-500 mt-0.5">
-                  <span>{getCountryFlag(user.country || DEFAULT_COUNTRY)}</span>
-                  <span>{user.country || DEFAULT_COUNTRY} Calendar (2026)</span>
+                  <span>{getCountryFlag(employeeCalendar(user).country || 'Company-wide')}</span>
+                  <span>{employeeCalendar(user).country || 'Company-wide'} Calendar (2026)</span>
                 </div>
               </div>
               <button
@@ -786,7 +787,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 text-[12px] text-slate-400 text-center">
-            {user.country ? `${user.country} & Global Closures` : 'GO Destinations official closure calendar'}
+            {employeeCalendar(user).country ? `${employeeCalendar(user).country} & Global Closures` : 'GO Destinations official closure calendar'}
           </div>
         </div>
       </div>

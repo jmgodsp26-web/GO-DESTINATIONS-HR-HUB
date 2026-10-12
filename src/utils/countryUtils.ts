@@ -1,3 +1,5 @@
+import { employeeCalendar } from './employeeCalendar';
+import { holidayApplies } from './workingDays';
 import { Holiday } from '../types';
 
 export interface CountryOption {
@@ -8,6 +10,8 @@ export interface CountryOption {
 }
 
 export const SUPPORTED_COUNTRIES: CountryOption[] = [
+  { code: 'AR', name: 'Argentina', flag: '🇦🇷', defaultTimezone: 'America/Argentina/Buenos_Aires' },
+  { code: 'CR', name: 'Costa Rica', flag: '🇨🇷', defaultTimezone: 'America/Costa_Rica' },
   { code: 'US', name: 'United States', flag: '🇺🇸', defaultTimezone: 'America/New_York' },
   { code: 'PH', name: 'Philippines', flag: '🇵🇭', defaultTimezone: 'Asia/Manila' },
   { code: 'CA', name: 'Canada', flag: '🇨🇦', defaultTimezone: 'America/Toronto' },
@@ -19,6 +23,8 @@ export const SUPPORTED_COUNTRIES: CountryOption[] = [
   { code: 'DE', name: 'Germany', flag: '🇩🇪', defaultTimezone: 'Europe/Berlin' },
   { code: 'JP', name: 'Japan', flag: '🇯🇵', defaultTimezone: 'Asia/Tokyo' },
 ];
+
+export const EMPLOYEE_COUNTRIES = ['Canada', 'Argentina', 'United States', 'Philippines', 'Costa Rica', 'United Kingdom'];
 
 export const DEFAULT_COUNTRY = 'United States';
 export const COMMON_COUNTRIES = SUPPORTED_COUNTRIES.map((c) => c.name);
@@ -60,43 +66,10 @@ export function getCountryFlag(countryName?: string | null): string {
  */
 export function isHolidayApplicableToEmployee(
   holiday: Holiday,
-  employeeLocation: { country?: string; region?: string } | null | undefined
+  employeeLocation: { country?: string; region?: string; holiday_calendar?: string; holiday_region?: string } | null | undefined
 ): boolean {
-  // If holiday is inactive, never show to employees
-  if (holiday.is_active === false) return false;
-
-  // Company-wide scope or Global country applies to all employees
-  if (
-    holiday.scope === 'Company-wide' ||
-    holiday.country?.toLowerCase() === 'company-wide' ||
-    holiday.country?.toLowerCase() === 'global' ||
-    holiday.country?.toLowerCase() === 'all'
-  ) {
-    return true;
-  }
-
-  // If employee has no country specified, we only show company-wide
-  if (!employeeLocation?.country) {
-    return false;
-  }
-
-  const empCountry = employeeLocation.country.trim().toLowerCase();
-  const holCountry = (holiday.country || '').trim().toLowerCase();
-
-  // Match country
-  if (empCountry !== holCountry) {
-    return false;
-  }
-
-  // If holiday specifies a region other than 'All', check if employee matches
-  if (holiday.region && holiday.region.trim().toLowerCase() !== 'all') {
-    if (!employeeLocation.region) return true; // Default to including if region unknown
-    const empRegion = employeeLocation.region.trim().toLowerCase();
-    const holRegion = holiday.region.trim().toLowerCase();
-    return empRegion.includes(holRegion) || holRegion.includes(empRegion);
-  }
-
-  return true;
+  const calendar = employeeCalendar(employeeLocation);
+  return holidayApplies(holiday, calendar.country, calendar.region);
 }
 
 /**
@@ -185,7 +158,7 @@ export function getUpcomingHolidays(
   options?: {
     referenceDateStr?: string;
     strictFutureOnly?: boolean;
-    userLocation?: { country?: string; region?: string } | null;
+    userLocation?: { country?: string; region?: string; holiday_calendar?: string; holiday_region?: string } | null;
     year?: number | string;
   }
 ): Holiday[] {

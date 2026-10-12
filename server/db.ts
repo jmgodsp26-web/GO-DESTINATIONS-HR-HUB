@@ -1,3 +1,4 @@
+import { employeeCalendar } from '../src/utils/employeeCalendar.js';
 import { workingDays, holidayApplies } from '../src/utils/workingDays.js';
 import { decodeUpload } from './files.js';
 import {
@@ -310,6 +311,8 @@ export class HRDatabase {
       phone: string;
       department: string;
       job_title: string;
+      holiday_calendar?: string;
+      holiday_region?: string;
       country?: string;
       region?: string;
       timezone?: string;
@@ -325,6 +328,9 @@ export class HRDatabase {
     },
     adminUser: UserProfile
   ): UserProfile {
+    for (const field of ['holiday_calendar', 'holiday_region'] as const) {
+      if (data[field] !== undefined && (typeof data[field] !== 'string' || data[field].length > 100)) throw new Error('Invalid holiday calendar setting.');
+    }
     if (data.role !== undefined && !['admin', 'employee'].includes(data.role)) throw new Error('Role must be admin or employee.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email || '')) throw new Error('A valid company email is required.');
     if (!data.full_name?.trim()) throw new Error('Employee name is required.');
@@ -350,6 +356,8 @@ export class HRDatabase {
       department: data.department || '',
       job_title: data.job_title || (data.role === 'admin' ? 'Administrator' : 'Employee'),
       country: data.country || '',
+      holiday_calendar: data.holiday_calendar ?? data.country ?? '',
+      holiday_region: data.holiday_region ?? (data.holiday_calendar === undefined ? data.region ?? '' : ''),
       region: data.region || '',
       timezone: data.timezone || '',
       date_joined: joined,
@@ -440,6 +448,13 @@ export class HRDatabase {
     for (const key of ['id', 'user_id', 'employee_id', 'passwordHash', 'passwordCustomized', 'mustChangePassword', 'created_at']) {
       if (key in updates) throw new Error('This account field cannot be changed.');
     }
+    for (const field of ['holiday_calendar', 'holiday_region'] as const) {
+      if (updates[field] !== undefined && (typeof updates[field] !== 'string' || updates[field].length > 100)) throw new Error('Invalid holiday calendar setting.');
+    }
+    // Freeze legacy calendar before changing physical location.
+    const previousCalendar = employeeCalendar(user.profile);
+    updates = { ...updates, holiday_calendar: updates.holiday_calendar ?? previousCalendar.country,
+      holiday_region: updates.holiday_region ?? (updates.holiday_calendar !== undefined && updates.holiday_calendar !== previousCalendar.country ? '' : previousCalendar.region) };
     const previousRole = user.profile.role;
     const previousStatus = user.profile.status;
 
@@ -733,7 +748,7 @@ export class HRDatabase {
     const startDate = data.start_date;
     const endDate = isHalfDay ? data.start_date : (data.end_date || data.start_date);
 
-    const eligibleDays = this.calculateWorkingDays(startDate, endDate, user.country, user.region);
+    const eligibleDays = this.calculateWorkingDays(startDate, endDate, employeeCalendar(user).country, employeeCalendar(user).region);
     const calculatedWorkingDays = isHalfDay && eligibleDays > 0 ? 0.5 : eligibleDays;
 
     if (calculatedWorkingDays === 0) {
@@ -2175,7 +2190,7 @@ export class HRDatabase {
     for (const h of this.holidays) {
       if (!h.is_active) continue;
       if (user.role !== 'admin') {
-        const isApplicable = holidayApplies(h, user.country, user.region);
+        const isApplicable = holidayApplies(h, employeeCalendar(user).country, employeeCalendar(user).region);
         if (!isApplicable) continue;
       }
 
