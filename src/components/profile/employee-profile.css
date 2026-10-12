@@ -1,0 +1,49 @@
+.go-profile { max-width: 1120px; margin: 0 auto; display: grid; gap: 22px; color: #182e3f; animation: go-profile-enter .4s ease-out both; }
+.go-profile-hero { background: #fff; border: 1px solid #dfe5ec; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 18px #182e3f05; }
+.go-profile-accent { height: 8px; background: linear-gradient(90deg,#182e3f,#3a5d83 82%,#ed9027 82%,#ed9027); }
+.go-profile-identity { display: flex; align-items: center; gap: 24px; padding: 30px; }
+.go-profile-avatar { flex: 0 0 96px; height: 96px; border-radius: 24px; overflow: hidden; background: linear-gradient(145deg,#3a5d83,#182e3f); box-shadow: 0 6px 16px #182e3f15; display: grid; place-items: center; }
+.go-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.go-profile-avatar > span { color: #fff; font-size: 30px; font-weight: 700; letter-spacing: -.03em; }
+.go-profile-intro { min-width: 0; flex: 1; }
+.go-profile-eyebrow { color: #7087a3; font-size: 10px; font-weight: 800; letter-spacing: .16em; margin: 0 0 7px; }
+.go-profile .go-profile-name { font-size: clamp(24px,2.4vw,32px); line-height: 1.2; letter-spacing: -.035em; color: #182e3f; margin: 0; overflow-wrap: anywhere; }
+.go-profile-subtitle { color: #62778a; font-size: 14px; margin: 8px 0 0; overflow-wrap: anywhere; }
+.go-profile-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.go-profile-badges > span { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 7px; background: #edf2f7; color: #3a5d83; }
+.go-profile-badges > .is-active { color: #256752; background: #edf7f2; }
+.go-profile-badges > .is-disabled { color: #9e3940; background: #fff0f0; }
+.go-profile-badges i { width: 5px; height: 5px; background: currentColor; border-radius: 50%; }
+.go-profile-badges > .go-profile-id { background: #f6f7f9; color: #617080; font-variant-numeric: tabular-nums; }
+.go-profile-notice { display: flex; align-items: center; gap: 9px; padding: 13px 30px; background: #f8fafc; border-top: 1px solid #edf0f4; color: #62778a; font-size: 12px; }
+.go-profile-notice svg { flex-shrink: 0; }
+.go-profile-notice p { margin: 0; }
+.go-profile-details { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
+.go-profile-card { min-width: 0; background: #fff; border: 1px solid #dfe5ec; border-radius: 18px; padding: 24px; }
+.go-profile-section-title { display: flex; gap: 11px; align-items: center; margin-bottom: 22px; }
+.go-profile-section-title > span { display: grid; place-items: center; width: 36px; height: 36px; background: #edf2f7; color: #3a5d83; border-radius: 10px; flex-shrink: 0; }
+.go-profile-section-title h2 { font-size: 15px; font-weight: 700; letter-spacing: -.02em; margin: 0; color: #182e3f; }
+.go-profile-section-title p { font-size: 12px; color: #62778a; margin: 3px 0 0; }
+.go-profile-field { padding: 0 0 15px; margin-bottom: 15px; border-bottom: 1px solid #f0f3f6; }
+.go-profile-field:last-child { padding-bottom: 0; margin-bottom: 0; border: 0; }
+.go-profile-field dt { font-size: 11px; color: #62778a; margin-bottom: 5px; }
+.go-profile-field dd { font-size: 13px; font-weight: 600; color: #182e3f; margin: 0; overflow-wrap: anywhere; }
+.go-profile-field dd.is-empty { font-weight: 400; color: #7087a3; }
+.go-profile-footnote { font-size: 11px; color: #62778a; line-height: 1.6; margin-top: 20px; }
+.go-profile-balances { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+.go-profile-balance { background: #f8fafc; padding: 20px; border: 1px solid #e7edf3; border-radius: 13px; transition: border-color .2s,box-shadow .2s; }
+.go-profile-balance:hover { border-color: #9eafc1; box-shadow: 0 4px 12px #182e3f06; }
+.go-profile-balance h3 { font-size: 12px; font-weight: 600; color: #3a5d83; margin: 0 0 14px; }
+.go-profile-balance-number { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px; }
+.go-profile-balance-number strong { font-size: 32px; font-weight: 700; letter-spacing: -.04em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.go-profile-balance-number > span { font-size: 11px; color: #62778a; }
+.go-profile-balance-track { height: 4px; background: #e1e8ef; border-radius: 4px; overflow: hidden; margin: 16px 0 10px; }
+.go-profile-balance-track > span { display: block; height: 100%; background: #3a5d83; border-radius: inherit; }
+.go-profile-balance:first-child .go-profile-balance-track > span { background: #ed9027; }
+.go-profile-balance-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font-size: 11px; color: #62778a; }
+.go-profile-balance-meta b { font-weight: 600; color: #3a5d83; }
+.go-profile-empty { color: #62778a; font-size: 13px; padding: 20px 0; }
+@keyframes go-profile-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 1050px) { .go-profile-details { grid-template-columns: repeat(2,minmax(0,1fr)); } .go-profile-details > :last-child { grid-column: 1 / -1; } .go-profile-details > :last-child dl { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; } .go-profile-details > :last-child .go-profile-field { border: 0; margin: 0; padding: 0; } }
+@media (max-width: 640px) { .go-profile { gap: 16px; } .go-profile-identity { padding: 22px; gap: 16px; align-items: flex-start; } .go-profile-avatar { flex-basis: 64px; height: 64px; border-radius: 17px; } .go-profile-avatar > span { font-size: 23px; } .go-profile .go-profile-name { font-size: 23px; } .go-profile-subtitle { font-size: 12px; } .go-profile-notice { padding: 12px 22px; } .go-profile-details, .go-profile-balances { grid-template-columns: minmax(0,1fr); } .go-profile-details > :last-child dl { grid-template-columns: minmax(0,1fr); gap: 16px; } .go-profile-card { padding: 20px; } }
+@media (prefers-reduced-motion: reduce) { .go-profile { animation: none; } .go-profile-balance { transition: none; } }
