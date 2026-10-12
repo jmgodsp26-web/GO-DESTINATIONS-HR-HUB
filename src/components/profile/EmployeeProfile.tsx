@@ -1,3 +1,4 @@
+import { employeeCalendar } from '../../utils/employeeCalendar';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { LeaveBalance, EmployeeDocument } from '../../types';
@@ -133,6 +134,14 @@ export const EmployeeProfile: React.FC = () => {
               <span className="font-semibold text-slate-900">{user.department}</span>
             </div>
 
+            <div className="flex justify-between items-center py-1 border-t border-slate-100">
+              <span className="text-slate-500 font-medium">Country:</span>
+              <span className="font-semibold text-slate-900">{user.country || 'Not set'}</span>
+            </div>
+            <div className="flex justify-between items-center py-1 border-t border-slate-100">
+              <span className="text-slate-500 font-medium">Holiday Calendar:</span>
+              <span className="font-semibold text-slate-900">{employeeCalendar(user).country || 'Company-wide only'}{employeeCalendar(user).region ? ' · ' + employeeCalendar(user).region : ''}</span>
+            </div>
             <div className="flex justify-between items-center py-1 border-t border-slate-100">
               <span className="text-slate-500 font-medium">Job Title / Role:</span>
               <span className="font-semibold text-slate-900">{user.job_title}</span>

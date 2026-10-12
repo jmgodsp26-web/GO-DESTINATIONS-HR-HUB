@@ -167,6 +167,8 @@ export const api = {
     date_of_birth?: string;
     birthday?: string;
     avatar_url?: string;
+    holiday_calendar?: string;
+    holiday_region?: string;
     country?: string;
     region?: string;
     timezone?: string;

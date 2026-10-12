@@ -1,3 +1,4 @@
+import { employeeCalendar } from '../../utils/employeeCalendar';
 import { workingDays } from '../../utils/workingDays';
 import { readUpload } from '../../utils/files';
 import React, { useState, useEffect } from 'react';
@@ -92,7 +93,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   let dateError: string | null = holidayError;
   if (holidaysReady) {
     try {
-      const eligible = workingDays(startDate, isHalfDay ? startDate : endDate, holidays, user.country, user.region, workweek);
+      const eligible = workingDays(startDate, isHalfDay ? startDate : endDate, holidays, employeeCalendar(user).country, employeeCalendar(user).region, workweek);
       calculatedDays = isHalfDay && eligible > 0 ? 0.5 : eligible;
       if (!calculatedDays) dateError = 'Choose a working day; weekends and applicable holidays are excluded.';
     } catch (err: any) { dateError = err.message; }

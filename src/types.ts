@@ -60,6 +60,8 @@ export interface UserProfile {
   department: string;
   job_title: string;
   country: string;
+  holiday_calendar?: string;
+  holiday_region?: string;
   region?: string;
   timezone?: string;
   date_joined: string;

@@ -21,7 +21,8 @@ export type DepartmentName =
   | 'Graphics & Design'
   | 'Audit'
   | 'Admin & Support'
-  | 'WRW';
+  | 'WRW'
+  | 'HR';
 
 export interface DepartmentItem {
   id: string;
@@ -34,7 +35,7 @@ export interface DepartmentItem {
 }
 
 /**
- * Official Company Departments (13 Total)
+ * Official Company Departments (14 Total)
  * Strictly enforced across employee profiles, directories, filters, and reports.
  */
 export const OFFICIAL_DEPARTMENTS: readonly DepartmentName[] = [
@@ -51,9 +52,11 @@ export const OFFICIAL_DEPARTMENTS: readonly DepartmentName[] = [
   'Audit',
   'Admin & Support',
   'WRW',
+  'HR',
 ] as const;
 
 export const DEPARTMENT_MASTER_DATA: DepartmentItem[] = [
+  { id: 'dept-14', name: 'HR', code: 'HR', is_active: true, description: 'Human resources and employee support.' },
   {
     id: 'dept-01',
     name: 'Leadership',

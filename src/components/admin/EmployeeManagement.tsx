@@ -1,3 +1,5 @@
+import { employeeReportCsv } from '../../utils/employeeReport';
+import { employeeCalendar } from '../../utils/employeeCalendar';
 import { motion } from 'motion/react';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -16,6 +18,7 @@ import { api } from '../../services/api';
 import {
   Users,
   UserPlus,
+  Download,
   Search,
   Filter,
   MoreHorizontal,
@@ -40,7 +43,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { EmployeeDocumentsModal } from './EmployeeDocumentsModal';
-import { COMMON_COUNTRIES, getCountryFlag, DEFAULT_COUNTRY } from '../../utils/countryUtils';
+import { EMPLOYEE_COUNTRIES, COMMON_COUNTRIES, getCountryFlag, DEFAULT_COUNTRY } from '../../utils/countryUtils';
 
 export const EmployeeManagement: React.FC = () => {
   const { user: currentAdmin } = useAuth();
@@ -74,6 +77,8 @@ export const EmployeeManagement: React.FC = () => {
     department: OFFICIAL_DEPARTMENTS[0],
     job_title: '',
     country: DEFAULT_COUNTRY,
+    holiday_calendar: DEFAULT_COUNTRY,
+    holiday_region: '',
     region: '',
     avatar_url: '',
     date_joined: new Date().toISOString().split('T')[0],
@@ -170,6 +175,8 @@ export const EmployeeManagement: React.FC = () => {
         department: OFFICIAL_DEPARTMENTS[0],
         job_title: '',
         country: DEFAULT_COUNTRY,
+        holiday_calendar: DEFAULT_COUNTRY,
+        holiday_region: '',
         region: '',
         avatar_url: '',
         date_joined: new Date().toISOString().split('T')[0],
@@ -202,6 +209,8 @@ export const EmployeeManagement: React.FC = () => {
         department: editingEmployee.department,
         job_title: editingEmployee.job_title,
         country: editingEmployee.country || DEFAULT_COUNTRY,
+        holiday_calendar: employeeCalendar(editingEmployee).country,
+        holiday_region: employeeCalendar(editingEmployee).region,
         region: editingEmployee.region || '',
         timezone: editingEmployee.timezone || '',
         avatar_url: editingEmployee.avatar_url,
@@ -325,6 +334,22 @@ export const EmployeeManagement: React.FC = () => {
           </p>
         </div>
 
+        <div className="flex flex-wrap gap-2">
+          <button type="button" disabled={isLoading || !filteredEmployees.length || currentAdmin?.role !== 'admin'}
+            onClick={() => {
+              const blob = new Blob([employeeReportCsv(filteredEmployees)], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = 'employee-list-' + new Date().toISOString().slice(0, 10) + '.csv';
+              link.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+              showToast({ type: 'success', title: 'Report exported', message: filteredEmployees.length + ' employees exported using the current filters.' });
+            }}
+            title="Export employees matching the current filters"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-300 bg-white text-slate-700 rounded-lg font-semibold text-xs disabled:opacity-50">
+            <Download className="w-4 h-4" /> Export Employee List
+          </button>
         <button
           type="button"
           id="add-employee-modal-btn"
@@ -338,6 +363,7 @@ export const EmployeeManagement: React.FC = () => {
           <UserPlus className="w-4 h-4" />
           <span>Add Employee</span>
         </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -375,7 +401,7 @@ export const EmployeeManagement: React.FC = () => {
             className="text-xs rounded-xl border border-slate-200 px-3 py-2.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
           >
             <option value="All">🌍 Location: All</option>
-            {COMMON_COUNTRIES.map((c) => (
+            {EMPLOYEE_COUNTRIES.map((c) => (
               <option key={c} value={c}>
                 {getCountryFlag(c)} {c}
               </option>
@@ -460,6 +486,7 @@ export const EmployeeManagement: React.FC = () => {
                         </span>
                         <div>
                           <p className="font-semibold text-slate-800">{emp.country || DEFAULT_COUNTRY}</p>
+                          <p className="text-[11px] text-slate-500">Calendar: {employeeCalendar(emp).country || 'Company-wide only'}</p>
                           <p className="text-[12px] text-slate-400">
                             {emp.region && emp.region !== 'All' ? emp.region : 'Nationwide'}
                           </p>
@@ -869,21 +896,21 @@ export const EmployeeManagement: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    Country / Holiday Calendar *
+                    Country *
                   </label>
                   <select
                     value={newEmployee.country}
                     onChange={(e) => setNewEmployee({ ...newEmployee, country: e.target.value })}
                     className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 font-medium"
                   >
-                    {COMMON_COUNTRIES.map((c) => (
+                    {EMPLOYEE_COUNTRIES.map((c) => (
                       <option key={c} value={c}>
                         {getCountryFlag(c)} {c}
                       </option>
                     ))}
-                    <option value="Other">🌍 Other / International</option>
+
                   </select>
-                  <p className="text-[12px] text-slate-400 mt-0.5">Determines the employee's applicable holiday calendar.</p>
+                  <p className="text-[12px] text-slate-400 mt-0.5">Where the employee is based.</p>
                 </div>
 
                 <div>
@@ -896,6 +923,28 @@ export const EmployeeManagement: React.FC = () => {
                     className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500"
                   />
                   <p className="text-[12px] text-slate-400 mt-0.5">Regional or state office (optional).</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1" htmlFor="newEmployee-calendar">Holiday Calendar</label>
+                  <select id="newEmployee-calendar" value={newEmployee.holiday_calendar}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, holiday_calendar: e.target.value, holiday_region: '' })}
+                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900">
+                    <option value="">Company-wide holidays only</option>
+                    {newEmployee.holiday_calendar && !COMMON_COUNTRIES.includes(newEmployee.holiday_calendar) && <option value={newEmployee.holiday_calendar}>{newEmployee.holiday_calendar} (existing)</option>}
+                    {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{getCountryFlag(c)} {c}</option>)}
+                  </select>
+                  <p className="text-[12px] text-slate-500 mt-1">Controls holiday dates and leave-day calculations, independently of country.</p>
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1" htmlFor="newEmployee-holiday-region">Holiday Calendar Region (optional)</label>
+                  <input id="newEmployee-holiday-region" value={newEmployee.holiday_region}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, holiday_calendar: newEmployee.holiday_calendar, holiday_region: e.target.value })}
+                    placeholder="e.g. California or Ontario"
+                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900" />
+                  <p className="text-[12px] text-slate-500 mt-1">Leave blank for national and company-wide holidays.</p>
                 </div>
               </div>
 
@@ -1171,23 +1220,24 @@ export const EmployeeManagement: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    Country / Holiday Calendar *
+                    Country *
                   </label>
                   <select
                     value={editingEmployee.country || DEFAULT_COUNTRY}
                     onChange={(e) =>
-                      setEditingEmployee({ ...editingEmployee, country: e.target.value })
+                      setEditingEmployee({ ...editingEmployee, holiday_calendar: employeeCalendar(editingEmployee).country, holiday_region: employeeCalendar(editingEmployee).region, country: e.target.value })
                     }
                     className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 font-medium"
                   >
-                    {COMMON_COUNTRIES.map((c) => (
+                    {editingEmployee.country && !EMPLOYEE_COUNTRIES.includes(editingEmployee.country) && <option value={editingEmployee.country}>{editingEmployee.country} (existing)</option>}
+                    {EMPLOYEE_COUNTRIES.map((c) => (
                       <option key={c} value={c}>
                         {getCountryFlag(c)} {c}
                       </option>
                     ))}
-                    <option value="Other">🌍 Other / International</option>
+
                   </select>
-                  <p className="text-[12px] text-slate-400 mt-0.5">Used for personalizing Upcoming Holidays.</p>
+                  <p className="text-[12px] text-slate-400 mt-0.5">Where the employee is based.</p>
                 </div>
 
                 <div>
@@ -1196,11 +1246,33 @@ export const EmployeeManagement: React.FC = () => {
                     type="text"
                     value={editingEmployee.region || ''}
                     onChange={(e) =>
-                      setEditingEmployee({ ...editingEmployee, region: e.target.value })
+                      setEditingEmployee({ ...editingEmployee, holiday_calendar: employeeCalendar(editingEmployee).country, holiday_region: employeeCalendar(editingEmployee).region, region: e.target.value })
                     }
                     placeholder="e.g. California, Metro Manila, Ontario"
                     className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1" htmlFor="editingEmployee-calendar">Holiday Calendar</label>
+                  <select id="editingEmployee-calendar" value={employeeCalendar(editingEmployee).country}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, holiday_calendar: e.target.value, holiday_region: '' })}
+                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900">
+                    <option value="">Company-wide holidays only</option>
+                    {employeeCalendar(editingEmployee).country && !COMMON_COUNTRIES.includes(employeeCalendar(editingEmployee).country) && <option value={employeeCalendar(editingEmployee).country}>{employeeCalendar(editingEmployee).country} (existing)</option>}
+                    {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{getCountryFlag(c)} {c}</option>)}
+                  </select>
+                  <p className="text-[12px] text-slate-500 mt-1">Controls holiday dates and leave-day calculations, independently of country.</p>
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1" htmlFor="editingEmployee-holiday-region">Holiday Calendar Region (optional)</label>
+                  <input id="editingEmployee-holiday-region" value={employeeCalendar(editingEmployee).region}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, holiday_calendar: employeeCalendar(editingEmployee).country, holiday_region: e.target.value })}
+                    placeholder="e.g. California or Ontario"
+                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900" />
+                  <p className="text-[12px] text-slate-500 mt-1">Leave blank for national and company-wide holidays.</p>
                 </div>
               </div>
 
