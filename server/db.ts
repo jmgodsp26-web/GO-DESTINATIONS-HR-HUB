@@ -1,3 +1,4 @@
+import { validateProfileStorage } from './profile-validation.js';
 import { employeeCalendar } from '../src/utils/employeeCalendar.js';
 import { workingDays, holidayApplies } from '../src/utils/workingDays.js';
 import { decodeUpload } from './files.js';
@@ -331,6 +332,7 @@ export class HRDatabase {
     for (const field of ['holiday_calendar', 'holiday_region'] as const) {
       if (data[field] !== undefined && (typeof data[field] !== 'string' || data[field].length > 100)) throw new Error('Invalid holiday calendar setting.');
     }
+    validateProfileStorage(data);
     if (data.role !== undefined && !['admin', 'employee'].includes(data.role)) throw new Error('Role must be admin or employee.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email || '')) throw new Error('A valid company email is required.');
     if (!data.full_name?.trim()) throw new Error('Employee name is required.');
@@ -455,6 +457,7 @@ export class HRDatabase {
     const previousCalendar = employeeCalendar(user.profile);
     updates = { ...updates, holiday_calendar: updates.holiday_calendar ?? previousCalendar.country,
       holiday_region: updates.holiday_region ?? (updates.holiday_calendar !== undefined && updates.holiday_calendar !== previousCalendar.country ? '' : previousCalendar.region) };
+    validateProfileStorage({ ...user.profile, ...updates });
     const previousRole = user.profile.role;
     const previousStatus = user.profile.status;
 
