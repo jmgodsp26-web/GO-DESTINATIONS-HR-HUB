@@ -1,0 +1,195 @@
+/* GO workspace refresh. Scoped to signed-in screens; login keeps its own art direction. */
+.go-polished {
+  --workspace-ink: #182e3f;
+  --workspace-blue: #3a5d83;
+  --workspace-muted: #607184;
+  --workspace-line: #dfe6ed;
+  --workspace-radius: 16px;
+  background: #f3f6f9;
+  color: var(--workspace-ink);
+}
+.go-polished .go-workspace { max-width: 1800px; }
+.go-polished .go-main { padding: 30px clamp(20px, 2.4vw, 40px) 48px; font-size: 14px; line-height: 1.6; }
+.go-polished .go-main > div { max-width: 1400px; margin-inline: auto; }
+.go-polished .go-main h1 { font-size: clamp(26px, 2.15vw, 32px); font-weight: 750; letter-spacing: -.035em; line-height: 1.2; }
+.go-polished .go-main h2 { letter-spacing: -.02em; }
+.go-polished .go-main .text-xs { font-size: 13px; line-height: 1.6; }
+.go-polished .go-main .go-surface { border-color: var(--workspace-line); border-radius: var(--workspace-radius); box-shadow: 0 2px 8px #182e3f03; }
+.go-polished .go-main table { font-size: 13px; }
+.go-polished .go-main thead { background: #f6f8fa; }
+.go-polished .go-main th { padding-block: 13px; font-size: 12px; font-weight: 650; color: #576c80; letter-spacing: .01em; }
+.go-polished .go-main td { padding-block: 17px; vertical-align: middle; }
+.go-polished .go-main tbody tr:hover { background: #f5f8fc; }
+.go-polished .go-main label { line-height: 1.6; }
+.go-polished .go-main input:not([type="checkbox"]):not([type="radio"]),
+.go-polished .go-main select, .go-polished .go-main textarea { border-radius: 10px; min-height: 44px; }
+.go-polished :is(button, a, input, select, textarea):focus-visible { outline: 3px solid #3a5d83; outline-offset: 3px; }
+.go-polished .go-sidebar :is(button, a):focus-visible { outline-color: #f1c48e; }
+.go-polished .go-main button:disabled { cursor: not-allowed; }
+.go-skip-link { position: fixed; top: 8px; left: 8px; z-index: 100; transform: translateY(-160%); padding: 12px 20px; background: white; color: #182e3f; border-radius: 8px; box-shadow: 0 4px 24px #182e3f25; }
+.go-skip-link:focus { transform: none; }
+
+/* A lighter header and a compact, stable navigation rail. */
+.go-polished .go-header { background: #ffffffed; border-bottom: 1px solid var(--workspace-line); }
+.go-polished .go-header > div { height: 72px; max-width: 1800px; padding-inline: 22px; gap: 24px; }
+.go-polished .go-header .go-logo img { width: 42px; max-height: 52px; }
+.go-polished .go-header-company { font-size: 9px; letter-spacing: .16em; }
+.go-polished .go-header-product strong { font-size: 21px; }
+.go-polished .go-header-context { font-size: 11px; }
+.go-polished .go-command-trigger { min-height: 40px; background: #f5f7fa; border-color: #e4eaf0; border-radius: 10px; }
+.go-polished .go-command-trigger kbd { padding: 2px 5px; font-size: 10px; white-space: nowrap; }
+.go-polished .go-sidebar { width: 236px; background: #182e3f; box-shadow: none; }
+.go-polished .go-sidebar > div:first-child { padding: 16px 12px; min-height: 0; scrollbar-width: thin; scrollbar-color: #7087a3 transparent; }
+.go-sidebar-caption { align-items: center; gap: 9px; padding: 0 12px 18px; color: #b9c9d8; font-size: 11px; }
+.go-sidebar-caption-mark { width: 6px; height: 6px; border-radius: 50%; background: #ed9027; flex-shrink: 0; }
+.go-polished .go-sidebar nav > :not(:last-child) { margin-bottom: 16px; }
+.go-polished .go-sidebar nav > div > div:first-child span { color: #9eafc1; font-size: 10px; letter-spacing: .09em; }
+.go-polished .go-sidebar .sidebar-menu-item { min-height: 40px; font-size: 12px; padding: 9px 12px; border-radius: 9px; }
+.go-polished .go-sidebar .sidebar-menu-item:hover { background: #ffffff0a; }
+.go-polished .go-sidebar .sidebar-menu-item[aria-current="page"] { color: #fff; background: transparent; }
+.go-polished .go-nav-selection { border-radius: 9px; background: #375674; border-left-width: 3px; }
+.go-polished .go-workspace-switch { padding: 3px; border-radius: 11px; background: #102635; border-color: #ffffff20; }
+.go-polished .go-workspace-switch > button { min-height: 42px; font-size: 11px; }
+.go-polished .go-workspace-selection { border-radius: 8px; box-shadow: 0 2px 4px #0002; }
+.go-polished .go-sidebar > div:last-child { padding: 12px; }
+.go-polished .go-sidebar > div:last-child > div { border-radius: 12px; background: #233c50; }
+
+/* One page-heading pattern for every workspace. */
+.go-polished .go-page-header { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 24px; padding: 0 0 4px; }
+.go-page-heading { min-width: 0; flex: 1 1 360px; }
+.go-page-eyebrow { display: block; margin-bottom: 8px; color: #607184; font-size: 10px; letter-spacing: .13em; text-transform: uppercase; font-weight: 750; }
+.go-page-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.go-polished .go-page-title-row h1 { margin: 0; }
+.go-polished .go-page-heading > p { margin-top: 9px; color: #607184; font-size: 13px; line-height: 1.65; max-width: 620px; }
+.go-polished .go-page-header > div:not(.go-page-heading), .go-page-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.go-polished .go-page-header > div:not(.go-page-heading) > * { margin-inline: 0; }
+.go-polished .go-page-header button { min-height: 42px; border-radius: 10px; font-size: 12px; }
+.go-heading-badge { display: inline-flex; padding: 4px 10px; border-radius: 7px; background: #fff1de; color: #865312; border: 1px solid #f3d5ab; font-size: 12px; font-weight: 650; }
+.go-date-label { display: inline-flex; align-items: center; gap: 8px; color: #607184; font-size: 12px; white-space: nowrap; }
+.go-polished .go-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: 10px; min-height: 44px; padding: 10px 15px; font-size: 12px; font-weight: 650; line-height: 1.5; cursor: pointer; }
+.go-polished .go-button svg { flex-shrink: 0; }
+.go-polished .go-button-primary { background: #3a5d83; color: #fff; box-shadow: 0 2px 4px #182e3f0c; }
+.go-polished .go-button-primary:hover { background: #294965; }
+.go-polished .go-button-secondary { background: #fff; color: #36536f; border-color: #d3dfe9; }
+.go-polished .go-button-secondary:hover { background: #f5f8fc; border-color: #9eafc1; }
+.go-polished .go-button-accent { background: #ed9027; color: #182e3f; }
+.go-polished .go-button-accent:hover { background: #f2a347; }
+.go-polished .go-button-inverse { background: transparent; border-color: #ffffff38; color: #fff; }
+.go-polished .go-button-inverse:hover { background: #ffffff12; border-color: #ffffff70; }
+.go-button-count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; padding: 1px 5px; border-radius: 5px; background: #ffffff20; font-size: 11px; font-variant-numeric: tabular-nums; }
+
+/* Calm metric cards: a number first, context second, clear affordance when clickable. */
+.go-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.go-polished .go-stat-card { --stat-color: #3a5d83; --stat-tint: #edf3fa; display: flex; flex-direction: column; min-width: 0; min-height: 168px; text-align: left; padding: 20px; border: 1px solid #dfe6ed; border-radius: 16px; background: #fff; box-shadow: 0 2px 8px #182e3f03; }
+.go-polished button.go-stat-card:hover { border-color: #9eafc1; box-shadow: 0 4px 14px #182e3f09; }
+.go-polished .go-stat-green { --stat-color: #39715b; --stat-tint: #eef7f2; }
+.go-polished .go-stat-orange { --stat-color: #96591b; --stat-tint: #fff2e4; }
+.go-stat-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.go-stat-label { color: #52687c; font-size: 12px; font-weight: 650; }
+.go-stat-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex-shrink: 0; background: var(--stat-tint); color: var(--stat-color); border-radius: 10px; }
+.go-stat-number { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px; margin-block: 13px 16px; }
+.go-stat-number strong { font-size: 34px; line-height: 1; font-weight: 700; letter-spacing: -.045em; color: #182e3f; font-variant-numeric: tabular-nums; }
+.go-stat-number > span { color: #607184; font-size: 12px; }
+.go-stat-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; color: #607184; font-size: 12px; line-height: 1.5; }
+.go-stat-footer svg { color: #3a5d83; flex-shrink: 0; }
+.go-stat-track { display: block; height: 4px; border-radius: 3px; background: #eaf0f5; margin-top: 12px; overflow: hidden; }
+.go-stat-track > span { display: block; height: 100%; border-radius: inherit; background: var(--stat-color); }
+.go-polished .go-stat-navy { background: #243f55; border-color: #243f55; }
+.go-polished button.go-stat-navy:hover { background: #2c4c66; border-color: #3a5d83; }
+.go-stat-navy .go-stat-label, .go-stat-navy .go-stat-number strong { color: #fff; }
+.go-stat-navy .go-stat-footer, .go-stat-navy .go-stat-number > span { color: #c4d2dd; }
+.go-stat-navy .go-stat-icon { color: #f1c48e; background: #ffffff0d; }
+.go-stat-navy .go-stat-footer svg { color: #f1c48e; }
+.go-polished .go-review-queue { border-top: 1px solid var(--workspace-line) !important; }
+.go-polished .go-review-queue > div:first-child { background: #fff; padding: 20px 22px; }
+.go-polished .go-dashboard h2.uppercase, .go-polished .go-dashboard h3.uppercase { font-size: 15px; font-weight: 700; }
+
+/* Personal workspace: identity and the three existing actions in one compact band. */
+.go-personal-banner { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px; padding: 24px; border-radius: 16px; background: #243f55; border: 1px solid #243f55; }
+.go-personal-identity { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 250px; }
+.go-personal-avatar { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; flex-shrink: 0; object-fit: cover; border-radius: 13px; color: #fff; background: #3f5d75; font-size: 17px; font-weight: 650; border: 1px solid #ffffff30; }
+.go-personal-identity > div { min-width: 0; }
+.go-personal-identity strong { display: block; color: #fff; font-size: 16px; font-weight: 650; overflow-wrap: anywhere; }
+.go-personal-identity p { color: #c4d2dd; font-size: 12px; margin-top: 3px; }
+.go-personal-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.go-polished .go-workspace-links button { border-radius: 14px; box-shadow: none; padding: 18px; }
+.go-polished .go-shortcut-icon { border-radius: 12px; }
+
+/* Directory summary, useful filters and a six-column table instead of nine. */
+.go-directory-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: #fff; border: 1px solid #dfe6ed; border-radius: 16px; padding: 20px 0; }
+.go-directory-summary > div { padding: 0 24px; border-right: 1px solid #e5ebf0; }
+.go-directory-summary > div:last-child { border: 0; }
+.go-directory-summary dt { color: #607184; font-size: 12px; margin-bottom: 5px; }
+.go-directory-summary dd { font-size: 25px; line-height: 1.2; color: #182e3f; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.go-polished .go-directory-filters { flex-wrap: wrap; padding: 16px; gap: 12px; }
+.go-directory-filters > .relative { min-width: 230px; }
+.go-polished .go-directory-filters select { font-size: 12px; color: #52687c; padding-right: 28px; }
+.go-directory-table-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid #e5ebf0; }
+.go-directory-table-heading h2 { font-size: 14px; font-weight: 700; }
+.go-directory-table-heading > span { color: #607184; font-size: 12px; }
+.go-directory-table { min-width: 1040px; }
+.go-polished .go-directory-table th, .go-polished .go-directory-table td { padding-inline: 18px; }
+.go-polished .go-directory-table td:first-child { min-width: 230px; }
+.go-directory-email { color: #607184; font-size: 12px; margin: 3px 0; overflow-wrap: anywhere; }
+.go-directory-balance { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 120px; font-size: 11px; color: #607184; line-height: 2; }
+.go-directory-balance strong { color: #182e3f; font-weight: 650; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.go-directory-balance small { font-size: 10px; font-weight: 400; color: #607184; }
+.go-polished .go-directory-table th:last-child, .go-polished .go-directory-table td:last-child { position: sticky; right: 0; background: #fff; box-shadow: -1px 0 #e5ebf0; }
+.go-polished .go-directory-table th:last-child { background: #f6f8fa; }
+.go-polished .go-directory-table tr:hover td:last-child { background: #f5f8fc; }
+.go-polished .go-directory-table td.go-directory-empty { padding: 48px 24px; text-align: center; color: #607184; }
+
+/* Responsive layout and touch targets. Page actions wrap instead of squeezing text. */
+@media (min-width: 768px) {
+  .go-polished .go-sidebar { top: 72px; height: calc(100dvh - 72px); }
+}
+@media (max-width: 1199px) {
+  .go-polished .go-header-context { display: none; }
+  .go-polished .go-header > div { gap: 16px; }
+  .go-polished .go-main { padding-inline: 24px; }
+  .go-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .go-directory-summary > div { padding-inline: 18px; }
+  .go-polished .go-directory-filters { align-items: stretch; }
+  .go-directory-filters > .relative { flex-basis: 100%; }
+  .go-directory-filters > div:last-child { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+  .go-directory-filters select { min-width: 0; width: 100%; }
+}
+@media (max-width: 767px) {
+  .go-polished .go-header > div { height: 64px; padding-inline: 12px; gap: 8px; }
+  .go-polished .go-header-product strong { font-size: 19px; }
+  .go-polished .go-header-company { font-size: 8px; }
+  .go-polished .go-notification-popover { position: fixed; top: 66px; left: 12px; right: 12px; width: auto; margin-top: 0; }
+  .go-polished .go-sidebar { width: min(290px, 88vw); height: 100dvh; }
+  .go-polished .go-sidebar .sidebar-menu-item { min-height: 44px; font-size: 13px; }
+  .go-polished .go-main { padding: 24px 16px 40px; }
+  .go-polished .go-page-header { gap: 16px; }
+  .go-page-heading { flex-basis: 100%; }
+  .go-page-eyebrow { margin-bottom: 6px; }
+  .go-polished .go-page-heading > p { font-size: 13px; margin-top: 8px; }
+  .go-polished .go-page-header button { min-height: 44px; }
+  .go-stat-grid { gap: 10px; }
+  .go-polished .go-stat-card { padding: 16px; min-height: 165px; }
+  .go-stat-top { align-items: flex-start; gap: 6px; }
+  .go-stat-icon { width: 29px; height: 29px; border-radius: 8px; }
+  .go-stat-icon svg { width: 16px; height: 16px; }
+  .go-stat-number { flex-direction: column; gap: 7px; margin-block: 14px; }
+  .go-stat-number strong { font-size: 30px; }
+  .go-stat-label { font-size: 12px; }
+  .go-personal-banner { padding: 20px; gap: 18px; }
+  .go-personal-actions { width: 100%; padding-top: 16px; border-top: 1px solid #ffffff24; }
+  .go-personal-actions .go-button { flex: 1 1 auto; padding-inline: 10px; }
+  .go-personal-actions .go-button-accent { flex-basis: 100%; }
+  .go-directory-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0; }
+  .go-directory-summary > div { padding: 16px 18px; }
+  .go-directory-summary > div:nth-child(2) { border-right: 0; }
+  .go-directory-summary > div:nth-child(-n+2) { border-bottom: 1px solid #e5ebf0; }
+  .go-directory-summary dt { font-size: 11px; }
+  .go-directory-filters > .relative { min-width: 0; }
+  .go-directory-filters > div:last-child { grid-template-columns: 1fr; }
+  .go-directory-table-heading { padding: 16px 18px; }
+  .go-polished .go-directory .md\:hidden button { min-height: 44px; min-width: 44px; }
+  .go-polished .go-calendar section[aria-label="Selected day details"] { position: static; }
+}
+@media (max-width: 359px) {
+  .go-stat-grid { grid-template-columns: 1fr; }
+}

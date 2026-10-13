@@ -1,3 +1,4 @@
+import { PageHeading } from '../common/WorkspaceUI';
 import React, {
   useCallback,
   useEffect,
@@ -194,13 +195,8 @@ export const CompanyCalendar: React.FC = () => {
 
   return (
     <div className="go-calendar space-y-5" data-direction={direction}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Company Calendar</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            See who’s away, company holidays, and holiday coverage.
-          </p>
-        </div>
+      <div className="go-page-header flex flex-wrap items-center justify-between gap-3">
+        <PageHeading eyebrow="Planning" title="Company Calendar" description="See who’s away, upcoming holidays, and holiday coverage." />
         <button
           type="button"
           onClick={loadEvents}

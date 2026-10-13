@@ -7,16 +7,8 @@ import {
   XCircle,
   Clock,
   LogOut,
-  ChevronDown,
-  Building2,
-  Users,
-  ShieldCheck,
-  UserCheck,
-  Check,
-  Sparkles,
   Search,
   Command,
-  SlidersHorizontal,
 } from 'lucide-react';
 import { GoDestinationsLogo } from '../common/GoDestinationsLogo';
 
@@ -96,15 +88,15 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={onOpenCommandPalette}
-            className="w-full flex items-center justify-between px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-slate-300 text-slate-400 text-xs transition-all duration-150 shadow-2xs group"
+            className="go-command-trigger w-full flex items-center justify-between px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-slate-300 text-slate-400 text-xs transition-all duration-150 shadow-2xs group"
           >
             <div className="flex items-center space-x-2">
               <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
-              <span className="text-slate-500 font-normal">Search or jump to...</span>
+              <span className="text-slate-500 font-normal">Find a page or action</span>
             </div>
             <div className="flex items-center space-x-1">
               <kbd className="px-1.5 py-0.5 text-[12px] font-mono text-slate-400 bg-white border border-slate-200/90 rounded shadow-2xs">
-                ⌘K
+                ⌘ / Ctrl K
               </kbd>
             </div>
           </button>
@@ -117,7 +109,8 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onOpenCommandPalette}
             className="md:hidden p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-            title="Search commands (⌘K)"
+            title="Find a page or action (⌘ / Ctrl K)"
+            aria-label="Find a page or action"
           >
             <Search className="w-4 h-4" />
           </button>
@@ -136,6 +129,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
               aria-label={`Notifications (${unreadCount} unread)`}
+              aria-expanded={showNotifications}
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
@@ -146,7 +140,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 go-surface bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+              <div className="go-notification-popover absolute right-0 mt-2 w-80 sm:w-96 go-surface bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                 <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-200/70 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className="font-semibold text-slate-900 text-xs">Notifications</span>

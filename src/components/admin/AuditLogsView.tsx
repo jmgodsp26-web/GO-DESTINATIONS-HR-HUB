@@ -1,18 +1,10 @@
+import { PageHeading } from '../common/WorkspaceUI';
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuditLog } from '../../types';
 import { api } from '../../services/api';
 import {
-  FileText,
-  ShieldCheck,
   Search,
   Filter,
-  CheckCircle2,
-  XCircle,
-  UserCheck,
-  UserPlus,
-  Sliders,
-  CalendarDays,
-  Clock,
 } from 'lucide-react';
 
 export const AuditLogsView: React.FC = () => {
@@ -66,18 +58,8 @@ export const AuditLogsView: React.FC = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-              HR activity
-            </span>
-          </div>
-          <h1 className="text-xl font-bold text-slate-900 mt-1">Activity Log</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            See who changed employee records, reviewed leave, or updated HR settings.
-          </p>
-        </div>
+      <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeading eyebrow="Administration" title="Activity Log" description="See changes to employee records, leave requests, and HR settings." />
       </div>
 
       {/* Filter and Search Bar */}

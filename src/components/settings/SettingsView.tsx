@@ -1,3 +1,4 @@
+import { PageHeading } from '../common/WorkspaceUI';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -7,7 +8,6 @@ import { CompanySettings } from '../../types';
 import {
   Settings,
   Building,
-  Clock,
   CalendarCheck,
   Bell,
   Save,
@@ -135,32 +135,8 @@ export const SettingsView: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-slate-900 text-white">
-              <Settings className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                {isAdmin ? 'Company Settings' : 'Settings & Policies'}
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                {isAdmin
-                  ? 'Set company details, leave allowances, and notifications.'
-                  : 'Check leave rules and choose your notifications.'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Status Chip */}
-        <div className="flex items-center space-x-2">
-          <span className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Service Layer Active</span>
-          </span>
-        </div>
+      <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeading eyebrow="Preferences" title={isAdmin ? 'Company Settings' : 'Settings & Policies'} description={isAdmin ? 'Manage company details, leave allowances, and notifications.' : 'Check leave rules and choose your notifications.'} />
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">

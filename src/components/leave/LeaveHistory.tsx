@@ -1,3 +1,4 @@
+import { PageHeading } from '../common/WorkspaceUI';
 import { motion } from 'motion/react';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -13,15 +14,11 @@ import {
   XCircle,
   Clock,
   Filter,
-  FileText,
   Paperclip,
   Download,
-  AlertCircle,
   ChevronRight,
-  Receipt,
   ArrowUpRight,
   ArrowDownLeft,
-  Coins,
   History,
   X,
   Calendar,
@@ -102,13 +99,8 @@ export const LeaveHistory: React.FC = () => {
   return (
     <div className="go-leave-history space-y-6 animate-in fade-in duration-200">
       {/* Top Header & Balances */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">My Leave</h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Track your requests, read HR feedback, and check your leave balances.
-          </p>
-        </div>
+      <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeading eyebrow="Time off" title="My Leave" description="Plan time off, check your balances, and follow your requests." />
 
         <button
           type="button"

@@ -1,3 +1,4 @@
+import { PageHeading } from '../common/WorkspaceUI';
 import { prepareProfilePhoto, normalizeProfilePhoto } from '../../utils/profilePhoto';
 import { employeeReportCsv } from '../../utils/employeeReport';
 import { employeeCalendar } from '../../utils/employeeCalendar';
@@ -17,30 +18,23 @@ import {
 } from '../../types';
 import { api } from '../../services/api';
 import {
-  Users,
   UserPlus,
   Download,
   Search,
   Filter,
-  MoreHorizontal,
   Edit2,
   UserX,
   UserCheck,
-  Shield,
   Sliders,
   CheckCircle,
   AlertCircle,
   X,
-  Building,
-  Mail,
   Phone,
-  Briefcase,
   Calendar,
   Camera,
   Upload,
   User,
   FolderOpen,
-  Globe,
   Trash2,
 } from 'lucide-react';
 import { EmployeeDocumentsModal } from './EmployeeDocumentsModal';
@@ -327,15 +321,10 @@ export const EmployeeManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="go-directory space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Employees</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Manage employee details, access, and leave allowances.
-          </p>
-        </div>
+      <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeading eyebrow="People" title="Employees" description="Manage your people, their details, and leave allowances." />
 
         <div className="flex flex-wrap gap-2">
           <button type="button" disabled={isLoading || !filteredEmployees.length || currentAdmin?.role !== 'admin'}
@@ -369,13 +358,21 @@ export const EmployeeManagement: React.FC = () => {
         </div>
       </div>
 
+      <dl className="go-directory-summary" aria-label="Employee directory summary">
+        <div><dt>People in your directory</dt><dd>{isLoading ? '—' : employees.length}</dd></div>
+        <div><dt>Active employees</dt><dd>{isLoading ? '—' : employees.filter(emp => emp.status === 'active').length}</dd></div>
+        <div><dt>Departments</dt><dd>{isLoading ? '—' : new Set(employees.map(emp => emp.department).filter(Boolean)).size}</dd></div>
+        <div><dt>Countries</dt><dd>{isLoading ? '—' : new Set(employees.map(emp => emp.country).filter(Boolean)).size}</dd></div>
+      </dl>
+
       {/* Filter and Search Bar */}
-      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="go-directory-filters go-surface bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             id="employee-search-input"
+            aria-label="Search employees"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, ID, email, or position..."
@@ -386,6 +383,7 @@ export const EmployeeManagement: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* Department Filter */}
           <select
+            aria-label="Filter by department"
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
             className="text-xs rounded-xl border border-slate-200 px-3 py-2.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
@@ -399,6 +397,7 @@ export const EmployeeManagement: React.FC = () => {
 
           {/* Country / Location Filter */}
           <select
+            aria-label="Filter by country"
             value={countryFilter}
             onChange={(e) => setCountryFilter(e.target.value)}
             className="text-xs rounded-xl border border-slate-200 px-3 py-2.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
@@ -413,6 +412,7 @@ export const EmployeeManagement: React.FC = () => {
 
           {/* Status Filter */}
           <select
+            aria-label="Filter by account status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="text-xs rounded-xl border border-slate-200 px-3 py-2.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
@@ -426,23 +426,23 @@ export const EmployeeManagement: React.FC = () => {
 
       {/* Employees Table (Desktop) & Card Stack (Mobile) */}
       <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="go-directory-table-heading"><h2>Employee directory</h2><span role="status">{isLoading ? 'Loading employees…' : `${filteredEmployees.length} of ${employees.length} employees`}</span></div>
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="go-directory-table w-full text-left text-xs">
+            <caption className="sr-only">Employee details, leave balances, account access, and actions</caption>
             <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200/80">
               <tr>
                 <th className="px-5 py-3.5 font-semibold">Employee</th>
                 <th className="px-5 py-3.5 font-semibold">Department & Title</th>
                 <th className="px-5 py-3.5 font-semibold">Location</th>
-                <th className="px-5 py-3.5 font-semibold">Contact</th>
-                <th className="px-5 py-3.5 font-semibold">Vacation Leave</th>
-                <th className="px-5 py-3.5 font-semibold">Sick Leave</th>
-                <th className="px-5 py-3.5 font-semibold">Role</th>
-                <th className="px-5 py-3.5 font-semibold">Status</th>
+                <th className="px-5 py-3.5 font-semibold">Leave remaining</th>
+                <th className="px-5 py-3.5 font-semibold">Account</th>
                 <th className="px-5 py-3.5 text-right font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
+              {filteredEmployees.length === 0 && <tr><td colSpan={6} className="go-directory-empty">{isLoading ? 'Loading employees…' : 'No employees match your filters. Try a different name or filter.'}</td></tr>}
               {filteredEmployees.map((emp) => {
                 const vacationBal = emp.leave_balances?.find((b) => b.leave_type === 'Vacation Leave') || emp.leave_balances?.find((b) => (b.leave_type as string) === 'Annual Leave');
                 const sickBal = emp.leave_balances?.find((b) => b.leave_type === 'Sick Leave');
@@ -468,6 +468,8 @@ export const EmployeeManagement: React.FC = () => {
                         )}
                         <div>
                           <p className="font-bold text-slate-900">{emp.full_name}</p>
+                          <p className="go-directory-email">{emp.email}</p>
+                          {emp.phone && <p className="text-[12px] text-slate-500">{emp.phone}</p>}
                           <span className="font-mono text-[12px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
                             {emp.employee_id}
                           </span>
@@ -497,22 +499,9 @@ export const EmployeeManagement: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Contact */}
-                    <td className="px-5 py-3.5 text-slate-600">
-                      <p className="font-medium text-slate-800">{emp.email}</p>
-                      <p className="text-[12px] text-slate-400">{emp.phone}</p>
-                    </td>
-
-                    {/* Vacation Leave balance */}
                     <td className="px-5 py-3.5">
-                      <span className="font-bold text-slate-900 tabular-nums">{vacationRem}</span>
-                      <span className="text-[12px] text-slate-500"> / {vacationBal?.allocated_days ?? policyDefaults.annual} days</span>
-                    </td>
-
-                    {/* Sick Leave balance */}
-                    <td className="px-5 py-3.5">
-                      <span className="font-bold text-slate-900 tabular-nums">{sickRem}</span>
-                      <span className="text-[12px] text-slate-500"> / {sickBal?.allocated_days ?? 10} days</span>
+                      <div className="go-directory-balance"><span>Vacation</span><strong>{vacationRem}<small> / {vacationBal?.allocated_days ?? policyDefaults.annual}d</small></strong></div>
+                      <div className="go-directory-balance"><span>Sick</span><strong>{sickRem}<small> / {sickBal?.allocated_days ?? 10}d</small></strong></div>
                     </td>
 
                     {/* Role badge */}
@@ -524,10 +513,7 @@ export const EmployeeManagement: React.FC = () => {
                       }`}>
                         {emp.role === 'admin' ? 'Admin' : 'Employee'}
                       </span>
-                    </td>
-
-                    {/* Status badge */}
-                    <td className="px-5 py-3.5">
+                      <div className="mt-2" />
                       <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-semibold border ${
                         emp.status === 'active'
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'

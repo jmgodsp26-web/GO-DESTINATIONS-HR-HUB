@@ -1,3 +1,4 @@
+import { PageHeading } from '../common/WorkspaceUI';
 import { csvRow } from '../../utils/csv';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -13,16 +14,12 @@ import {
   getLeaveTypeConfig,
 } from '../../types';
 import {
-  BarChart3,
   Download,
-  Calendar,
   Filter,
   Users,
   Clock,
   CheckCircle2,
-  AlertCircle,
   TrendingUp,
-  FileSpreadsheet,
   Building2,
   RefreshCw,
   Sparkles,
@@ -232,22 +229,8 @@ export const ReportsView: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200/80">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                Reports
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                See leave totals by department and download reports.
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeading eyebrow="Team insights" title="Reports" description="Understand leave across your team and download the details." />
 
         {/* Action Controls */}
         <div className="flex items-center space-x-2.5">
