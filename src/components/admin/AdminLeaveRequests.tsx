@@ -1,3 +1,4 @@
+import { PageHeading } from '../common/WorkspaceUI';
 import { motion } from 'motion/react';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -7,7 +8,6 @@ import { api } from '../../services/api';
 import {
   ClipboardList,
   Filter,
-  Search,
   CheckCircle2,
   XCircle,
   Clock,
@@ -15,11 +15,6 @@ import {
   Check,
   X,
   AlertCircle,
-  FileText,
-  User,
-  Calendar,
-  ChevronDown,
-  Info,
   RotateCcw,
 } from 'lucide-react';
 
@@ -163,20 +158,8 @@ export const AdminLeaveRequests: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Leave Requests</h1>
-            {pendingCount > 0 && (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
-                {pendingCount} Pending
-              </span>
-            )}
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Filter, review, approve, or reject employee leave applications across the company.
-          </p>
-        </div>
+      <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeading eyebrow="Time off" title="Leave Approvals" description="Review your team’s time off requests and leave feedback." badge={pendingCount > 0 ? <span className="go-heading-badge">{pendingCount} pending</span> : undefined} />
       </div>
 
       {/* Filter Control Bar */}

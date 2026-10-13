@@ -1,3 +1,4 @@
+import { PageHeading, StatCard } from '../common/WorkspaceUI';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -12,20 +13,13 @@ import {
   UserCheck,
   CalendarDays,
   CheckCircle2,
-  XCircle,
-  Clock,
   ArrowRight,
   AlertCircle,
-  Sparkles,
   Paperclip,
   Check,
   X,
   Shield,
   Building2,
-  Calendar,
-  Layers,
-  ArrowUpRight,
-  TrendingUp,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -217,142 +211,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
   return (
     <div className="go-dashboard go-admin-workspace space-y-6 animate-in fade-in duration-200">
-      {/* 1. Operational Command Center Hero */}
-      <div className="go-welcome relative overflow-hidden go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[12px] font-semibold bg-purple-50 text-purple-700 border border-purple-200/80 uppercase tracking-wide">
-                HR Dashboard
-              </span>
-              <span className="text-slate-300">•</span>
-              <span className="text-xs text-slate-500 font-medium">GO Destinations HR</span>
-            </div>
-            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 mt-1.5 tracking-tight">
-              Welcome back, {user.full_name.split(' ')[0]}
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-              Manage employees, review leave requests, and plan holiday shifts.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-            <button
-              type="button"
-              onClick={() => onNavigateTab('employees')}
-              className="px-3.5 py-2.5 text-xs font-semibold bg-white text-slate-700 border border-slate-200/90 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition-all shadow-2xs min-h-[42px]"
-            >
-              View employees
-            </button>
-            <button
-              type="button"
-              onClick={() => onNavigateTab('leave-requests')}
-              className="px-4 py-2.5 text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] active:bg-[#182E3F] text-white rounded-xl transition-all shadow-xs min-h-[42px] flex items-center space-x-1.5"
-            >
-              <ClipboardList className="w-4 h-4" />
-              <span>Review Requests ({pendingRequests.length})</span>
-            </button>
-          </div>
+      <div className="go-page-header">
+        <PageHeading eyebrow="Administration" title="Team overview"
+          description={`Welcome back, ${user.full_name.split(' ')[0]}. Here’s what’s happening across your team.`} />
+        <div className="go-page-actions">
+          <button type="button" onClick={() => onNavigateTab('employees')} className="go-button go-button-secondary">
+            <Users size={16} /> View employees
+          </button>
+          <button type="button" onClick={() => onNavigateTab('leave-requests')} className="go-button go-button-primary">
+            <ClipboardList size={16} /> Review requests <span className="go-button-count">{pendingRequests.length}</span>
+          </button>
         </div>
       </div>
 
-      {/* 2. Metric Summary Cards - 4 Columns */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-        {/* Total Employees */}
-        <div
-          id="stat-card-workforce" role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateTab("employees"); } } }
-          onClick={() => onNavigateTab('employees')}
-          className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-indigo-300 cursor-pointer transition-all flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Employees</span>
-            <span className="p-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200/70 rounded-lg">
-              <Users className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">{totalEmployeesCount}</span>
-            <p className="text-[12px] text-slate-400 mt-1 flex items-center space-x-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>Active employees</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Employees Currently on Leave */}
-        <div
-          id="stat-card-on-leave" role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateTab("calendar"); } } }
-          onClick={() => onNavigateTab('calendar')}
-          className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-emerald-300 cursor-pointer transition-all flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Out Today</span>
-            <span className="p-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/70 rounded-lg">
-              <UserCheck className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">{currentlyOnLeave.length}</span>
-            <p className="text-[12px] text-slate-400 mt-1">
-              {currentlyOnLeave.length === 1 ? '1 team member absent' : `${currentlyOnLeave.length} away today`}
-            </p>
-          </div>
-        </div>
-
-        {/* Pending Leave Requests */}
-        <div
-          id="stat-card-pending-requests" role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateTab("leave-requests"); } } }
-          onClick={() => onNavigateTab('leave-requests')}
-          className={`rounded-2xl border p-4 sm:p-5 shadow-xs cursor-pointer transition-all flex flex-col justify-between ${
-            pendingRequests.length > 0
-              ? 'border-amber-300 ring-1 ring-amber-200/80 bg-amber-50/25 hover:bg-amber-50/40'
-              : 'bg-white border-slate-200/80 hover:border-amber-300'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Pending Review</span>
-            <span className="p-1.5 bg-amber-100 text-amber-800 rounded-lg">
-              <ClipboardList className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="mt-3">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">{pendingRequests.length}</span>
-              {pendingRequests.length > 0 && (
-                <span className="text-[12px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full font-bold">
-                  Action Required
-                </span>
-              )}
-            </div>
-            <p className="text-[12px] text-slate-400 mt-1 truncate">
-              {pendingRequests.length === 1 ? '1 request waiting' : `${pendingRequests.length} requests waiting`}
-            </p>
-          </div>
-        </div>
-
-        {/* Holiday Coverage Target */}
-        <div
-          id="stat-card-pc-coverage" role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateTab("holidays"); } } }
-          onClick={() => onNavigateTab('holidays')}
-          className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs hover:border-sky-300 cursor-pointer transition-all flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Holiday Coverage</span>
-            <span className="p-1.5 bg-sky-50 text-sky-700 border border-sky-200/70 rounded-lg">
-              <Shield className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">
-              {holidayCoverages.length > 0
-                ? `${holidayCoverages[0].pcs_working_count}/${holidayCoverages[0].pcs_required}`
-                : '2/2'}
-            </span>
-            <p className="text-[12px] text-slate-400 mt-1 truncate">
-              {upcomingHolidays[0] ? `${upcomingHolidays[0].name}` : 'Staffing target'}
-            </p>
-          </div>
-        </div>
+      <div className="go-stat-grid" aria-label="Team summary">
+        <StatCard id="stat-card-workforce" label="Employees" value={totalEmployeesCount}
+          detail="Active team members" icon={Users} onClick={() => onNavigateTab('employees')} />
+        <StatCard id="stat-card-on-leave" label="Out today" value={currentlyOnLeave.length}
+          detail="View the company calendar" icon={UserCheck} tone="green" onClick={() => onNavigateTab('calendar')} />
+        <StatCard id="stat-card-pending-requests" label="Awaiting review" value={pendingRequests.length}
+          detail={pendingRequests.length ? 'Leave requests need your review' : 'No leave requests waiting'}
+          icon={ClipboardList} tone="orange" onClick={() => onNavigateTab('leave-requests')} />
+        <StatCard id="stat-card-pc-coverage" label="Holiday coverage"
+          value={holidayCoverages.length ? `${holidayCoverages[0].pcs_working_count}/${holidayCoverages[0].pcs_required}` : '—'}
+          detail={holidayCoverages.length ? (upcomingHolidays[0]?.name || 'Scheduled / required PCs') : 'No upcoming coverage available'}
+          icon={Shield} tone="navy" onClick={() => onNavigateTab('holidays')} />
       </div>
 
       {/* 4. Quick Approval Queue */}

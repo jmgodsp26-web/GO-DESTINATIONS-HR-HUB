@@ -7,9 +7,9 @@ import {
   User,
   CalendarCheck,
   CalendarDays,
+  Calendar as CalendarIcon,
   Users,
   ClipboardList,
-  Calendar as CalendarIcon,
   FileText,
   FolderOpen,
   LogOut,
@@ -17,8 +17,6 @@ import {
   HelpCircle,
   LifeBuoy,
   ChevronRight,
-  Shield,
-  Sparkles,
   BarChart3,
   Settings as SettingsIcon,
   Bell,
@@ -143,6 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
             <GoDestinationsLogo variant="horizontal" size="sm" darkBackground={true} />
             <button
               type="button"
+              aria-label="Close navigation"
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
             >
@@ -151,12 +150,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
           </div>
 
           {/* Grouped Navigation Links */}
-          <div className="go-sidebar-brand hidden md:block">
-            <span className="go-eyebrow">GO DESTINATIONS</span>
-            <p>Your workplace,<br /><em>beautifully connected.</em></p>
-            <span className="go-sidebar-rule" />
+          <div className="go-sidebar-caption hidden md:flex">
+            <span className="go-sidebar-caption-mark" aria-hidden="true" />
+            <span>{isAdmin ? 'Your team, connected' : 'Your everyday workspace'}</span>
           </div>
-          <nav className="space-y-5 flex-1">
+          <nav className="space-y-5 flex-1" aria-label="Main navigation">
             {user.role === 'admin' && (
               <div className="go-workspace-switch" role="group" aria-label="Choose workspace">
                 {[{ id: 'personal', label: 'My Workspace', tab: 'my-workspace', active: !isAdmin }, { id: 'administration', label: 'Administration', tab: 'admin-dashboard', active: isAdmin }].map(option => (

@@ -1,3 +1,4 @@
+import { PageHeading } from '../common/WorkspaceUI';
 import { motion } from 'motion/react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useEffect, useCallback } from 'react';
@@ -12,14 +13,6 @@ import {
   Search,
   Filter,
   Lock,
-  Building,
-  Calendar,
-  Tag,
-  ShieldCheck,
-  CheckCircle2,
-  FileSpreadsheet,
-  FileCode,
-  FileCheck,
   Clock,
   Trash2,
   X,
@@ -163,22 +156,8 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
   return (
     <div className="go-documents space-y-6 animate-in fade-in duration-200">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              {isAdmin ? 'Corporate Archive' : 'Confidential Records'}
-            </span>
-            <span className="text-slate-300">•</span>
-            <span className="text-xs font-semibold text-slate-500">GO Destinations HR</span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 tracking-tight">{isAdmin ? 'Documents' : 'My Documents'}</h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            {isAdmin
-              ? 'Find and manage employee contracts, records, and certificates.'
-              : 'Find your contracts, ID documents, reviews, and certificates.'}
-          </p>
-        </div>
+      <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeading eyebrow="Records" title={isAdmin ? 'Documents' : 'My Documents'} description={isAdmin ? 'Find and manage employee contracts, records, and certificates.' : 'Your contracts, records, and certificates in one place.'} />
 
         <div className="flex items-center space-x-2">
           <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100/80 text-slate-700 border border-slate-200/80">

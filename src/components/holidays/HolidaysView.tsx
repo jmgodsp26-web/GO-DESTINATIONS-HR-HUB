@@ -1,3 +1,4 @@
+import { PageHeading } from '../common/WorkspaceUI';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -14,7 +15,6 @@ import {
   formatHolidayDate,
 } from '../../utils/countryUtils';
 import {
-  CalendarDays,
   PlusCircle,
   Edit2,
   Trash2,
@@ -22,9 +22,7 @@ import {
   X,
   Calendar,
   Clock,
-  ShieldCheck,
   Eye,
-  Plus,
   Globe,
   Filter,
   CheckCircle2,
@@ -33,7 +31,6 @@ import {
   Search,
   Building2,
   RotateCcw,
-  Sparkles,
   Users,
 } from 'lucide-react';
 
@@ -422,22 +419,8 @@ export const HolidaysView: React.FC = () => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-slate-900">
-              {isAdmin ? 'Holidays & Shifts' : 'Company Holidays'}
-            </h1>
-            <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-              Multi-Country
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {isAdmin
-              ? 'Manage holidays by location and plan who is working.'
-              : 'View holidays for your location and request to work a holiday shift.'}
-          </p>
-        </div>
+      <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeading eyebrow="Planning" title={isAdmin ? 'Holidays & Shifts' : 'Company Holidays'} description={isAdmin ? 'Manage holidays by location and plan who is working.' : 'Explore your holiday calendar and request a holiday shift.'} />
 
         <div className="flex items-center space-x-2">
           {!isAdmin && (

@@ -1,3 +1,4 @@
+import { PageHeading } from '../common/WorkspaceUI';
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -10,8 +11,6 @@ import {
   Check,
   Filter,
   Trash2,
-  CalendarCheck,
-  Sparkles,
   ArrowRight,
 } from 'lucide-react';
 
@@ -78,22 +77,8 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
   return (
     <div className="go-notifications space-y-6 animate-in fade-in duration-200">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200/80">
-              <Bell className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                Notifications
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Keep track of leave decisions and holiday shifts.
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeading eyebrow="Your updates" title="Notifications" description="Stay up to date with leave decisions and holiday shifts." />
 
         <div className="flex items-center space-x-2">
           {unreadCount > 0 && (

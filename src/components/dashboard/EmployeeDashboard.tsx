@@ -1,3 +1,4 @@
+import { PageHeading, StatCard } from '../common/WorkspaceUI';
 import { employeeCalendar } from '../../utils/employeeCalendar';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -22,13 +23,9 @@ import {
   Plane,
   HeartPulse,
   Briefcase,
-  Sparkles,
   Calendar,
-  Layers,
   ArrowUpRight,
-  Sun,
   ShieldCheck,
-  Globe,
   CalendarX2,
 } from 'lucide-react';
 import {
@@ -195,92 +192,24 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
 
   return (
     <div className="go-dashboard go-employee-workspace go-personal-home space-y-6 animate-in fade-in duration-200">
-      <div className="go-page-intro">
-        <div><span className="go-eyebrow">YOUR EVERYDAY HR, IN ONE PLACE</span><h1>My Workspace</h1><p>Your time off, documents, and upcoming schedule.</p></div>
-        <span className="go-context-tag"><CalendarDays className="w-4 h-4" />{new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', timeZone: user.timezone || undefined }).format(new Date())}</span>
+      <div className="go-page-header">
+        <PageHeading eyebrow="My workspace" title={`${getGreeting()}, ${firstName}`}
+          description="Your time off, documents, and upcoming schedule, together." />
+        <span className="go-date-label"><CalendarDays size={16} />{new Intl.DateTimeFormat('en', { weekday: 'long', month: 'short', day: 'numeric', timeZone: user.timezone || undefined }).format(new Date())}</span>
       </div>
-      {/* Personal welcome and existing quick actions */}
-      <div className="go-welcome relative overflow-hidden go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
-          <div className="flex items-start sm:items-center space-x-4">
-            <div className="relative shrink-0">
-              {user.avatar_url && user.avatar_url.trim() ? (
-                <img
-                  src={user.avatar_url}
-                  alt={user.full_name}
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border border-slate-200/90 shadow-xs ring-2 ring-slate-100"
-                />
-              ) : (
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#3A5D83] text-white flex items-center justify-center font-bold text-lg border border-slate-200/90 shadow-xs ring-2 ring-slate-100">
-                  {user.full_name
-                    ? user.full_name
-                        .split(' ')
-                        .filter(Boolean)
-                        .map((n) => n[0])
-                        .join('')
-                        .substring(0, 2)
-                    : 'GD'}
-                </div>
-              )}
-              <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="go-personal-greeting text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">
-                  {getGreeting()}, {firstName}
-                </h2>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 inline-block" />
-                  Active
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-                Welcome back. Everything you need to plan your next day off.
-              </p>
-              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500 mt-2 font-normal">
-                <span className="font-semibold text-slate-700">{user.job_title}</span>
-                <span className="text-slate-300">•</span>
-                <span>{user.department}</span>
-                <span className="text-slate-300">•</span>
-                <span className="tabular-nums font-mono text-[12px] text-slate-400">ID: {user.employee_id}</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Quick Actions (Visually Distinct Touch-Friendly Buttons) */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-            <button
-              type="button"
-              id="dashboard-request-leave-btn"
-              onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-[#3A5D83] hover:bg-[#182E3F] active:bg-[#182E3F] text-white rounded-xl font-semibold text-xs transition-all shadow-xs min-h-[44px]"
-            >
-              <Plus className="w-4 h-4 shrink-0" />
-              <span>Request Leave</span>
-            </button>
-
-            <button
-              type="button"
-              id="dashboard-holiday-shift-btn"
-              onClick={() => setIsShiftModalOpen(true)}
-              className="inline-flex items-center justify-center space-x-2 px-3.5 py-2.5 bg-white hover:bg-slate-50 active:bg-slate-100 text-[#3A5D83] border border-[#3A5D83]/30 rounded-xl font-semibold text-xs transition-all shadow-2xs min-h-[44px]"
-            >
-              <Briefcase className="w-4 h-4 shrink-0 text-[#3A5D83]" />
-              <span>Holiday Shift</span>
-            </button>
-
-            <button
-              type="button"
-              id="dashboard-my-requests-btn"
-              onClick={() => onNavigateTab('leave')}
-              className="inline-flex items-center justify-center space-x-2 px-3.5 py-2.5 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 border border-slate-200/90 rounded-xl font-semibold text-xs transition-all shadow-2xs min-h-[44px]"
-            >
-              <History className="w-4 h-4 shrink-0 text-slate-500" />
-              <span>My Requests</span>
-            </button>
-          </div>
+      <section className="go-personal-banner" aria-label="Your profile and quick actions">
+        <div className="go-personal-identity">
+          {user.avatar_url?.trim() ? <img src={user.avatar_url} alt="" className="go-personal-avatar" /> :
+            <span className="go-personal-avatar" aria-hidden="true">{user.full_name?.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('') || 'GO'}</span>}
+          <div><strong>{user.full_name}</strong><p>{[user.job_title, user.department].filter(Boolean).join(' · ') || 'Your personal workspace'}</p></div>
         </div>
-      </div>
+        <div className="go-personal-actions">
+          <button type="button" id="dashboard-request-leave-btn" onClick={() => setIsModalOpen(true)} className="go-button go-button-accent"><Plus size={16} />Request leave</button>
+          <button type="button" id="dashboard-holiday-shift-btn" onClick={() => setIsShiftModalOpen(true)} className="go-button go-button-inverse"><Briefcase size={16} />Holiday shift</button>
+          <button type="button" id="dashboard-my-requests-btn" onClick={() => onNavigateTab('leave')} className="go-button go-button-inverse"><History size={16} />My requests</button>
+        </div>
+      </section>
 
       {/* 2. Rich Leave Balances (4 Refined Information Cards) */}
       <div>
@@ -300,139 +229,15 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
           </button>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-          {/* Card 1: Total Balance Available */}
-          <div className="go-surface bg-white rounded-2xl border border-indigo-100/90 bg-gradient-to-b from-indigo-50/30 to-white p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-indigo-200 transition-colors">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-indigo-900 tracking-wide">Total Balance</span>
-                <span className="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg">
-                  <CalendarCheck className="w-4 h-4" />
-                </span>
-              </div>
-              <div className="mt-3 flex items-baseline space-x-1.5">
-                <span className="text-2xl sm:text-3xl font-extrabold text-indigo-950 tabular-nums">
-                  {totalRemainingAll}
-                </span>
-                <span className="text-xs font-semibold text-indigo-600">days available</span>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-2.5 border-t border-indigo-100/70 text-[12px] text-indigo-700/80 flex items-center justify-between">
-              <span>Combined balance</span>
-              <span className="font-mono text-[12px] bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-700 font-semibold">
-                {balances.length} Types
-              </span>
-            </div>
-          </div>
-
-          {/* Card 2: Vacation Leave */}
-          <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-colors">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Vacation Leave</span>
-                <span className="p-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/70 rounded-lg">
-                  <Plane className="w-4 h-4" />
-                </span>
-              </div>
-              <div className="mt-3 flex items-baseline space-x-1.5">
-                <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">
-                  {vacRemaining}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">/ {vacAllocated}d left</span>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-2.5 border-t border-slate-100">
-              <div className="flex items-center justify-between text-[12px] text-slate-500 mb-1.5">
-                <span>{vacUsed} days taken</span>
-                <span className="font-semibold text-slate-700">{vacPercent}% used</span>
-              </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${vacPercent}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Sick Leave */}
-          <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-colors">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Sick Leave</span>
-                <span className="p-1.5 bg-sky-50 text-sky-700 border border-sky-200/70 rounded-lg">
-                  <HeartPulse className="w-4 h-4" />
-                </span>
-              </div>
-              <div className="mt-3 flex items-baseline space-x-1.5">
-                <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">
-                  {sickRemaining}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">/ {sickAllocated}d left</span>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-2.5 border-t border-slate-100">
-              <div className="flex items-center justify-between text-[12px] text-slate-500 mb-1.5">
-                <span>{sickUsed} days taken</span>
-                <span className="font-semibold text-slate-700">{sickPercent}% used</span>
-              </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-sky-500 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${sickPercent}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: Pending Queue */}
-          <button
-            type="button"
-            aria-label={`${pendingCount} leave requests awaiting review. View my requests`}
-            onClick={() => onNavigateTab('leave')}
-            className={`text-left rounded-2xl border p-4 sm:p-5 shadow-xs flex flex-col justify-between cursor-pointer transition-all ${
-              pendingCount > 0
-                ? 'bg-amber-50/30 border-amber-200 hover:border-amber-300'
-                : 'bg-white border-slate-200/80 hover:border-slate-300'
-            }`}
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-600">Awaiting review</span>
-                <span
-                  className={`p-1.5 rounded-lg border ${
-                    pendingCount > 0
-                      ? 'bg-amber-100 text-amber-800 border-amber-200'
-                      : 'bg-slate-50 text-slate-500 border-slate-200/80'
-                  }`}
-                >
-                  <Clock className="w-4 h-4" />
-                </span>
-              </div>
-              <div className="mt-3 flex items-baseline space-x-1.5">
-                <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">
-                  {pendingCount}
-                </span>
-                <span className="text-xs text-slate-500 font-medium">
-                  {pendingCount === 1 ? 'request' : 'requests'}
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-2.5 border-t border-slate-100 text-[12px]">
-              {pendingCount > 0 ? (
-                <span className="text-amber-800 font-semibold flex items-center space-x-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  <span>Awaiting HR approval</span>
-                </span>
-              ) : (
-                <span className="text-slate-400">No requests awaiting review</span>
-              )}
-            </div>
-          </button>
+        <div className="go-stat-grid">
+          <StatCard label="Total balance" value={totalRemainingAll} unit="days available"
+            detail={`Combined across ${balances.length} leave types`} icon={CalendarCheck} tone="navy" />
+          <StatCard label="Vacation leave" value={vacRemaining} unit={`of ${vacAllocated} days left`}
+            detail={`${vacUsed} days taken · ${vacPercent}% used`} icon={Plane} tone="green" progress={vacPercent} />
+          <StatCard label="Sick leave" value={sickRemaining} unit={`of ${sickAllocated} days left`}
+            detail={`${sickUsed} days taken · ${sickPercent}% used`} icon={HeartPulse} progress={sickPercent} />
+          <StatCard label="Awaiting review" value={pendingCount} unit={pendingCount === 1 ? 'request' : 'requests'}
+            detail={pendingCount ? 'Awaiting HR approval' : 'No requests awaiting review'} icon={Clock} tone="orange" onClick={() => onNavigateTab('leave')} />
         </div>
       </div>
 

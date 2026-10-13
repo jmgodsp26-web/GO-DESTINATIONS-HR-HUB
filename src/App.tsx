@@ -75,7 +75,8 @@ const MainApp: React.FC = () => {
 
   return (
     <WorkspaceProvider mode={mode}>
-    <div className="go-app min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans antialiased">
+    <div className="go-app go-polished min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans antialiased">
+      <a className="go-skip-link" href="#workspace-content">Skip to content</a>
       {/* First-Time Password Setup Modal for Initial Onboarding Sign-In */}
       <FirstTimePasswordModal />
 
@@ -97,7 +98,7 @@ const MainApp: React.FC = () => {
         />
 
         {/* Main Content Viewport */}
-        <main key={`${mode}:${currentTab}`} className="go-main flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
+        <main id="workspace-content" tabIndex={-1} key={`${mode}:${currentTab}`} className="go-main flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
           {/* Employee Views */}
           {!isAdministration && (
             <>
