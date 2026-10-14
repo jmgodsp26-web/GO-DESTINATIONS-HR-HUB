@@ -1,3 +1,4 @@
+import { AnnouncementWidget } from '../announcements/AnnouncementsView';
 import { PageHeading, StatCard } from '../common/WorkspaceUI';
 import { employeeCalendar } from '../../utils/employeeCalendar';
 import React, { useState, useEffect, useCallback } from 'react';
@@ -240,6 +241,8 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate
             detail={pendingCount ? 'Awaiting HR approval' : 'No requests awaiting review'} icon={Clock} tone="orange" onClick={() => onNavigateTab('leave')} />
         </div>
       </div>
+
+      <AnnouncementWidget onViewAll={() => onNavigateTab('announcements')} />
 
       {/* 3. Upcoming Holiday & Shift Status Highlight */}
       {nextHoliday && (

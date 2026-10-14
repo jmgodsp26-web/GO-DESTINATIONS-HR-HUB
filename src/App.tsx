@@ -1,3 +1,4 @@
+import { AnnouncementsView } from './components/announcements/AnnouncementsView';
 import { MotionConfig } from 'motion/react';
 import React, { useState, useEffect } from 'react';
 import { WorkspaceProvider } from './context/WorkspaceContext';
@@ -109,6 +110,7 @@ const MainApp: React.FC = () => {
               {(currentTab === 'leave' || currentTab === 'requests' || currentTab === 'history') && (
                 <LeaveHistory />
               )}
+              {currentTab === 'announcements' && <AnnouncementsView />}
               {currentTab === 'calendar' && <CompanyCalendar />}
               {currentTab === 'holidays' && <HolidaysView />}
               {currentTab === 'documents' && <DocumentsView />}
@@ -124,6 +126,7 @@ const MainApp: React.FC = () => {
                 'leave',
                 'requests',
                 'history',
+                'announcements',
                 'calendar',
                 'holidays',
                 'documents',
@@ -145,6 +148,7 @@ const MainApp: React.FC = () => {
               {(currentTab === 'leave-requests' || currentTab === 'requests' || currentTab === 'leave' || currentTab === 'history') && (
                 <AdminLeaveRequests />
               )}
+              {currentTab === 'announcements' && <AnnouncementsView />}
               {currentTab === 'calendar' && <CompanyCalendar />}
               {currentTab === 'holidays' && <HolidaysView />}
               {currentTab === 'documents' && <DocumentsView />}
@@ -163,6 +167,7 @@ const MainApp: React.FC = () => {
                 'requests',
                 'leave',
                 'history',
+                'announcements',
                 'calendar',
                 'holidays',
                 'documents',

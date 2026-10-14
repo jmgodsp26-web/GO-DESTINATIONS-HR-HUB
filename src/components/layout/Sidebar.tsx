@@ -20,6 +20,7 @@ import {
   BarChart3,
   Settings as SettingsIcon,
   Bell,
+  Megaphone,
 } from 'lucide-react';
 import { GoDestinationsLogo } from '../common/GoDestinationsLogo';
 
@@ -61,6 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
       items: [
         { id: 'leave', label: 'My Leave', icon: CalendarCheck },
         { id: 'calendar', label: 'Company Calendar', icon: CalendarIcon },
+        { id: 'announcements', label: 'Announcements', icon: Megaphone },
         { id: 'holidays', label: 'Company Holidays', icon: CalendarDays },
         { id: 'documents', label: 'My Documents', icon: FolderOpen },
       ],
@@ -85,6 +87,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
       items: [
         { id: 'admin-dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'calendar', label: 'Company Calendar', icon: CalendarIcon },
+        { id: 'announcements', label: 'Announcements', icon: Megaphone },
       ],
     },
     {

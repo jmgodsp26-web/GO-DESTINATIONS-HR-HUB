@@ -81,6 +81,10 @@ export const AuditLogsView: React.FC = () => {
           className="text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-700 focus:ring-2 focus:ring-indigo-500"
         >
           <option value="All">All Actions</option>
+          <option value="Publish Announcement">Announcement Published</option>
+          <option value="Save Announcement Draft">Announcement Draft Saved</option>
+          <option value="Archive Announcement">Announcement Archived</option>
+          <option value="Acknowledge Announcement">Announcement Acknowledged</option>
           <option value="Signed in">Signed In</option>
           <option value="Sign-in failed">Sign-In Failed</option>
           <option value="Leave approved">Leave Approved</option>

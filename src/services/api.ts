@@ -1,3 +1,4 @@
+import type { AnnouncementInput, AnnouncementView, AnnouncementReport } from '../types';
 import {
   UserProfile,
   LeaveBalance,
@@ -48,6 +49,23 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const api = {
+  getAnnouncements(manage = false): Promise<AnnouncementView[]> {
+    return request('/api/announcements' + (manage ? '?view=manage' : ''));
+  },
+  saveAnnouncement(data: AnnouncementInput, existing?: { id: string; revision: number }): Promise<AnnouncementView> {
+    return request('/api/announcements' + (existing ? '/' + encodeURIComponent(existing.id) : ''), {
+      method: existing ? 'PATCH' : 'POST', body: JSON.stringify({ ...data, ...(existing ? { expected_revision: existing.revision } : {}) }),
+    });
+  },
+  archiveAnnouncement(item: { id: string; revision: number }): Promise<AnnouncementView> {
+    return request(`/api/announcements/${encodeURIComponent(item.id)}/archive`, { method: 'POST', body: JSON.stringify({ expected_revision: item.revision }) });
+  },
+  readAnnouncement(item: { id: string; revision: number }, acknowledge = false): Promise<AnnouncementView> {
+    return request(`/api/announcements/${encodeURIComponent(item.id)}/${acknowledge ? 'acknowledge' : 'read'}`, { method: 'POST', body: JSON.stringify({ revision: item.revision }) });
+  },
+  announcementReport(id: string): Promise<AnnouncementReport> {
+    return request(`/api/announcements/${encodeURIComponent(id)}/report`);
+  },
   // Auth
   async login(identifier: string, passwordHash?: string): Promise<AuthResponse> {
     const res = await request<AuthResponse>('/api/auth/login', {

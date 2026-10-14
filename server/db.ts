@@ -1,3 +1,5 @@
+import { AnnouncementError, announcementAudience, announcementVisible, validateAnnouncement } from './announcements.js';
+import type { Announcement, AnnouncementView, AnnouncementReceipt, AnnouncementReport } from '../src/types.js';
 import { validateProfileStorage } from './profile-validation.js';
 import { employeeCalendar } from '../src/utils/employeeCalendar.js';
 import { workingDays, holidayApplies } from '../src/utils/workingDays.js';
@@ -85,6 +87,8 @@ export class HRDatabase {
   private holidayShifts: HolidayShiftRequest[] = [];
   private auditLogs: AuditLog[] = [];
   private notifications: NotificationItem[] = [];
+  private announcements: Announcement[] = [];
+  private announcementReceipts: AnnouncementReceipt[] = [];
   private employeeDocuments: EmployeeDocument[] = [];
   private sessions: Map<string, SessionRecord> = new Map();
   private loginAttempts: { id: string; count: number; expiresAt: number }[] = [];
@@ -136,6 +140,8 @@ export class HRDatabase {
       holidayShifts: this.holidayShifts,
       auditLogs: this.auditLogs,
       notifications: this.notifications,
+      announcements: this.announcements,
+      announcementReceipts: this.announcementReceipts,
       employeeDocuments: this.employeeDocuments,
       companySettings: this.companySettings,
       sessions: Array.from(this.sessions.entries()),
@@ -149,6 +155,8 @@ export class HRDatabase {
 
   private hydrateFromStore(data: PersistentData) {
     this.leaveAttachments = data.leaveAttachments || [];
+    this.announcements = data.announcements || [];
+    this.announcementReceipts = data.announcementReceipts || [];
     this.loginAttempts = (data.loginAttempts || []).filter(row => row.expiresAt > Date.now());
     this.nextEmployeeNumber = Math.max(data.nextEmployeeNumber || 100, ...((data.users || []).map(u => Number(u.profile?.employee_id?.replace('HR-', '')) + 1).filter(Number.isFinite)));
 
@@ -2276,10 +2284,106 @@ export class HRDatabase {
 
   }
 
+  // --- COMPANY ANNOUNCEMENTS ---
+  private announcementActor(actor: UserProfile, admin = false): UserProfile {
+    const current = this.users.find(u => u.id === actor.id)?.profile;
+    if (!current || current.status !== 'active' || !['admin', 'employee'].includes(current.role) || (admin && current.role !== 'admin')) throw new AnnouncementError('Access denied.', 403);
+    return current;
+  }
+
+  private announcementView(a: Announcement, actor: UserProfile): AnnouncementView {
+    const receipt = this.announcementReceipts.find(r => r.announcement_id === a.id && r.user_id === actor.id && r.revision === a.revision);
+    return structuredClone({ ...a, read_at: receipt?.read_at || null, acknowledged_at: receipt?.acknowledged_at || null });
+  }
+
+  public getAnnouncements(actor: UserProfile, manage = false): AnnouncementView[] {
+    const user = this.announcementActor(actor, manage);
+    return this.announcements.filter(a => manage || announcementVisible(a, user))
+      .sort((a, b) => Number(b.pinned) - Number(a.pinned) || (b.published_at || b.updated_at).localeCompare(a.published_at || a.updated_at))
+      .map(a => this.announcementView(a, user));
+  }
+
+  public saveAnnouncement(actor: UserProfile, input: unknown, id?: string, expectedRevision?: unknown): AnnouncementView {
+    const user = this.announcementActor(actor, true);
+    const current = id ? this.announcements.find(a => a.id === id) : undefined;
+    if (id && !current) throw new AnnouncementError('Announcement not found.', 404);
+    if (current && current.revision !== expectedRevision) throw new AnnouncementError('This announcement changed. Refresh and reopen it before editing.', 409);
+    if (current?.status === 'archived') throw new AnnouncementError('Archived announcements cannot be edited. Create a new announcement.');
+    const data = validateAnnouncement(input);
+    if (current?.status === 'published' && data.status === 'draft') throw new AnnouncementError('Archive a published announcement to remove it from employee view.');
+    const now = new Date().toISOString();
+    const next: Announcement = { ...data, id: current?.id || 'announcement-' + crypto.randomUUID(),
+      author_id: current?.author_id || user.id, author_name: current?.author_name || user.full_name,
+      created_at: current?.created_at || now, updated_at: now, published_at: data.status === 'published' ? now : null,
+      revision: (current?.revision || 0) + 1 };
+    if (current) this.announcements[this.announcements.indexOf(current)] = next;
+    else this.announcements.push(next);
+    // Replace obsolete notifications, including those for an audience that changed.
+    this.notifications = this.notifications.filter(n => n.announcement_id !== next.id);
+    if (next.status === 'published') {
+      for (const recipient of this.users.map(u => u.profile).filter(u => announcementAudience(next, u))) {
+        this.notifications.unshift({ id: 'notif-' + crypto.randomUUID(), user_id: recipient.id,
+          title: current?.status === 'published' ? 'Company announcement updated' : 'New company announcement',
+          message: next.requires_acknowledgment ? 'A company update requires your acknowledgment. Open Announcements to read it.' : 'A company update is available. Open Announcements to read it.',
+          type: 'system', read: false, created_at: now, link_tab: 'announcements', announcement_id: next.id, announcement_revision: next.revision });
+      }
+    }
+    this.logAudit({ action: next.status === 'published' ? 'Publish Announcement' : 'Save Announcement Draft', user_id: user.id, user_name: user.full_name, user_role: user.role,
+      target_type: 'announcement', target_id: next.id, details: `Saved announcement revision ${next.revision}.` });
+    return this.announcementView(next, user);
+  }
+
+  public archiveAnnouncement(actor: UserProfile, id: string, expectedRevision: unknown): AnnouncementView {
+    const user = this.announcementActor(actor, true);
+    const a = this.announcements.find(a => a.id === id);
+    if (!a) throw new AnnouncementError('Announcement not found.', 404);
+    if (a.revision !== expectedRevision) throw new AnnouncementError('This announcement changed. Refresh before archiving.', 409);
+    if (a.status !== 'archived') {
+      a.status = 'archived'; a.updated_at = new Date().toISOString();
+      this.notifications = this.notifications.filter(n => n.announcement_id !== id);
+      this.logAudit({ action: 'Archive Announcement', user_id: user.id, user_name: user.full_name, user_role: user.role, target_type: 'announcement', target_id: id, details: 'Announcement archived.' });
+    }
+    return this.announcementView(a, user);
+  }
+
+  public readAnnouncement(actor: UserProfile, id: string, revision: unknown, acknowledge = false): AnnouncementView {
+    const user = this.announcementActor(actor);
+    const a = this.announcements.find(a => a.id === id && announcementVisible(a, user));
+    if (!a) throw new AnnouncementError('Announcement not available.', 404);
+    if (a.revision !== revision) throw new AnnouncementError('This announcement changed. Refresh and read the latest version.', 409);
+    let receipt = this.announcementReceipts.find(r => r.announcement_id === id && r.user_id === user.id);
+    if (acknowledge && (!a.requires_acknowledgment || !receipt || receipt.revision !== a.revision)) throw new AnnouncementError('Open the current announcement before acknowledging it.');
+    if (!receipt) {
+      receipt = { id: crypto.randomUUID(), announcement_id: id, user_id: user.id, revision: a.revision, read_at: new Date().toISOString(), acknowledged_at: null };
+      this.announcementReceipts.push(receipt);
+    } else if (receipt.revision !== a.revision) {
+      receipt.revision = a.revision; receipt.read_at = new Date().toISOString(); receipt.acknowledged_at = null;
+    }
+    if (acknowledge && !receipt.acknowledged_at) {
+      receipt.acknowledged_at = new Date().toISOString();
+      this.logAudit({ action: 'Acknowledge Announcement', user_id: user.id, user_name: user.full_name, user_role: user.role, target_type: 'announcement', target_id: id, details: `Acknowledged revision ${a.revision}.` });
+    }
+    this.notifications.filter(n => n.announcement_id === id && n.user_id === user.id).forEach(n => { n.read = true; });
+    return this.announcementView(a, user);
+  }
+
+  public announcementReport(actor: UserProfile, id: string): AnnouncementReport {
+    this.announcementActor(actor, true);
+    const a = this.announcements.find(a => a.id === id);
+    if (!a) throw new AnnouncementError('Announcement not found.', 404);
+    return { revision: a.revision, recipients: this.users.map(u => u.profile).filter(u => announcementAudience(a, u)).map(user => {
+      const receipt = this.announcementReceipts.find(r => r.announcement_id === id && r.user_id === user.id && r.revision === a.revision);
+      return { user_id: user.id, name: user.full_name, department: user.department, read_at: receipt?.read_at || null, acknowledged_at: receipt?.acknowledged_at || null };
+    }) };
+  }
+
   // --- NOTIFICATIONS ---
   public getNotifications(userId: string): NotificationItem[] {
     return this.notifications
-      .filter((n) => n.user_id === userId)
+      .filter((n) => n.user_id === userId && (!n.announcement_id || this.announcements.some(a => {
+        const user = this.users.find(u => u.id === userId)?.profile;
+        return user && a.id === n.announcement_id && a.revision === n.announcement_revision && announcementVisible(a, user);
+      })))
       .map((n) => ({
         ...n,
         link_tab:
