@@ -208,7 +208,7 @@ export interface AuditLog {
   user_id: string;
   user_name: string;
   user_role: UserRole;
-  target_type: 'employee' | 'leave_request' | 'holiday' | 'leave_balance' | 'security';
+  target_type: 'employee' | 'leave_request' | 'holiday' | 'leave_balance' | 'security' | 'announcement';
   target_id: string;
   details: string;
   timestamp: string;
@@ -223,6 +223,47 @@ export interface NotificationItem {
   read: boolean;
   created_at: string;
   link_tab?: string;
+  announcement_id?: string;
+  announcement_revision?: number;
+}
+
+export const ANNOUNCEMENT_CATEGORIES = ['Company news', 'HR reminder', 'Policy update', 'Event'] as const;
+export interface AnnouncementInput {
+  title: string;
+  message: string;
+  category: typeof ANNOUNCEMENT_CATEGORIES[number];
+  departments: string[];
+  countries: string[];
+  pinned: boolean;
+  requires_acknowledgment: boolean;
+  expires_at: string | null;
+  status: 'draft' | 'published';
+}
+export interface Announcement extends Omit<AnnouncementInput, 'status'> {
+  id: string;
+  status: 'draft' | 'published' | 'archived';
+  author_id: string;
+  author_name: string;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+  revision: number;
+}
+export interface AnnouncementReceipt {
+  id: string;
+  announcement_id: string;
+  user_id: string;
+  revision: number;
+  read_at: string;
+  acknowledged_at: string | null;
+}
+export interface AnnouncementView extends Announcement {
+  read_at: string | null;
+  acknowledged_at: string | null;
+}
+export interface AnnouncementReport {
+  revision: number;
+  recipients: { user_id: string; name: string; department: string; read_at: string | null; acknowledged_at: string | null }[];
 }
 
 export interface CalendarEvent {

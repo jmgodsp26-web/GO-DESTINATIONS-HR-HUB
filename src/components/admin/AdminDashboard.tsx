@@ -1,3 +1,4 @@
+import { AnnouncementWidget } from '../announcements/AnnouncementsView';
 import { PageHeading, StatCard } from '../common/WorkspaceUI';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -237,6 +238,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           detail={holidayCoverages.length ? (upcomingHolidays[0]?.name || 'Scheduled / required PCs') : 'No upcoming coverage available'}
           icon={Shield} tone="navy" onClick={() => onNavigateTab('holidays')} />
       </div>
+
+      <AnnouncementWidget onViewAll={() => onNavigateTab('announcements')} />
 
       {/* 4. Quick Approval Queue */}
       <div className="go-review-queue go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">

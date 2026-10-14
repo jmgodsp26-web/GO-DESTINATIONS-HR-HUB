@@ -1,3 +1,4 @@
+import { AnnouncementError } from './server/announcements.js';
 import { visibleCoverage } from './server/coverage.js';
 import { decodeUpload } from './server/files.js';
 import express, { Request, Response, NextFunction } from 'express';
@@ -617,6 +618,36 @@ apiRouter.get('/api/audit-logs', adminOnlyMiddleware, (_req: AuthenticatedReques
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
+});
+
+// Announcements: publication and readership reports are admin-only.
+function announcementReply(res: Response, operation: () => unknown, status = 200) {
+  try { res.status(status).json(operation()); }
+  catch (error) {
+    if (error instanceof AnnouncementError) res.status(error.status).json({ error: error.message });
+    else throw error;
+  }
+}
+apiRouter.get('/api/announcements', authMiddleware, (req: AuthenticatedRequest, res) => {
+  announcementReply(res, () => db.getAnnouncements(req.user!, req.query.view === 'manage'));
+});
+apiRouter.post('/api/announcements', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => {
+  announcementReply(res, () => db.saveAnnouncement(req.user!, req.body), 201);
+});
+apiRouter.patch('/api/announcements/:id', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => {
+  announcementReply(res, () => db.saveAnnouncement(req.user!, req.body, req.params.id, req.body.expected_revision));
+});
+apiRouter.post('/api/announcements/:id/archive', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => {
+  announcementReply(res, () => db.archiveAnnouncement(req.user!, req.params.id, req.body.expected_revision));
+});
+apiRouter.post('/api/announcements/:id/read', authMiddleware, (req: AuthenticatedRequest, res) => {
+  announcementReply(res, () => db.readAnnouncement(req.user!, req.params.id, req.body.revision));
+});
+apiRouter.post('/api/announcements/:id/acknowledge', authMiddleware, (req: AuthenticatedRequest, res) => {
+  announcementReply(res, () => db.readAnnouncement(req.user!, req.params.id, req.body.revision, true));
+});
+apiRouter.get('/api/announcements/:id/report', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => {
+  announcementReply(res, () => db.announcementReport(req.user!, req.params.id));
 });
 
 // 8. Notifications

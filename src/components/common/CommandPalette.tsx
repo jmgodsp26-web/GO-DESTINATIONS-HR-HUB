@@ -22,6 +22,7 @@ import {
   BarChart3,
   Settings as SettingsIcon,
   Bell,
+  Megaphone,
 } from 'lucide-react';
 
 interface CommandPaletteProps {
@@ -66,6 +67,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   // Build command list based on role
   const allCommands: CommandItem[] = [
+    { id: 'nav-announcements', category: 'Navigation', title: 'Announcements', subtitle: 'Company updates, HR reminders, and policies', icon: Megaphone, action: () => { onNavigate('announcements'); onClose(); } },
     ...(user?.role === 'admin' ? [{
       id: 'switch-workspace', category: 'Navigation' as const,
       title: isAdmin ? 'My Workspace' : 'Administration',
