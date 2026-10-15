@@ -1,3 +1,4 @@
+import { useViewPreference } from '../../hooks/useViewPreference';
 import React, { useState, useMemo } from 'react';
 import {
   Calendar as CalendarIcon,
@@ -38,7 +39,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
   error = null,
 }) => {
   const [selectedHolidayId, setSelectedHolidayId] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState<string>('2026');
+  const [selectedYear, setSelectedYear] = useViewPreference<string>('coverage:year', String(new Date().getFullYear()));
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isRetrying, setIsRetrying] = useState<boolean>(false);
 
@@ -56,9 +57,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
 
         // Strictly 2026 calendar year boundary: 2026-01-01 to 2026-12-31
         // Excludes 2027, 2028+, past years, and any invalid dates
-        if (selectedYear === '2026') {
-          return dateStr >= '2026-01-01' && dateStr <= '2026-12-31';
-        }
+
 
         // If local year selector is set to another year
         return dateStr.startsWith(`${selectedYear}-`);

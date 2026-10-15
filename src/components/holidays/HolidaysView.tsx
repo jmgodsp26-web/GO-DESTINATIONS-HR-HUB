@@ -1,3 +1,5 @@
+import { LoadError, RefreshStatus } from '../common/LoadFeedback';
+import { useViewPreference } from '../../hooks/useViewPreference';
 import { PageHeading } from '../common/WorkspaceUI';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -42,14 +44,16 @@ export const HolidaysView: React.FC = () => {
   const [coverageList, setCoverageList] = useState<HolidayStaffingCoverage[]>([]);
   const [employees, setEmployees] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState('');
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedCountry, setSelectedCountry] = useState<string>('All');
-  const [selectedYear, setSelectedYear] = useState<string>('All');
-  const [selectedType, setSelectedType] = useState<string>('All');
-  const [selectedScope, setSelectedScope] = useState<string>('All');
-  const [selectedStatus, setSelectedStatus] = useState<string>('All');
+  const [selectedCountry, setSelectedCountry] = useViewPreference<string>('holidays/HolidaysView.tsx:selectedCountry', 'All');
+  const [selectedYear, setSelectedYear] = useViewPreference<string>('holidays/HolidaysView.tsx:selectedYear', 'All');
+  const [selectedType, setSelectedType] = useViewPreference<string>('holidays/HolidaysView.tsx:selectedType', 'All');
+  const [selectedScope, setSelectedScope] = useViewPreference<string>('holidays/HolidaysView.tsx:selectedScope', 'All');
+  const [selectedStatus, setSelectedStatus] = useViewPreference<string>('holidays/HolidaysView.tsx:selectedStatus', 'All');
   const [upcomingOnly, setUpcomingOnly] = useState<boolean>(false);
 
   // Detail Modal
@@ -87,13 +91,13 @@ export const HolidaysView: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const loadData = useCallback(async () => {
-    setIsLoading(true);
+    setIsLoading(true); setLoadError('');
     try {
       // Fetch holidays with active filters applied on backend if desired, or fetch all and filter in memory for smooth client UX
       const [holRes, covRes, empRes] = await Promise.all([
         api.getHolidays(),
-        api.getAllHolidayCoverage(isAdmin ? undefined : { view: 'personal' }).catch(() => []),
-        isAdmin ? api.getAllEmployees().catch(() => []) : Promise.resolve([]),
+        api.getAllHolidayCoverage(isAdmin ? undefined : { view: 'personal' }),
+        isAdmin ? api.getAllEmployees() : Promise.resolve([]),
       ]);
       setHolidays(holRes);
       setCoverageList(covRes);
@@ -103,7 +107,9 @@ export const HolidaysView: React.FC = () => {
         const updated = covRes.find((c) => c.holiday.id === selectedCoverage.holiday.id);
         if (updated) setSelectedCoverage(updated);
       }
+      setHasLoaded(true);
     } catch (err: any) {
+      setLoadError(err.message || 'Could not load records.');
       if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
         console.error('Failed to load holidays & coverage:', err);
       }
@@ -416,8 +422,10 @@ export const HolidaysView: React.FC = () => {
     }
   };
 
+  if (!hasLoaded) return <div><PageHeading eyebrow="HR Hub" title="Company holidays" description="Your records and requests" />{loadError ? <LoadError onRetry={loadData} /> : <p className="go-refresh-status" role="status">Loading company holidays…</p>}</div>;
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
+      {loadError && <LoadError message="Could not refresh. Information below may be out of date." onRetry={loadData} />}<RefreshStatus active={isLoading && hasLoaded} />
       {/* Top Header */}
       <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeading eyebrow="Planning" title={isAdmin ? 'Holidays & Shifts' : 'Company Holidays'} description={isAdmin ? 'Manage holidays by location and plan who is working.' : 'Explore your holiday calendar and request a holiday shift.'} />
@@ -472,7 +480,7 @@ export const HolidaysView: React.FC = () => {
           <span className="text-[12px] font-medium text-slate-500 block">Total Holidays</span>
           <div className="flex items-baseline space-x-2 mt-1">
             <span className="text-xl font-bold text-slate-900 tabular-nums">{stats.total}</span>
-            <span className="text-[12px] text-slate-400">across 2026–2027</span>
+            <span className="text-[12px] text-slate-400">across available years</span>
           </div>
         </div>
 
@@ -578,8 +586,7 @@ export const HolidaysView: React.FC = () => {
               className="bg-transparent text-slate-700 font-medium focus:outline-none cursor-pointer"
             >
               <option value="All">All Years</option>
-              <option value="2026">2026</option>
-              <option value="2027">2027</option>
+              {[...new Set([String(new Date().getFullYear()), String(new Date().getFullYear()+1), ...holidays.map(h => h.date.slice(0,4))])].sort().map(year => <option key={year} value={year}>{year}</option>)}
             </select>
           </div>
 

@@ -1,3 +1,4 @@
+import { notificationDestination } from '../../utils/navigation';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';

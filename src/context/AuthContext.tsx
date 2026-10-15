@@ -45,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!res.mustChangePassword) await refreshNotifications();
     } catch {
       setUser(null);
+      history.replaceState(null, '', location.pathname);
     } finally {
       setIsLoading(false);
     }
@@ -58,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const handleAuthExpired = () => {
       setUser(null);
+      history.replaceState(null, '', location.pathname);
       setMustChangePassword(false);
       setNotifications([]);
       setIsLoading(false);
@@ -117,10 +119,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    if (!window.dispatchEvent(new Event('workspace:before-navigate', { cancelable: true }))) return;
     setIsLoading(true);
     try {
       await api.logout();
       setUser(null);
+      history.replaceState(null, '', location.pathname);
       setMustChangePassword(false);
       setNotifications([]);
     } finally {

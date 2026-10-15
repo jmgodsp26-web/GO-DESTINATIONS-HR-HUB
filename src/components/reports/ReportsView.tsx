@@ -1,3 +1,7 @@
+import { reportRange } from '../../utils/reportPeriod';
+import { getTodayDateString } from '../../utils/countryUtils';
+import { LoadError, RefreshStatus } from '../common/LoadFeedback';
+import { useViewPreference } from '../../hooks/useViewPreference';
 import { PageHeading } from '../common/WorkspaceUI';
 import { csvRow } from '../../utils/csv';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -33,12 +37,14 @@ export const ReportsView: React.FC = () => {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<(UserProfile & { leave_balances: LeaveBalance[] })[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [timeRange, setTimeRange] = useState<string>('2026-YTD');
-  const [departmentFilter, setDepartmentFilter] = useState<string>('All');
+  const [loadError, setLoadError] = useState('');
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [timeRange, setTimeRange] = useViewPreference<string>('reports/ReportsView.tsx:timeRange', 'ytd');
+  const [departmentFilter, setDepartmentFilter] = useViewPreference<string>('reports/ReportsView.tsx:departmentFilter', 'All');
   const [isExporting, setIsExporting] = useState<boolean>(false);
 
   const loadData = useCallback(async () => {
-    setIsLoading(true);
+    setIsLoading(true); setLoadError('');
     try {
       const [reqData, empData] = await Promise.all([
         api.getLeaveRequests(),
@@ -46,7 +52,9 @@ export const ReportsView: React.FC = () => {
       ]);
       setRequests(reqData);
       setEmployees(empData);
+      setHasLoaded(true);
     } catch (err: any) {
+      setLoadError(err.message || 'Could not load records.');
       if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
         console.error('Failed to load report data:', err);
         showToast({
@@ -76,19 +84,10 @@ export const ReportsView: React.FC = () => {
       if (departmentFilter !== 'All' && r.employee_department !== departmentFilter) {
         return false;
       }
-      // Time range filter
-      if (timeRange === '2026-YTD') {
-        return r.start_date.startsWith('2026');
-      } else if (timeRange === 'Q1-2026') {
-        return r.start_date >= '2026-01-01' && r.start_date <= '2026-03-31';
-      } else if (timeRange === 'Q2-2026') {
-        return r.start_date >= '2026-04-01' && r.start_date <= '2026-06-30';
-      } else if (timeRange === 'Q3-2026') {
-        return r.start_date >= '2026-07-01' && r.start_date <= '2026-09-30';
-      }
-      return true;
+      const range = reportRange(timeRange, getTodayDateString(user?.timezone));
+      return !range || (r.start_date >= range[0] && r.start_date <= range[1]);
     });
-  }, [requests, departmentFilter, timeRange]);
+  }, [requests, departmentFilter, timeRange, user?.timezone]);
 
   const approvedRequests = useMemo(
     () => filteredRequests.filter((r) => r.status === 'Approved'),
@@ -226,11 +225,13 @@ export const ReportsView: React.FC = () => {
     }
   };
 
+  if (!hasLoaded) return <div><PageHeading eyebrow="HR Hub" title="Reports" description="Your records and requests" />{loadError ? <LoadError onRetry={loadData} /> : <p className="go-refresh-status" role="status">Loading reports…</p>}</div>;
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
+      {loadError && <LoadError message="Could not refresh. Information below may be out of date." onRetry={loadData} />}<RefreshStatus active={isLoading && hasLoaded} />
       {/* Header */}
       <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <PageHeading eyebrow="Team insights" title="Reports" description="Understand leave across your team and download the details." />
+        <PageHeading eyebrow="Team insights" title="Reports" description="Requests are grouped by their start date. Review leave totals and download the details." />
 
         {/* Action Controls */}
         <div className="flex items-center space-x-2.5">
@@ -268,11 +269,9 @@ export const ReportsView: React.FC = () => {
               onChange={(e) => setTimeRange(e.target.value)}
               className="rounded-xl border border-slate-200 px-3 py-1.5 bg-white text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
             >
-              <option value="2026-YTD">2026 Year-to-Date</option>
-              <option value="Q3-2026">Q3 2026 (Jul - Sep)</option>
-              <option value="Q2-2026">Q2 2026 (Apr - Jun)</option>
-              <option value="Q1-2026">Q1 2026 (Jan - Mar)</option>
-              <option value="ALL">All Available Time</option>
+              <option value="ytd">This year to today</option>
+              {[...new Set([getTodayDateString(user?.timezone).slice(0, 4), ...requests.map(r => r.start_date.slice(0, 4))])].sort().reverse().map(year => <React.Fragment key={year}><option value={`year:${year}`}>{year} · Full year</option>{[1,2,3,4].map(q => <option key={q} value={`quarter:${year}:${q}`}>{year} · Quarter {q}</option>)}</React.Fragment>)}
+              <option value="all">All dates</option>
             </select>
 
             <div className="flex items-center space-x-1.5 text-slate-600 font-medium ml-0 sm:ml-2">

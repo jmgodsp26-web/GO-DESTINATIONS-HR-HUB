@@ -1,3 +1,4 @@
+import { DocumentActions } from '../documents/DocumentActions';
 import './employee-profile.css';
 import { employeeCalendar } from '../../utils/employeeCalendar';
 import React, { useState, useEffect } from 'react';
@@ -155,24 +156,6 @@ export const EmployeeProfile: React.FC = () => {
                 }
               };
 
-              const handleDownload = () => {
-                if (doc.file_data) {
-                  const link = document.createElement('a');
-                  link.href = doc.file_data;
-                  link.download = doc.name;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                } else {
-                  const element = document.createElement('a');
-                  const file = new Blob([`Official Record: ${doc.name}\nEmployee: ${user.full_name} (${user.employee_id})\nUploaded: ${new Date(doc.uploaded_at).toLocaleString()}`], { type: 'text/plain' });
-                  element.href = URL.createObjectURL(file);
-                  element.download = doc.name.endsWith('.txt') ? doc.name : `${doc.name}.txt`;
-                  document.body.appendChild(element);
-                  element.click();
-                  document.body.removeChild(element);
-                }
-              };
 
               return (
                 <div
@@ -201,14 +184,7 @@ export const EmployeeProfile: React.FC = () => {
 
                   <div className="mt-3 pt-2.5 border-t border-slate-200 flex items-center justify-between">
                     <span className="text-[12px] text-slate-400">By {doc.uploaded_by_name}</span>
-                    <button
-                      type="button"
-                      onClick={handleDownload}
-                      className="inline-flex items-center space-x-1 text-[12px] font-semibold text-[#3A5D83] hover:text-[#182E3F] hover:underline"
-                    >
-                      <Download className="w-3 h-3" />
-                      <span>Download</span>
-                    </button>
+                    <DocumentActions doc={doc} />
                   </div>
                 </div>
               );

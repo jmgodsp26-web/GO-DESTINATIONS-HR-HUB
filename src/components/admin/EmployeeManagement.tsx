@@ -1,3 +1,9 @@
+import { EmployeeDetails } from './EmployeeDetails';
+import { Dialog } from '../common/Dialog';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import { useNavigation } from '../../context/NavigationContext';
+import { LoadError, RefreshStatus } from '../common/LoadFeedback';
+import { useViewPreference } from '../../hooks/useViewPreference';
 import { PageHeading } from '../common/WorkspaceUI';
 import { prepareProfilePhoto, normalizeProfilePhoto } from '../../utils/profilePhoto';
 import { employeeReportCsv } from '../../utils/employeeReport';
@@ -42,13 +48,17 @@ import { EMPLOYEE_COUNTRIES, getCountryFlag, DEFAULT_COUNTRY } from '../../utils
 
 export const EmployeeManagement: React.FC = () => {
   const { user: currentAdmin } = useAuth();
+  const { params, navigate } = useNavigation(); const employeeId = params.get('employee');
+  const initialNew = useRef('');
   const { showToast } = useToast();
   const [employees, setEmployees] = useState<(UserProfile & { leave_balances: LeaveBalance[] })[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [departmentFilter, setDepartmentFilter] = useState<string>('All');
-  const [countryFilter, setCountryFilter] = useState<string>('All');
-  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [departmentFilter, setDepartmentFilter] = useViewPreference<string>('admin/EmployeeManagement.tsx:departmentFilter', 'All');
+  const [countryFilter, setCountryFilter] = useViewPreference<string>('admin/EmployeeManagement.tsx:countryFilter', 'All');
+  const [statusFilter, setStatusFilter] = useViewPreference<string>('admin/EmployeeManagement.tsx:statusFilter', 'All');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState('');
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -104,12 +114,19 @@ export const EmployeeManagement: React.FC = () => {
   const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  const editDirty = Boolean(editingEmployee && (editPassword || JSON.stringify(editingEmployee) !== JSON.stringify(employees.find(e => e.id === editingEmployee.id))));
+  const canCloseForm = useUnsavedChanges(editDirty || (isAddModalOpen && JSON.stringify(newEmployee) !== initialNew.current), isSubmitting || isPhotoProcessing);
+  const closeAdd = () => { if (canCloseForm()) setIsAddModalOpen(false); };
+  const closeEdit = () => { if (canCloseForm()) { setEditingEmployee(null); setEditPassword(''); } };
+  const focusedEmployee = employees.find(e => e.id === employeeId);
   const loadEmployees = useCallback(async () => {
-    setIsLoading(true);
+    setIsLoading(true); setLoadError('');
     try {
       const data = await api.getAllEmployees();
       setEmployees(data);
+      setHasLoaded(true);
     } catch (err: any) {
+      setLoadError(err.message || 'Could not load records.');
       if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
         console.error('Failed to load employees:', err);
       }
@@ -320,9 +337,15 @@ export const EmployeeManagement: React.FC = () => {
     }
   };
 
+  if (!hasLoaded) return <div><PageHeading eyebrow="HR Hub" title="Employees" description="Your records and requests" />{loadError ? <LoadError onRetry={loadEmployees} /> : <p className="go-refresh-status" role="status">Loading employees…</p>}</div>;
   return (
     <div className="go-directory space-y-6">
+      {loadError && <LoadError message="Could not refresh. Information below may be out of date." onRetry={loadEmployees} />}<RefreshStatus active={isLoading && hasLoaded} />
       {/* Top Header */}
+      {employeeId ? (focusedEmployee ? <EmployeeDetails key={focusedEmployee.id} employee={focusedEmployee}
+        onEdit={() => { setEditingEmployee({ ...focusedEmployee }); setEditPassword(''); setFormError(null); }}
+        onBalance={() => { setAdjustingBalanceEmployee({ employee: focusedEmployee, balances: focusedEmployee.leave_balances }); setSelectedLeaveTypeToAdjust('Vacation Leave'); setNewAllocatedDays(focusedEmployee.leave_balances.find(b=>b.leave_type==='Vacation Leave')?.allocated_days || 0); setFormError(null); }}
+        onDocuments={() => setSelectedDocsEmployee(focusedEmployee)} /> : <div className="go-live-audience"><p>This employee record is no longer available.</p><button type="button" className="go-button" onClick={()=>navigate('administration/employees')}>Back to employees</button></div>) : <>
       <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeading eyebrow="People" title="Employees" description="Manage your people, their details, and leave allowances." />
 
@@ -348,7 +371,7 @@ export const EmployeeManagement: React.FC = () => {
           disabled={!policyReady}
           onClick={() => {
             setFormError(null);
-            setIsAddModalOpen(true);
+            initialNew.current = JSON.stringify(newEmployee); setIsAddModalOpen(true);
           }}
           className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-lg font-semibold text-xs transition-colors shadow-xs"
         >
@@ -447,8 +470,8 @@ export const EmployeeManagement: React.FC = () => {
                 const vacationBal = emp.leave_balances?.find((b) => b.leave_type === 'Vacation Leave') || emp.leave_balances?.find((b) => (b.leave_type as string) === 'Annual Leave');
                 const sickBal = emp.leave_balances?.find((b) => b.leave_type === 'Sick Leave');
 
-                const vacationRem = (vacationBal?.allocated_days ?? policyDefaults.annual) - (vacationBal?.used_days ?? 0);
-                const sickRem = (sickBal?.allocated_days ?? 10) - (sickBal?.used_days ?? 0);
+                const vacationRem = vacationBal ? vacationBal.allocated_days - vacationBal.used_days : '—';
+                const sickRem = sickBal ? sickBal.allocated_days - sickBal.used_days : '—';
 
                 return (
                   <motion.tr layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={emp.id} className="hover:bg-slate-50/70 transition-colors">
@@ -467,7 +490,7 @@ export const EmployeeManagement: React.FC = () => {
                           </div>
                         )}
                         <div>
-                          <p className="font-bold text-slate-900">{emp.full_name}</p>
+                          <button type="button" className="font-bold text-slate-900 text-left underline-offset-4 hover:underline" onClick={() => navigate(`administration/employees?employee=${encodeURIComponent(emp.id)}`)}>{emp.full_name}</button>
                           <p className="go-directory-email">{emp.email}</p>
                           {emp.phone && <p className="text-[12px] text-slate-500">{emp.phone}</p>}
                           <span className="font-mono text-[12px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
@@ -500,8 +523,8 @@ export const EmployeeManagement: React.FC = () => {
                     </td>
 
                     <td className="px-5 py-3.5">
-                      <div className="go-directory-balance"><span>Vacation</span><strong>{vacationRem}<small> / {vacationBal?.allocated_days ?? policyDefaults.annual}d</small></strong></div>
-                      <div className="go-directory-balance"><span>Sick</span><strong>{sickRem}<small> / {sickBal?.allocated_days ?? 10}d</small></strong></div>
+                      <div className="go-directory-balance"><span>Vacation</span><strong>{vacationRem}<small> / {vacationBal?.allocated_days ?? 'Not assigned'}d</small></strong></div>
+                      <div className="go-directory-balance"><span>Sick</span><strong>{sickRem}<small> / {sickBal?.allocated_days ?? 'Not assigned'}d</small></strong></div>
                     </td>
 
                     {/* Role badge */}
@@ -612,8 +635,8 @@ export const EmployeeManagement: React.FC = () => {
             filteredEmployees.map((emp) => {
               const vacationBal = emp.leave_balances?.find((b) => b.leave_type === 'Vacation Leave') || emp.leave_balances?.find((b) => (b.leave_type as string) === 'Annual Leave');
               const sickBal = emp.leave_balances?.find((b) => b.leave_type === 'Sick Leave');
-              const vacationRem = (vacationBal?.allocated_days ?? policyDefaults.annual) - (vacationBal?.used_days ?? 0);
-              const sickRem = (sickBal?.allocated_days ?? 10) - (sickBal?.used_days ?? 0);
+              const vacationRem = vacationBal ? vacationBal.allocated_days - vacationBal.used_days : '—';
+              const sickRem = sickBal ? sickBal.allocated_days - sickBal.used_days : '—';
 
               return (
                 <div key={emp.id} className="p-4 space-y-3">
@@ -661,13 +684,13 @@ export const EmployeeManagement: React.FC = () => {
                     <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 flex justify-between items-center">
                       <span className="text-slate-500 text-[12px]">Vacation:</span>
                       <span className="font-bold text-slate-800 tabular-nums">
-                        {vacationRem} <span className="text-[12px] text-slate-400 font-normal">/ {vacationBal?.allocated_days ?? policyDefaults.annual}d</span>
+                        {vacationRem} <span className="text-[12px] text-slate-400 font-normal">/ {vacationBal?.allocated_days ?? 'Not assigned'}d</span>
                       </span>
                     </div>
                     <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 flex justify-between items-center">
                       <span className="text-slate-500 text-[12px]">Sick:</span>
                       <span className="font-bold text-slate-800 tabular-nums">
-                        {sickRem} <span className="text-[12px] text-slate-400 font-normal">/ {sickBal?.allocated_days ?? 10}d</span>
+                        {sickRem} <span className="text-[12px] text-slate-400 font-normal">/ {sickBal?.allocated_days ?? 'Not assigned'}d</span>
                       </span>
                     </div>
                   </div>
@@ -745,21 +768,10 @@ export const EmployeeManagement: React.FC = () => {
         </div>
       </div>
 
+      </>}
       {/* 1. Add Employee Modal */}
       {isAddModalOpen && (
-        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="text-base font-semibold text-slate-900">Add New Employee</h3>
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 rounded text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
+        <Dialog title="Add employee" onClose={closeAdd} busy={isSubmitting || isPhotoProcessing}>
             {formError && (
               <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-start space-x-2 text-xs text-rose-700">
                 <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
@@ -1041,7 +1053,7 @@ export const EmployeeManagement: React.FC = () => {
               <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={closeAdd}
                   className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg"
                 >
                   Cancel
@@ -1055,27 +1067,12 @@ export const EmployeeManagement: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </Dialog>
       )}
 
       {/* 2. Edit Employee Modal */}
       {editingEmployee && (
-        <div className="go-overlay go-detail-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="text-base font-semibold text-slate-900">
-                Edit Employee: {editingEmployee.full_name}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setEditingEmployee(null)}
-                className="p-1 rounded text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
+        <Dialog title="Edit employee" onClose={closeEdit} busy={isSubmitting || isPhotoProcessing}>
             {formError && (
               <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-start space-x-2 text-xs text-rose-700">
                 <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
@@ -1363,7 +1360,7 @@ export const EmployeeManagement: React.FC = () => {
                 <div className="flex items-center space-x-3">
                   <button
                     type="button"
-                    onClick={() => setEditingEmployee(null)}
+                    onClick={closeEdit}
                     className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer"
                   >
                     Cancel
@@ -1378,8 +1375,7 @@ export const EmployeeManagement: React.FC = () => {
                 </div>
               </div>
             </form>
-          </div>
-        </div>
+        </Dialog>
       )}
 
       {/* 3. Adjust Leave Balance Modal */}

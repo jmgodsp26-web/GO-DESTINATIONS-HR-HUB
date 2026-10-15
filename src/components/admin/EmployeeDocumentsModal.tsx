@@ -1,3 +1,4 @@
+import { DocumentActions } from '../documents/DocumentActions';
 import { readUpload } from '../../utils/files';
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, EmployeeDocument } from '../../types';
@@ -168,29 +169,6 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
     }
   };
 
-  const handleDownload = (doc: EmployeeDocument) => {
-    showToast({
-      type: 'info',
-      title: 'Downloading Document',
-      message: `Fetching ${doc.name}...`,
-    });
-    if (doc.file_data) {
-      const link = document.createElement('a');
-      link.href = doc.file_data;
-      link.download = doc.name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      const element = document.createElement('a');
-      const file = new Blob([`Confidential Document Content for: ${doc.name}\nEmployee: ${employee.full_name} (${employee.employee_id})\nUploaded: ${new Date(doc.uploaded_at).toLocaleString()}`], { type: 'text/plain' });
-      element.href = URL.createObjectURL(file);
-      element.download = doc.name.endsWith('.txt') ? doc.name : `${doc.name}.txt`;
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-    }
-  };
 
   const getCategoryColor = (cat: EmployeeDocument['category']) => {
     switch (cat) {
@@ -403,14 +381,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
                     </div>
 
                     <div className="flex items-center space-x-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleDownload(doc)}
-                        title="Download Document"
-                        className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
+                      <DocumentActions doc={doc} />
                       <button
                         type="button"
                         onClick={() => setDeletingDoc(doc)}

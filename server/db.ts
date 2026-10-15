@@ -839,6 +839,7 @@ export class HRDatabase {
         read: false,
         created_at: new Date().toISOString(),
         link_tab: 'leave-requests',
+        request_id: newRequest.id,
       };
       this.notifications.unshift(notifItem);
 
@@ -1014,6 +1015,7 @@ export class HRDatabase {
         read: false,
         created_at: new Date().toISOString(),
         link_tab: 'leave',
+        request_id: request.id,
       };
       this.notifications.unshift(approvedNotif);
 
@@ -1043,6 +1045,7 @@ export class HRDatabase {
         read: false,
         created_at: new Date().toISOString(),
         link_tab: 'leave',
+        request_id: request.id,
       };
       this.notifications.unshift(rejectedNotif);
 
@@ -2303,6 +2306,13 @@ export class HRDatabase {
       .map(a => this.announcementView(a, user));
   }
 
+  public previewAnnouncementAudience(actor: UserProfile, input: { departments?: unknown; countries?: unknown }): { count: number } {
+    this.announcementActor(actor, true);
+    const audience = validateAnnouncement({ title: 'Audience preview', message: 'Preview', category: 'Company news',
+      departments: input.departments, countries: input.countries, pinned: false, requires_acknowledgment: false, expires_at: null, status: 'draft' });
+    return { count: this.users.filter(u => announcementAudience(audience, u.profile)).length };
+  }
+
   public saveAnnouncement(actor: UserProfile, input: unknown, id?: string, expectedRevision?: unknown): AnnouncementView {
     const user = this.announcementActor(actor, true);
     const current = id ? this.announcements.find(a => a.id === id) : undefined;
@@ -2439,6 +2449,20 @@ export class HRDatabase {
   }
 
   // --- EMPLOYEE DOCUMENTS (Admin Only) ---
+  public listDocuments(actor: UserProfile, all = false, employeeId?: string): EmployeeDocument[] {
+    const current = this.announcementActor(actor, all || Boolean(employeeId && employeeId !== actor.id));
+    return this.employeeDocuments.filter(d => all || d.employee_id === (employeeId || current.id))
+      .sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at)).map(({ file_data, ...doc }) => ({ ...doc,
+        file_available: Boolean(file_data), mime_type: file_data?.match(/^data:([^;]+);/)?.[1],
+        ...(file_data ? { file_url: `/api/documents/${encodeURIComponent(doc.id)}/file` } : {}) }));
+  }
+  public documentFile(actor: UserProfile, id: string): EmployeeDocument {
+    const user = this.announcementActor(actor);
+    const doc = this.employeeDocuments.find(d => d.id === id && (user.role === 'admin' || d.employee_id === user.id));
+    if (!doc?.file_data) throw new AnnouncementError('Original file unavailable. Contact HR.', 404);
+    return doc;
+  }
+
   public getEmployeeDocuments(employeeId: string): EmployeeDocument[] {
     return this.employeeDocuments
       .filter((d) => d.employee_id === employeeId)

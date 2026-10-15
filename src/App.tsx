@@ -1,6 +1,8 @@
+import { resolveRoute, routeHash, type WorkspaceRoute } from './utils/navigation';
+import { NavigationContext } from './context/NavigationContext';
 import { AnnouncementsView } from './components/announcements/AnnouncementsView';
 import { MotionConfig } from 'motion/react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { WorkspaceProvider } from './context/WorkspaceContext';
 import { navigateWorkspace, type WorkspaceMode } from './utils/workspace';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -27,15 +29,27 @@ import { NotificationsView } from './components/notifications/NotificationsView'
 
 const MainApp: React.FC = () => {
   const { user, isLoading } = useAuth();
-  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('administration');
-  const [currentTab, setCurrentTab] = useState<string>('dashboard');
+  const [route, setRoute] = useState<WorkspaceRoute>({ mode: 'personal', tab: 'dashboard', query: '' });
+  const routeRef = useRef(route); routeRef.current = route;
+  const workspaceMode = route.mode, currentTab = route.tab;
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
 
-  // Reset only on account/role changes, never when switching workspaces.
   useEffect(() => {
-    setWorkspaceMode(user?.role === 'admin' ? 'administration' : 'personal');
-    setCurrentTab(user?.role === 'admin' ? 'admin-dashboard' : 'dashboard');
+    if (!user) return;
+    const mode = user.role === 'admin' ? 'administration' : 'personal';
+    let saved = ''; try { saved = sessionStorage.getItem(`hr:last-route:${user.id}`) || ''; } catch {}
+    const next = resolveRoute(user.role, mode, location.hash || saved || (mode === 'administration' ? 'admin-dashboard' : 'dashboard'));
+    setRoute(next); routeRef.current = next; history.replaceState(null, '', routeHash(next));
+    const pop = () => {
+      const event = new Event('workspace:before-navigate', { cancelable: true });
+      if (!window.dispatchEvent(event)) { history.pushState(null, '', routeHash(routeRef.current)); return; }
+      const target = resolveRoute(user.role, routeRef.current.mode, location.hash);
+      setRoute(target); routeRef.current = target; setIsMobileSidebarOpen(false);
+      try { sessionStorage.setItem(`hr:last-route:${user.id}`, routeHash(target)); } catch {}
+    };
+    window.addEventListener('popstate', pop);
+    return () => window.removeEventListener('popstate', pop);
   }, [user?.id, user?.role]);
 
   // Global Cmd+K / Ctrl+K keyboard shortcut
@@ -68,16 +82,18 @@ const MainApp: React.FC = () => {
   const mode: WorkspaceMode = user.role === 'admin' ? workspaceMode : 'personal';
   const isAdministration = user.role === 'admin' && mode === 'administration';
   const handleTabChange = (targetTab: string) => {
-    const target = navigateWorkspace(user.role, mode, targetTab);
-    setWorkspaceMode(target.mode);
-    setCurrentTab(target.tab);
+    const target = resolveRoute(user.role, mode, targetTab);
+    if (routeHash(target) === routeHash(route)) return;
+    if (!window.dispatchEvent(new Event('workspace:before-navigate', { cancelable: true }))) return;
+    history.pushState(null, '', routeHash(target)); setRoute(target); routeRef.current = target;
+    try { sessionStorage.setItem(`hr:last-route:${user.id}`, routeHash(target)); } catch {}
     setIsMobileSidebarOpen(false);
   };
 
   return (
-    <WorkspaceProvider mode={mode}>
+    <NavigationContext.Provider value={{ query: route.query, navigate: handleTabChange }}><WorkspaceProvider mode={mode}>
     <div className="go-app go-polished min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans antialiased">
-      <a className="go-skip-link" href="#workspace-content">Skip to content</a>
+      <a className="go-skip-link" href="#workspace-content" onClick={e => { e.preventDefault(); document.getElementById("workspace-content")?.focus(); }}>Skip to content</a>
       {/* First-Time Password Setup Modal for Initial Onboarding Sign-In */}
       <FirstTimePasswordModal />
 
@@ -190,7 +206,7 @@ const MainApp: React.FC = () => {
         onNavigate={handleTabChange}
       />
     </div>
-    </WorkspaceProvider>
+    </WorkspaceProvider></NavigationContext.Provider>
   );
 };
 
