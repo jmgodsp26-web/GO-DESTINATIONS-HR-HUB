@@ -1,3 +1,5 @@
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import { DocumentActions } from '../documents/DocumentActions';
 import { readUpload } from '../../utils/files';
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, EmployeeDocument } from '../../types';
@@ -42,6 +44,8 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
   const [fileBase64, setFileBase64] = useState<string>('');
   const [dragActive, setDragActive] = useState(false);
 
+  const canClose = useUnsavedChanges(Boolean(docName || selectedFile), uploading || isDeletingDoc);
+  const closeDialog = () => { if (canClose()) onClose(); };
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDocuments = async () => {
@@ -168,29 +172,6 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
     }
   };
 
-  const handleDownload = (doc: EmployeeDocument) => {
-    showToast({
-      type: 'info',
-      title: 'Downloading Document',
-      message: `Fetching ${doc.name}...`,
-    });
-    if (doc.file_data) {
-      const link = document.createElement('a');
-      link.href = doc.file_data;
-      link.download = doc.name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      const element = document.createElement('a');
-      const file = new Blob([`Confidential Document Content for: ${doc.name}\nEmployee: ${employee.full_name} (${employee.employee_id})\nUploaded: ${new Date(doc.uploaded_at).toLocaleString()}`], { type: 'text/plain' });
-      element.href = URL.createObjectURL(file);
-      element.download = doc.name.endsWith('.txt') ? doc.name : `${doc.name}.txt`;
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-    }
-  };
 
   const getCategoryColor = (cat: EmployeeDocument['category']) => {
     switch (cat) {
@@ -232,7 +213,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeDialog}
             className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -403,14 +384,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
                     </div>
 
                     <div className="flex items-center space-x-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleDownload(doc)}
-                        title="Download Document"
-                        className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
+                      <DocumentActions doc={doc} />
                       <button
                         type="button"
                         onClick={() => setDeletingDoc(doc)}
@@ -431,7 +405,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
         <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50/50 flex justify-end">
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeDialog}
             className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer"
           >
             Close

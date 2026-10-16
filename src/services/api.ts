@@ -49,6 +49,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const api = {
+  getAllDocuments(): Promise<EmployeeDocument[]> { return request('/api/documents?scope=all'); },
+  previewAnnouncementAudience(departments: string[], countries: string[]): Promise<{ count: number }> {
+    return request('/api/announcements/audience-preview', { method: 'POST', body: JSON.stringify({ departments, countries }) });
+  },
   getAnnouncements(manage = false): Promise<AnnouncementView[]> {
     return request('/api/announcements' + (manage ? '?view=manage' : ''));
   },
@@ -422,11 +426,11 @@ export const api = {
 
   // Employee Documents
   async getMyDocuments(): Promise<EmployeeDocument[]> {
-    return request<EmployeeDocument[]>('/api/my-documents');
+    return request<EmployeeDocument[]>('/api/documents');
   },
 
   async getEmployeeDocuments(employeeId: string): Promise<EmployeeDocument[]> {
-    return request<EmployeeDocument[]>(`/api/admin/employees/${employeeId}/documents`);
+    return request<EmployeeDocument[]>(`/api/documents?employee=${encodeURIComponent(employeeId)}`);
   },
 
   async uploadEmployeeDocument(

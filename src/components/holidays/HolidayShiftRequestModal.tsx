@@ -1,3 +1,5 @@
+import { Dialog } from '../common/Dialog';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import React, { useState, useEffect } from 'react';
 import { X, Calendar as CalendarIcon, Clock, Send, ShieldCheck, AlertCircle, AlertTriangle } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
@@ -25,14 +27,17 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canClose = useUnsavedChanges(Boolean(reason || workingHours !== '9:00 AM – 5:00 PM' || selectedHolidayId !== (initialHolidayId || holidays[0]?.id || '')), isSubmitting);
+  const closeDialog = () => { if (canClose()) onClose(); };
+  const [leaveReady, setLeaveReady] = useState(false);
   const [userLeaves, setUserLeaves] = useState<LeaveRequest[]>([]);
 
   useEffect(() => {
     api.getLeaveRequests({ scope: 'mine' })
-      .then((res) => setUserLeaves(res || []))
+      .then((res) => { setUserLeaves(res || []); setLeaveReady(true); })
       .catch((err: any) => {
         if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
-          console.error('Failed to load user leaves for conflict check:', err);
+          setError('Could not check your existing leave requests. Close and reopen this form to try again.');
         }
       });
   }, []);
@@ -60,6 +65,7 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!leaveReady) { setError('Wait for your existing requests to load before submitting.'); return; }
     if (!selectedHolidayId) {
       setError('Please choose a holiday.');
       return;
@@ -87,37 +93,7 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
   };
 
   return (
-    <div
-      id="holiday-shift-request-modal-overlay"
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
-    >
-      <div
-        id="holiday-shift-request-modal-card"
-        className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 overflow-hidden animate-in zoom-in-95 duration-150"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center">
-              <CalendarIcon className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900">
-                Volunteer for Holiday Shift
-              </h3>
-              <p className="text-xs text-slate-500">
-                Submit your availability to work on an upcoming company holiday.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
+    <Dialog title="Request a holiday shift" onClose={closeDialog} busy={isSubmitting}><div className="go-dialog-body">
         {error && (
           <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
@@ -237,14 +213,14 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
           <div className="flex items-center justify-end space-x-2.5 pt-3 border-t border-slate-100">
             <button
               type="button"
-              onClick={onClose}
+              onClick={closeDialog}
               className="px-4 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !leaveReady}
               className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white shadow-xs transition-colors"
             >
               <Send className="w-3.5 h-3.5" />
@@ -253,6 +229,6 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
           </div>
         </form>
       </div>
-    </div>
+    </Dialog>
   );
 };

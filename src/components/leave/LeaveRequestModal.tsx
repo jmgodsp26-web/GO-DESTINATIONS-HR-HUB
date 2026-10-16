@@ -1,10 +1,13 @@
+import { Dialog } from '../common/Dialog';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import { useNavigation } from '../../context/NavigationContext';
 import { employeeCalendar } from '../../utils/employeeCalendar';
-import { workingDays } from '../../utils/workingDays';
+import { workingDays, leaveDayBreakdown } from '../../utils/workingDays';
 import { readUpload } from '../../utils/files';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { LeaveType, LeaveBalance, HalfDayPeriod, Holiday } from '../../types';
+import { LeaveType, LeaveBalance, HalfDayPeriod, Holiday, LeaveRequest } from '../../types';
 import {
   OFFICIAL_LEAVE_TYPES,
   LEAVE_TYPE_MASTER_DATA,
@@ -53,6 +56,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   const [workweek, setWorkweek] = useState('Monday to Friday');
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [holidaysReady, setHolidaysReady] = useState(false);
+  const [reload, setReload] = useState(0);
   const [holidayError, setHolidayError] = useState<string | null>(null);
   useEffect(() => {
     if (!isOpen) return;
@@ -61,11 +65,20 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     setHolidayError(null);
     Promise.all([api.getHolidays({is_active: true}), api.getSettings()]).then(([data, settings]) => { if (active) { setHolidays(data); setWorkweek(settings.workweek); setHolidaysReady(true); } }).catch(err => {if (active) setHolidayError(err.message || 'Could not load holidays. Close and reopen to try again.');});
     return () => {active = false;};
-  }, [isOpen]);
+  }, [isOpen, reload]);
   const [attachmentName, setAttachmentName] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'form' | 'confirm'>('form');
+
+  const [submitted, setSubmitted] = useState<LeaveRequest | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const initialDates = useRef(''), errorRef = useRef<HTMLDivElement>(null);
+  const { navigate } = useNavigation();
+  const dirty = Boolean(reason || attachmentFile || isHalfDay || leaveType !== 'Vacation Leave' || startDate !== initialDates.current || endDate !== initialDates.current);
+  const canClose = useUnsavedChanges(isOpen && !submitted && dirty, isSubmitting);
+  const closeDialog = () => { if (canClose()) onClose(); };
+  useEffect(() => { if (Object.keys(fieldErrors).length) errorRef.current?.focus(); }, [fieldErrors]);
 
   // Reset form when opened
   useEffect(() => {
@@ -74,6 +87,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
       tomorrow.setDate(tomorrow.getDate() + 1);
       const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
+      initialDates.current = tomorrowStr; setSubmitted(null); setFieldErrors({});
       setStartDate(tomorrowStr);
       setEndDate(tomorrowStr);
       setIsHalfDay(false);
@@ -130,32 +144,15 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   const handleProceedToConfirm = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!holidaysReady || dateError) { setError(dateError || 'Please wait while holidays are loaded.'); return; }
-
-    if (!startDate || (!isHalfDay && !endDate)) {
-      setError('Please select valid leave dates.');
-      return;
-    }
-
-    if (!isHalfDay && calculatedDays <= 0) {
-      setError('End date must be on or after start date.');
-      return;
-    }
-
-    if (!reason.trim()) {
-      setError('Please provide a reason for your leave request.');
-      return;
-    }
-
-    // Balance check applies ONLY to paid leave types (Vacation, Sick, Emergency, Medical)
-    // Unpaid Leave does NOT deduct from paid balances
-    if (isPaid && remainingDays !== null) {
-      if (calculatedDays > remainingDays) {
-        setError(`Insufficient leave balance. You have ${remainingDays} day(s) remaining for ${leaveType}.`);
-        return;
-      }
-    }
-
+    const errors: Record<string, string> = {};
+    if (!holidaysReady || dateError) errors['start-date-input'] = dateError || 'Wait for your holiday calendar to load.';
+    if (!startDate) errors['start-date-input'] = 'Choose a start date.';
+    if (!isHalfDay && !endDate) errors['end-date-input'] = 'Choose an end date.';
+    if (!reason.trim()) errors['leave-reason-input'] = 'Tell HR why you need this leave.';
+    if (isPaid && remainingDays === null) errors['leave-type-select'] = 'No allowance is assigned for this leave type. Contact HR.';
+    if (isPaid && remainingDays !== null && calculatedDays > remainingDays) errors['leave-type-select'] = `You have ${remainingDays} day(s) available for ${leaveType}.`;
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) return;
     setStep('confirm');
   };
 
@@ -182,8 +179,8 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         message: `Your ${leaveType} application (${saved.total_days} day(s)) has been submitted to HR.`,
       });
 
+      setSubmitted(saved);
       onSuccess();
-      onClose();
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
       setStep('form');
@@ -193,28 +190,9 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   };
 
   return (
-    <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div role="dialog" aria-modal="true" aria-labelledby="leave-request-title" className="go-leave-dialog go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-              <Calendar className="w-4 h-4" />
-            </div>
-            <h3 id="leave-request-title" className="text-base font-bold text-slate-900">
-              {step === 'form' ? 'Request leave' : 'Review your request'}
-            </h3>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close leave request"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
+    <Dialog title={submitted ? 'Request submitted' : step === 'form' ? 'Request leave' : 'Review your request'} onClose={closeDialog} busy={isSubmitting}>
+      {submitted ? <div className="go-dialog-body"><div className="go-status-confirmation" role="status"><h3>Your leave request is with HR</h3><p>{submitted.leave_type} · {submitted.start_date} to {submitted.end_date} · {submitted.total_days} day(s)</p><p>Submitted → Awaiting HR review</p><p>Your balance changes only when HR approves the request. Track the decision in My Leave.</p></div><div className="flex gap-3 mt-5"><button type="button" className="go-button" onClick={closeDialog}>Done</button><button type="button" className="go-button go-button-primary" onClick={() => { onClose(); navigate(`personal/leave?request=${encodeURIComponent(submitted.id)}`); }}>View my request</button></div></div> : <>
+        {Object.keys(fieldErrors).length > 0 && <div ref={errorRef} tabIndex={-1} className="go-error-summary" role="alert"><strong>Check these details</strong><ul>{Object.entries(fieldErrors).map(([id, message]) => <li key={id}><a href={'#'+id} onClick={e => { e.preventDefault(); document.getElementById(id)?.focus(); }}>{message}</a></li>)}</ul></div>}
         <ol className="go-form-steps" aria-label="Leave request progress">
           <li aria-current={step === 'form' ? 'step' : undefined} className={step === 'form' ? 'is-current' : 'is-complete'}><span>1</span><div><strong>Request details</strong><small>Dates, balance &amp; reason</small></div></li>
           <li aria-current={step === 'confirm' ? 'step' : undefined} className={step === 'confirm' ? 'is-current' : ''}><span>2</span><div><strong>Review &amp; submit</strong><small>Check before sending</small></div></li>
@@ -229,7 +207,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
         {/* Modal Body */}
         {step === 'form' ? (
-          <form aria-busy={isSubmitting} onSubmit={handleProceedToConfirm} className="go-leave-form p-6 space-y-4">
+          <form noValidate aria-busy={isSubmitting} onSubmit={handleProceedToConfirm} className="go-leave-form p-6 space-y-4">
             <div className="go-form-section-title"><span>01</span><div><h4>Choose your time off</h4><p>Required fields are marked with an asterisk.</p></div></div>
             {/* Leave Type */}
             <div>
@@ -237,7 +215,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 Leave Type *
               </label>
               <select
-                id="leave-type-select"
+                id="leave-type-select" aria-invalid={Boolean(fieldErrors['leave-type-select'])} aria-describedby={fieldErrors['leave-type-select'] ? 'leave-type-select-error' : undefined}
                 value={leaveType}
                 onChange={(e) => setLeaveType(e.target.value as LeaveType)}
                 className="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -252,6 +230,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                   );
                 })}
               </select>
+              {fieldErrors['leave-type-select'] && <p className="go-field-error" id="leave-type-select-error">{fieldErrors['leave-type-select']}</p>}
 
               {isPaid && remainingDays !== null && (
                 <p className="text-[12px] text-slate-500 mt-1 flex items-center space-x-1">
@@ -357,7 +336,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 </label>
                 <input
                   type="date"
-                  id="start-date-input"
+                  id="start-date-input" aria-invalid={Boolean(fieldErrors['start-date-input'])} aria-describedby={fieldErrors['start-date-input'] ? 'start-date-input-error' : undefined}
                   value={startDate}
                   onChange={(e) => {
                     setStartDate(e.target.value);
@@ -368,6 +347,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                   required
                   className="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 />
+              {fieldErrors['start-date-input'] && <p className="go-field-error" id="start-date-input-error">{fieldErrors['start-date-input']}</p>}
               </div>
 
               {!isHalfDay && (
@@ -377,17 +357,19 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                   </label>
                   <input
                     type="date"
-                    id="end-date-input"
+                    id="end-date-input" aria-invalid={Boolean(fieldErrors['end-date-input'])} aria-describedby={fieldErrors['end-date-input'] ? 'end-date-input-error' : undefined}
                     value={endDate}
                     min={startDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     required
                     className="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                   />
+              {fieldErrors['end-date-input'] && <p className="go-field-error" id="end-date-input-error">{fieldErrors['end-date-input']}</p>}
                 </div>
               )}
             </div>
 
+            <div className="go-live-audience" aria-live="polite"><p><strong>{employeeCalendar(user).country} holiday calendar</strong> · {workweek}</p>{holidaysReady && !dateError && (() => { const days = leaveDayBreakdown(startDate, isHalfDay ? startDate : endDate, holidays, employeeCalendar(user).country, employeeCalendar(user).region, workweek); return <p>{days.selected} calendar day(s) · {days.nonWorking} non-working day(s) · {days.holidays} holiday(s) excluded → <strong>{calculatedDays} day(s) requested</strong>{isHalfDay ? ' (half day)' : ''}</p>; })()}{holidayError && <button type="button" className="go-button" onClick={() => setReload(n=>n+1)}>Retry calendar</button>}</div>
             {/* Auto-calculated duration & Real-Time Balance Exhaustion Indicator */}
             {calculatedDays > 0 && (
               <div
@@ -529,7 +511,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 Reason for Leave *
               </label>
               <textarea
-                id="leave-reason-input"
+                id="leave-reason-input" aria-invalid={Boolean(fieldErrors['leave-reason-input'])} aria-describedby={fieldErrors['leave-reason-input'] ? 'leave-reason-input-error' : undefined}
                 rows={3}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
@@ -537,6 +519,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 required
                 className="w-full text-sm rounded-lg border border-slate-300 p-3 bg-white text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 resize-none"
               />
+              {fieldErrors['leave-reason-input'] && <p className="go-field-error" id="leave-reason-input-error">{fieldErrors['leave-reason-input']}</p>}
             </div>
 
             {/* Optional Attachment */}
@@ -575,7 +558,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             <div className="go-dialog-actions pt-3 border-t border-slate-100 flex items-center justify-end space-x-3">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={closeDialog}
                 className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
               >
                 Cancel
@@ -678,7 +661,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </>}
+    </Dialog>
   );
 };

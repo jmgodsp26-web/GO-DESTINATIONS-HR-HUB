@@ -631,6 +631,9 @@ function announcementReply(res: Response, operation: () => unknown, status = 200
 apiRouter.get('/api/announcements', authMiddleware, (req: AuthenticatedRequest, res) => {
   announcementReply(res, () => db.getAnnouncements(req.user!, req.query.view === 'manage'));
 });
+apiRouter.post('/api/announcements/audience-preview', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => {
+  announcementReply(res, () => db.previewAnnouncementAudience(req.user!, req.body));
+});
 apiRouter.post('/api/announcements', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => {
   announcementReply(res, () => db.saveAnnouncement(req.user!, req.body), 201);
 });
@@ -694,6 +697,20 @@ apiRouter.delete('/api/notifications', authMiddleware, (req: AuthenticatedReques
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
+});
+
+apiRouter.get('/api/documents', authMiddleware, (req: AuthenticatedRequest, res) => {
+  announcementReply(res, () => db.listDocuments(req.user!, req.query.scope === 'all', typeof req.query.employee === 'string' ? req.query.employee : undefined));
+});
+apiRouter.get('/api/documents/:id/file', authMiddleware, (req: AuthenticatedRequest, res) => {
+  try {
+    const doc = db.documentFile(req.user!, req.params.id);
+    const { mime, bytes } = decodeUpload(doc.file_data);
+    const inline = req.query.preview === '1' && ['application/pdf', 'image/png', 'image/jpeg'].includes(mime);
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(doc.name).replace(/'/g, '%27')}`);
+    res.send(bytes);
+  } catch (error) { res.status(error instanceof AnnouncementError ? error.status : 400).json({ error: (error as Error).message }); }
 });
 
 // 9. Employee Documents

@@ -1,3 +1,4 @@
+import { useViewPreference } from '../../hooks/useViewPreference';
 import { PageHeading } from '../common/WorkspaceUI';
 import React, {
   useCallback,
@@ -73,12 +74,12 @@ export const CompanyCalendar: React.FC = () => {
   const { isAdministration } = useWorkspace();
   const today = getTodayDateString(user?.timezone);
   const [direction, setDirection] = useState("next");
-  const [month, setMonth] = useState(today.slice(0, 7));
+  const [month, setMonth] = useViewPreference('calendar:month', today.slice(0, 7));
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [types, setTypes] = useState<EventType[]>(eventTypes);
-  const [department, setDepartment] = useState("all");
-  const [view, setView] = useState<"month" | "list">("month");
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [types, setTypes] = useViewPreference<EventType[]>('calendar:types', eventTypes);
+  const [department, setDepartment] = useViewPreference('calendar:department', 'all');
+  const [view, setView] = useViewPreference<'month' | 'list'>('calendar:view', 'month');
+  const [selectedDate, setSelectedDate] = useViewPreference('calendar:date', today);
   const [selectedEventKey, setSelectedEventKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

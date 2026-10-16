@@ -223,6 +223,7 @@ export interface NotificationItem {
   read: boolean;
   created_at: string;
   link_tab?: string;
+  request_id?: string;
   announcement_id?: string;
   announcement_revision?: number;
 }
@@ -297,6 +298,9 @@ export interface EmployeeDocument {
   category: 'Contract' | 'ID Proof' | 'Resume' | 'Certificate' | 'Review' | 'Other';
   file_size: string;
   file_data?: string;
+  file_available?: boolean;
+  file_url?: string;
+  mime_type?: string;
   uploaded_at: string;
   uploaded_by_name: string;
 }

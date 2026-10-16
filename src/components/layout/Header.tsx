@@ -1,3 +1,4 @@
+import { notificationDestination } from '../../utils/navigation';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -28,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
     user,
     logout,
     notifications,
+    notificationError,
     unreadCount,
     markNotificationRead,
     markAllNotificationsRead,
@@ -161,6 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
                   )}
                 </div>
 
+                {notificationError && <p role="alert" className="go-field-error px-4 py-2">{notificationError}</p>}
                 <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
                   {notifications.length === 0 ? (
                     <div className="p-8 text-center text-xs text-slate-400">
@@ -170,9 +173,11 @@ export const Header: React.FC<HeaderProps> = ({
                     notifications.map((notif) => (
                       <div
                         key={notif.id}
+                        role="button" tabIndex={0}
+                        onKeyDown={e => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click(); } }}
                         onClick={() => {
                           markNotificationRead(notif.id);
-                          const targetTab = notif.link_tab || 'notifications';
+                          const targetTab = notificationDestination(notif);
                           onTabChange(targetTab);
                           setShowNotifications(false);
                         }}

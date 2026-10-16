@@ -1,3 +1,6 @@
+import { LoadError, RefreshStatus } from '../common/LoadFeedback';
+import { useViewPreference } from '../../hooks/useViewPreference';
+import { DocumentActions } from '../documents/DocumentActions';
 import { PageHeading } from '../common/WorkspaceUI';
 import { motion } from 'motion/react';
 import { useWorkspace } from '../../context/WorkspaceContext';
@@ -28,9 +31,11 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [employees, setEmployees] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState('');
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useViewPreference<string>('documents/DocumentsView.tsx:selectedCategory', 'All');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useViewPreference<string>('documents/DocumentsView.tsx:selectedEmployeeId', 'All');
   const [deletingDoc, setDeletingDoc] = useState<EmployeeDocument | null>(null);
   const [isDeletingDoc, setIsDeletingDoc] = useState<boolean>(false);
 
@@ -60,26 +65,19 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
   };
 
   const loadDocuments = useCallback(async () => {
-    setIsLoading(true);
+    setIsLoading(true); setLoadError('');
     try {
       if (isAdmin) {
-        // Load all employee documents + employee directory
-        const allEmps = await api.getAllEmployees();
-        setEmployees(allEmps);
-
-        // Fetch documents for all employees in parallel
-        const docPromises = allEmps.map((emp) =>
-          api.getEmployeeDocuments(emp.id).catch(() => [])
-        );
-        const docsArrays = await Promise.all(docPromises);
-        const flattened = docsArrays.flat();
-        setDocuments(flattened);
+        const [allEmps, allDocs] = await Promise.all([api.getAllEmployees(), api.getAllDocuments()]);
+        setEmployees(allEmps); setDocuments(allDocs);
       } else {
         // Load current user's confidential documents
         const myDocs = await api.getMyDocuments();
         setDocuments(myDocs || []);
       }
+      setHasLoaded(true);
     } catch (err: any) {
+      setLoadError(err.message || 'Could not load records.');
       if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
         console.error('Failed to load documents:', err);
       }
@@ -125,36 +123,11 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
     }
   };
 
-  const handleDownload = (doc: EmployeeDocument) => {
-    showToast({
-      type: 'info',
-      title: 'Downloading Document',
-      message: `Downloading ${doc.name}...`,
-    });
 
-    if (doc.file_data) {
-      const link = document.createElement('a');
-      link.href = doc.file_data;
-      link.download = doc.name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      const content = `GO Destinations HR Hub - Document Record\n\nDocument: ${doc.name}\nCategory: ${doc.category}\nFile Size: ${doc.file_size}\nUploaded: ${new Date(doc.uploaded_at).toLocaleString()}\nUploader: ${doc.uploaded_by_name}\n`;
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = doc.name.endsWith('.txt') ? doc.name : `${doc.name}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }
-  };
-
+  if (!hasLoaded) return <div><PageHeading eyebrow="HR Hub" title="Documents" description="Your records and requests" />{loadError ? <LoadError onRetry={loadDocuments} /> : <p className="go-refresh-status" role="status">Loading documents…</p>}</div>;
   return (
     <div className="go-documents space-y-6 animate-in fade-in duration-200">
+      {loadError && <LoadError message="Could not refresh. Information below may be out of date." onRetry={loadDocuments} />}<RefreshStatus active={isLoading && hasLoaded} />
       {/* Page Header */}
       <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeading eyebrow="Records" title={isAdmin ? 'Documents' : 'My Documents'} description={isAdmin ? 'Find and manage employee contracts, records, and certificates.' : 'Your contracts, records, and certificates in one place.'} />
@@ -345,14 +318,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                       </td>
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end space-x-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleDownload(doc)}
-                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 rounded-xl text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                          >
-                            <Download className="w-3.5 h-3.5 text-slate-500" />
-                            <span>Download</span>
-                          </button>
+                          <DocumentActions doc={doc} />
                           {isAdmin && (
                             <button
                               type="button"
@@ -399,14 +365,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                 </div>
 
                 <div className="pt-1 flex items-center space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(doc)}
-                    className="flex-1 inline-flex items-center justify-center space-x-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 rounded-xl text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Download File</span>
-                  </button>
+                  <DocumentActions doc={doc} />
                   {isAdmin && (
                     <button
                       type="button"

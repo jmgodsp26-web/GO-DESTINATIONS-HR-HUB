@@ -30,3 +30,12 @@ export function workingDays(start: string, end: string, holidays: {date: string;
   }
   return count;
 }
+
+
+/** Counts use the same calendar/workweek rules as the server's charged days. */
+export function leaveDayBreakdown(start: string, end: string, holidays: Parameters<typeof workingDays>[2], country?: string, region?: string, workweek = 'Monday to Friday') {
+  const charged = workingDays(start, end, holidays, country, region, workweek);
+  const scheduled = workingDays(start, end, [], country, region, workweek);
+  const selected = Math.round((Date.parse(end + 'T00:00:00Z') - Date.parse(start + 'T00:00:00Z')) / 86400000) + 1;
+  return { selected, nonWorking: selected - scheduled, holidays: scheduled - charged, charged };
+}

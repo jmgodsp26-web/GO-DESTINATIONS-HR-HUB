@@ -1,6 +1,8 @@
-import { AnnouncementsView } from './components/announcements/AnnouncementsView';
+import { resolveRoute, routeHash, type WorkspaceRoute } from './utils/navigation';
+import { NavigationContext } from './context/NavigationContext';
+const AnnouncementsView = lazy(() => import('./components/announcements/AnnouncementsView').then(module => ({ default: module.AnnouncementsView })));
 import { MotionConfig } from 'motion/react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { WorkspaceProvider } from './context/WorkspaceContext';
 import { navigateWorkspace, type WorkspaceMode } from './utils/workspace';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -11,31 +13,43 @@ import { Sidebar } from './components/layout/Sidebar';
 import { CommandPalette } from './components/common/CommandPalette';
 import { LoginPage } from './components/auth/LoginPage';
 import { FirstTimePasswordModal } from './components/auth/FirstTimePasswordModal';
-import { EmployeeDashboard } from './components/dashboard/EmployeeDashboard';
-import { EmployeeProfile } from './components/profile/EmployeeProfile';
-import { LeaveHistory } from './components/leave/LeaveHistory';
-import { HolidaysView } from './components/holidays/HolidaysView';
-import { AdminDashboard } from './components/admin/AdminDashboard';
-import { EmployeeManagement } from './components/admin/EmployeeManagement';
-import { AdminLeaveRequests } from './components/admin/AdminLeaveRequests';
-import { CompanyCalendar } from './components/admin/CompanyCalendar';
-import { AuditLogsView } from './components/admin/AuditLogsView';
-import { DocumentsView } from './components/documents/DocumentsView';
-import { ReportsView } from './components/reports/ReportsView';
-import { SettingsView } from './components/settings/SettingsView';
-import { NotificationsView } from './components/notifications/NotificationsView';
+const EmployeeDashboard = lazy(() => import('./components/dashboard/EmployeeDashboard').then(module => ({ default: module.EmployeeDashboard })));
+const EmployeeProfile = lazy(() => import('./components/profile/EmployeeProfile').then(module => ({ default: module.EmployeeProfile })));
+const LeaveHistory = lazy(() => import('./components/leave/LeaveHistory').then(module => ({ default: module.LeaveHistory })));
+const HolidaysView = lazy(() => import('./components/holidays/HolidaysView').then(module => ({ default: module.HolidaysView })));
+const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const EmployeeManagement = lazy(() => import('./components/admin/EmployeeManagement').then(module => ({ default: module.EmployeeManagement })));
+const AdminLeaveRequests = lazy(() => import('./components/admin/AdminLeaveRequests').then(module => ({ default: module.AdminLeaveRequests })));
+const CompanyCalendar = lazy(() => import('./components/admin/CompanyCalendar').then(module => ({ default: module.CompanyCalendar })));
+const AuditLogsView = lazy(() => import('./components/admin/AuditLogsView').then(module => ({ default: module.AuditLogsView })));
+const DocumentsView = lazy(() => import('./components/documents/DocumentsView').then(module => ({ default: module.DocumentsView })));
+const ReportsView = lazy(() => import('./components/reports/ReportsView').then(module => ({ default: module.ReportsView })));
+const SettingsView = lazy(() => import('./components/settings/SettingsView').then(module => ({ default: module.SettingsView })));
+const NotificationsView = lazy(() => import('./components/notifications/NotificationsView').then(module => ({ default: module.NotificationsView })));
 
 const MainApp: React.FC = () => {
   const { user, isLoading } = useAuth();
-  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('administration');
-  const [currentTab, setCurrentTab] = useState<string>('dashboard');
+  const [route, setRoute] = useState<WorkspaceRoute>({ mode: 'personal', tab: 'dashboard', query: '' });
+  const routeRef = useRef(route); routeRef.current = route;
+  const workspaceMode = route.mode, currentTab = route.tab;
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
 
-  // Reset only on account/role changes, never when switching workspaces.
   useEffect(() => {
-    setWorkspaceMode(user?.role === 'admin' ? 'administration' : 'personal');
-    setCurrentTab(user?.role === 'admin' ? 'admin-dashboard' : 'dashboard');
+    if (!user) return;
+    const mode = user.role === 'admin' ? 'administration' : 'personal';
+    let saved = ''; try { saved = sessionStorage.getItem(`hr:last-route:${user.id}`) || ''; } catch {}
+    const next = resolveRoute(user.role, mode, location.hash || saved || (mode === 'administration' ? 'admin-dashboard' : 'dashboard'));
+    setRoute(next); routeRef.current = next; history.replaceState(null, '', routeHash(next));
+    const pop = () => {
+      const event = new Event('workspace:before-navigate', { cancelable: true });
+      if (!window.dispatchEvent(event)) { history.pushState(null, '', routeHash(routeRef.current)); return; }
+      const target = resolveRoute(user.role, routeRef.current.mode, location.hash);
+      setRoute(target); routeRef.current = target; setIsMobileSidebarOpen(false);
+      try { sessionStorage.setItem(`hr:last-route:${user.id}`, routeHash(target)); } catch {}
+    };
+    window.addEventListener('popstate', pop);
+    return () => window.removeEventListener('popstate', pop);
   }, [user?.id, user?.role]);
 
   // Global Cmd+K / Ctrl+K keyboard shortcut
@@ -68,16 +82,19 @@ const MainApp: React.FC = () => {
   const mode: WorkspaceMode = user.role === 'admin' ? workspaceMode : 'personal';
   const isAdministration = user.role === 'admin' && mode === 'administration';
   const handleTabChange = (targetTab: string) => {
-    const target = navigateWorkspace(user.role, mode, targetTab);
-    setWorkspaceMode(target.mode);
-    setCurrentTab(target.tab);
+    const target = resolveRoute(user.role, mode, targetTab);
+    if (routeHash(target) === routeHash(route)) return true;
+    if (!window.dispatchEvent(new Event('workspace:before-navigate', { cancelable: true }))) return false;
+    history.pushState(null, '', routeHash(target)); setRoute(target); routeRef.current = target;
+    try { sessionStorage.setItem(`hr:last-route:${user.id}`, routeHash(target)); } catch {}
     setIsMobileSidebarOpen(false);
+    return true;
   };
 
   return (
-    <WorkspaceProvider mode={mode}>
+    <NavigationContext.Provider value={{ query: route.query, navigate: handleTabChange }}><WorkspaceProvider mode={mode}>
     <div className="go-app go-polished min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans antialiased">
-      <a className="go-skip-link" href="#workspace-content">Skip to content</a>
+      <a className="go-skip-link" href="#workspace-content" onClick={e => { e.preventDefault(); document.getElementById("workspace-content")?.focus(); }}>Skip to content</a>
       {/* First-Time Password Setup Modal for Initial Onboarding Sign-In */}
       <FirstTimePasswordModal />
 
@@ -100,6 +117,7 @@ const MainApp: React.FC = () => {
 
         {/* Main Content Viewport */}
         <main id="workspace-content" tabIndex={-1} key={`${mode}:${currentTab}`} className="go-main flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
+<Suspense fallback={<p className="go-refresh-status" role="status">Opening workspace…</p>}>
           {/* Employee Views */}
           {!isAdministration && (
             <>
@@ -180,6 +198,7 @@ const MainApp: React.FC = () => {
               )}
             </>
           )}
+          </Suspense>
         </main>
       </div>
 
@@ -190,7 +209,7 @@ const MainApp: React.FC = () => {
         onNavigate={handleTabChange}
       />
     </div>
-    </WorkspaceProvider>
+    </WorkspaceProvider></NavigationContext.Provider>
   );
 };
 

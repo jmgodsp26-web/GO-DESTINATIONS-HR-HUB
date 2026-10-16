@@ -1,3 +1,4 @@
+import { notificationDestination } from '../../utils/navigation';
 import { PageHeading } from '../common/WorkspaceUI';
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -19,7 +20,7 @@ interface NotificationsViewProps {
 }
 
 export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigateTab }) => {
-  const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead, refreshNotifications, user } =
+  const { notifications, notificationError, unreadCount, markNotificationRead, markAllNotificationsRead, refreshNotifications, user } =
     useAuth();
   const { showToast } = useToast();
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'leaves'>('all');
@@ -38,7 +39,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
   });
 
   const handleMarkAllRead = async () => {
-    await markAllNotificationsRead();
+    if (!await markAllNotificationsRead()) return;
     showToast({
       type: 'info',
       title: 'All Caught Up',
@@ -76,6 +77,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
 
   return (
     <div className="go-notifications space-y-6 animate-in fade-in duration-200">
+      {notificationError && <p className="go-field-error" role="alert">{notificationError}</p>}
       {/* Header */}
       <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeading eyebrow="Your updates" title="Notifications" description="Stay up to date with leave decisions and holiday shifts." />
@@ -228,7 +230,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
                       type="button"
                       onClick={() => {
                         markNotificationRead(notif.id);
-                        const targetTab = notif.link_tab || 'notifications';
+                        const targetTab = notificationDestination(notif);
                         onNavigateTab(targetTab);
                       }}
                       className="flex items-center space-x-1 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"

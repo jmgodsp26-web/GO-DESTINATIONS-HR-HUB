@@ -1,3 +1,5 @@
+import { useSections } from '../../hooks/useSections';
+import { DataRegion } from '../common/LoadFeedback';
 import { AnnouncementWidget } from '../announcements/AnnouncementsView';
 import { PageHeading, StatCard } from '../common/WorkspaceUI';
 import React, { useState, useEffect, useCallback } from 'react';
@@ -34,7 +36,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [holidayCoverages, setHolidayCoverages] = useState<HolidayStaffingCoverage[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { sections, run } = useSections();
+  const isLoading = !sections.employees?.ready || !sections.requests?.ready;
   const [isScheduleShiftOpen, setIsScheduleShiftOpen] = useState(false);
   const [assignShiftForm, setAssignShiftForm] = useState({
     employee_id: '',
@@ -45,35 +48,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
   });
   const [isAssigningShift, setIsAssigningShift] = useState(false);
 
-  // Review modal state
-  const [reviewingRequest, setReviewingRequest] = useState<LeaveRequest | null>(null);
-  const [reviewAction, setReviewAction] = useState<'Approved' | 'Rejected'>('Approved');
-  const [adminNote, setAdminNote] = useState<string>('');
-  const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false);
-  const [reviewError, setReviewError] = useState<string | null>(null);
-
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const todayStr = getTodayDateString(user?.timezone);
-      const [empRes, reqRes, holRes, covRes] = await Promise.all([
-        api.getAllEmployees(),
-        api.getLeaveRequests(),
-        api.getHolidays(),
-        api.getAllHolidayCoverage({ upcoming_only: true, reference_date: todayStr }).catch(() => []),
-      ]);
-      setEmployees(empRes);
-      setRequests(reqRes);
-      setHolidays(holRes);
-      setHolidayCoverages(covRes);
-    } catch (err: any) {
-      if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
-        console.error('Failed to load admin dashboard:', err);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user?.timezone]);
+  const loadData = useCallback(() => {
+    void run('employees', api.getAllEmployees, setEmployees);
+    void run('requests', () => api.getLeaveRequests(), setRequests);
+    void run('holidays', () => api.getHolidays(), setHolidays);
+    void run('coverage', () => api.getAllHolidayCoverage({ upcoming_only: true, reference_date: getTodayDateString(user?.timezone) }), setHolidayCoverages);
+  }, [run, user?.timezone]);
 
   useEffect(() => {
     loadData();
@@ -85,18 +65,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
   const todayStr = getTodayDateString(user?.timezone);
 
   // Calculated metrics
-  const totalEmployeesCount = employees.length;
-  const pendingRequests = requests.filter((r) => r.status === 'Pending');
+  const totalEmployeesCount = employees.filter(e=>e.status==='active').length;
+  const pendingRequests = requests.filter((r) => r.status === 'Pending').sort((a,b)=>a.submitted_at.localeCompare(b.submitted_at));
   const approvedRequests = requests.filter((r) => r.status === 'Approved');
 
   // Currently on leave (approved requests covering today)
   const currentlyOnLeave = approvedRequests.filter(
-    (r) => r.start_date <= todayStr && r.end_date >= todayStr
-  );
+    (r) => r.start_date <= todayStr && r.end_date >= todayStr && employees.some(e=>e.id===r.employee_id&&e.status==='active')
+  ).filter((r,index,all)=>all.findIndex(item=>item.employee_id===r.employee_id)===index);
 
   // Department distribution calculation
   const deptMap: Record<string, { total: number; onLeave: number }> = {};
-  employees.forEach((emp) => {
+  employees.filter(e=>e.status==='active').forEach((emp) => {
     const dept = emp.department || 'Technology';
     if (!deptMap[dept]) deptMap[dept] = { total: 0, onLeave: 0 };
     deptMap[dept].total += 1;
@@ -108,38 +88,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
     }
   });
 
-  // Upcoming holidays (strict: strictly 2026 future dates holiday.date > todayStr)
+  // Upcoming active holidays, including today and future years.
   const upcomingHolidays = holidays
-    .filter((h) => h.is_active !== false && h.date > todayStr && h.date.startsWith('2026'))
+    .filter((h) => h.is_active !== false && h.date >= todayStr)
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 4);
 
   const openReviewModal = (req: LeaveRequest, action: 'Approved' | 'Rejected') => {
-    setReviewingRequest(req);
-    setReviewAction(action);
-    setAdminNote('');
-    setReviewError(null);
-  };
-
-  const handleConfirmReview = async () => {
-    if (!reviewingRequest) return;
-    setIsSubmittingReview(true);
-    setReviewError(null);
-
-    try {
-      await api.reviewLeaveRequest(reviewingRequest.id, reviewAction, adminNote.trim() || undefined);
-      showToast({
-        type: reviewAction === 'Approved' ? 'success' : 'info',
-        title: `Leave ${reviewAction}`,
-        message: `${reviewingRequest.employee_name}'s request was ${reviewAction.toLowerCase()} successfully.`,
-      });
-      setReviewingRequest(null);
-      await loadData();
-    } catch (err: any) {
-      setReviewError(err.message || 'Failed to update leave request.');
-    } finally {
-      setIsSubmittingReview(false);
-    }
+    onNavigateTab(`administration/leave-requests?request=${encodeURIComponent(req.id)}`);
   };
 
   const handleAssignShiftSubmit = async (e: React.FormEvent) => {
@@ -187,28 +143,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs animate-pulse flex justify-between">
-          <div className="space-y-2">
-            <div className="h-5 bg-slate-200 rounded w-48" />
-            <div className="h-3 bg-slate-200 rounded w-72" />
-          </div>
-          <div className="h-9 bg-slate-200 rounded-xl w-40" />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs animate-pulse space-y-3">
-              <div className="h-3 bg-slate-200 rounded w-24" />
-              <div className="h-7 bg-slate-200 rounded w-16" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="go-dashboard go-admin-workspace space-y-6 animate-in fade-in duration-200">
@@ -219,29 +153,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           <button type="button" onClick={() => onNavigateTab('employees')} className="go-button go-button-secondary">
             <Users size={16} /> View employees
           </button>
-          <button type="button" onClick={() => onNavigateTab('leave-requests')} className="go-button go-button-primary">
+          <button type="button" onClick={() => onNavigateTab('administration/leave-requests')} className="go-button go-button-primary">
             <ClipboardList size={16} /> Review requests <span className="go-button-count">{pendingRequests.length}</span>
           </button>
         </div>
       </div>
 
       <div className="go-stat-grid" aria-label="Team summary">
-        <StatCard id="stat-card-workforce" label="Employees" value={totalEmployeesCount}
+        <StatCard id="stat-card-workforce" label="Employees" value={sections.employees?.ready ? totalEmployeesCount : '—'}
           detail="Active team members" icon={Users} onClick={() => onNavigateTab('employees')} />
-        <StatCard id="stat-card-on-leave" label="Out today" value={currentlyOnLeave.length}
+        <StatCard id="stat-card-on-leave" label="Out today" value={sections.requests?.ready && sections.employees?.ready ? currentlyOnLeave.length : '—'}
           detail="View the company calendar" icon={UserCheck} tone="green" onClick={() => onNavigateTab('calendar')} />
-        <StatCard id="stat-card-pending-requests" label="Awaiting review" value={pendingRequests.length}
-          detail={pendingRequests.length ? 'Leave requests need your review' : 'No leave requests waiting'}
-          icon={ClipboardList} tone="orange" onClick={() => onNavigateTab('leave-requests')} />
+        <StatCard id="stat-card-pending-requests" label="Awaiting review" value={sections.requests?.ready ? pendingRequests.length : '—'}
+          detail={!sections.requests?.ready ? 'Loading requests…' : pendingRequests.length ? 'Leave requests need review' : 'No leave requests waiting'}
+          icon={ClipboardList} tone="orange" onClick={() => onNavigateTab('administration/leave-requests')} />
         <StatCard id="stat-card-pc-coverage" label="Holiday coverage"
           value={holidayCoverages.length ? `${holidayCoverages[0].pcs_working_count}/${holidayCoverages[0].pcs_required}` : '—'}
-          detail={holidayCoverages.length ? (upcomingHolidays[0]?.name || 'Scheduled / required PCs') : 'No upcoming coverage available'}
+          detail={holidayCoverages.length ? (holidayCoverages[0]?.holiday.name || 'Scheduled / required PCs') : 'No upcoming coverage available'}
           icon={Shield} tone="navy" onClick={() => onNavigateTab('holidays')} />
       </div>
 
-      <AnnouncementWidget onViewAll={() => onNavigateTab('announcements')} />
 
-      {/* 4. Quick Approval Queue */}
+
+      <DataRegion state={sections.requests} label="pending requests" onRetry={loadData}>
+{/* 4. Quick Approval Queue */}
       <div className="go-review-queue go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-200/70 flex items-center justify-between bg-slate-50/50">
           <div>
@@ -262,7 +197,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
           <button
             type="button"
-            onClick={() => onNavigateTab('leave-requests')}
+            onClick={() => onNavigateTab('administration/leave-requests')}
             className="text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] transition-colors flex items-center space-x-1"
           >
             <span>All Requests</span>
@@ -331,16 +266,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                     className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs flex items-center space-x-1.5 min-h-[36px]"
                   >
                     <Check className="w-3.5 h-3.5" />
-                    <span>Approve</span>
+                    <span>Review request</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => openReviewModal(req, 'Rejected')}
-                    className="px-3.5 py-2 bg-white text-rose-700 border border-rose-200 hover:bg-rose-50 active:bg-rose-100 rounded-xl text-xs font-semibold transition-colors flex items-center space-x-1.5 min-h-[36px]"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    <span>Reject</span>
-                  </button>
+
                 </div>
               </div>
             ))
@@ -348,8 +276,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         </div>
       </div>
 
-      {/* 3. Upcoming Holidays & Shifts Section */}
-      <HolidayStaffingCoverageWidget
+      </DataRegion>
+      <DataRegion state={sections.coverage} label="holiday coverage" onRetry={loadData}>
+{/* 3. Upcoming Holidays & Shifts Section */}
+      <DataRegion state={sections.employees} label="employees for the holiday roster" onRetry={loadData}><HolidayStaffingCoverageWidget
         coverageList={holidayCoverages}
         allEmployees={employees}
         onRefresh={loadData}
@@ -363,15 +293,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           });
           setIsScheduleShiftOpen(true);
         }}
-      />
+      /></DataRegion>
 
-      {/* 5. Department Absence Heatmap & Distribution */}
+      </DataRegion>
+      <DataRegion state={sections.employees} label="team information" onRetry={loadData}>
+<DataRegion state={sections.requests} label="department leave" onRetry={loadData}>{/* 5. Department Absence Heatmap & Distribution */}
       <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
         <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
           <div className="flex items-center space-x-2">
             <Building2 className="w-4 h-4 text-indigo-600" />
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              Team Availability
+              Approved leave by department
             </h3>
           </div>
           <span className="text-xs text-slate-400 font-medium">By department</span>
@@ -391,9 +323,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                     <span className="text-[12px] font-semibold text-slate-500">{data.total} Staff</span>
                   </div>
                   <div className="mt-2.5 flex items-baseline justify-between">
-                    <span className="text-sm font-semibold text-slate-700">{presenceRate}% Present</span>
+                    <span className="text-sm font-semibold text-slate-700">{presenceRate}% not on approved leave</span>
                     <span className="text-[12px] text-slate-500 tabular-nums">
-                      {data.onLeave > 0 ? `${data.onLeave} out` : 'Full capacity'}
+                      {data.onLeave > 0 ? `${data.onLeave} out` : 'No approved leave'}
                     </span>
                   </div>
                 </div>
@@ -411,11 +343,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         </div>
       </div>
 
+      </DataRegion></DataRegion>
       {/* 6. Celebrations & Milestones Widget */}
-      <CelebrationsWidget employees={employees} onNavigateTab={onNavigateTab} />
+      <DataRegion state={sections.employees} label="team milestones" onRetry={loadData}><CelebrationsWidget employees={employees} onNavigateTab={onNavigateTab} /></DataRegion>
+      <AnnouncementWidget onViewAll={() => onNavigateTab('personal/announcements')} />
 
       {/* 7. Two Column Layout: Currently on Leave & Upcoming Holidays */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<DataRegion state={!sections.employees?.ready || sections.employees?.error ? sections.employees : sections.requests} label="approved leave" onRetry={loadData}>
         {/* Currently on Leave list */}
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
@@ -433,7 +368,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           <div className="space-y-2.5">
             {currentlyOnLeave.length === 0 ? (
               <p className="text-xs text-slate-400 py-6 text-center">
-                All employees are scheduled at work today.
+                No approved leave covers today. This does not indicate live attendance.
               </p>
             ) : (
               currentlyOnLeave.map((item) => (
@@ -473,6 +408,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           </div>
         </div>
 
+</DataRegion>
+<DataRegion state={sections.holidays} label="upcoming holidays" onRetry={loadData}>
         {/* Company Holidays list */}
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
@@ -520,108 +457,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
             })}
           </div>
         </div>
+</DataRegion>
       </div>
-
-      {/* Review Action Modal */}
-      {reviewingRequest && (
-        <div className="go-overlay go-detail-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
-              <h3 className="text-sm font-bold text-slate-900">
-                {reviewAction === 'Approved' ? 'Approve Leave Request' : 'Reject Leave Request'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setReviewingRequest(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {reviewError && (
-              <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start space-x-2 text-xs text-rose-700">
-                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                <span>{reviewError}</span>
-              </div>
-            )}
-
-            <div className="p-6 space-y-4 text-xs">
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-                <p className="font-bold text-slate-900 text-sm">{reviewingRequest.employee_name}</p>
-                <p className="text-slate-600">
-                  Requesting <strong>{reviewingRequest.total_days} days</strong> of {reviewingRequest.leave_type} ({reviewingRequest.start_date} to {reviewingRequest.end_date})
-                </p>
-                <p className="text-slate-500 italic mt-1 bg-white p-2.5 rounded-lg border border-slate-200">
-                  &ldquo;{reviewingRequest.reason}&rdquo;
-                </p>
-              </div>
-
-              {reviewAction === 'Approved' ? (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800">
-                  <p className="font-semibold">Confirming Approval</p>
-                  <p className="text-[12px] mt-0.5 leading-relaxed">
-                    Upon approval, {reviewingRequest.total_days} day(s) will automatically be deducted from {reviewingRequest.employee_name}&rsquo;s {reviewingRequest.leave_type} balance.
-                  </p>
-                </div>
-              ) : (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800">
-                  <p className="font-semibold">Confirming Rejection</p>
-                  <p className="text-[12px] mt-0.5 leading-relaxed">
-                    No leave days will be deducted. You can provide an explanation note below for the employee.
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="admin-note-input" className="block text-xs font-semibold text-slate-700 mb-1">
-                  {reviewAction === 'Approved' ? 'Optional Approval Note' : 'Optional Rejection Reason'}
-                </label>
-                <textarea
-                  id="admin-note-input"
-                  rows={3}
-                  value={adminNote}
-                  onChange={(e) => setAdminNote(e.target.value)}
-                  placeholder={
-                    reviewAction === 'Approved'
-                      ? 'e.g. Approved. Have a wonderful break!'
-                      : 'e.g. Coverage constraints for this project milestone.'
-                  }
-                  className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => setReviewingRequest(null)}
-                disabled={isSubmittingReview}
-                className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200/60 rounded-xl transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                id="submit-review-action-btn"
-                onClick={handleConfirmReview}
-                disabled={isSubmittingReview}
-                className={`px-4 py-2 text-xs font-semibold text-white rounded-xl transition-colors shadow-2xs ${
-                  reviewAction === 'Approved'
-                    ? 'bg-emerald-600 hover:bg-emerald-700'
-                    : 'bg-rose-600 hover:bg-rose-700'
-                }`}
-              >
-                {isSubmittingReview
-                  ? 'Processing...'
-                  : reviewAction === 'Approved'
-                  ? 'Confirm Approval'
-                  : 'Confirm Rejection'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Admin Assign Holiday Shift Modal */}
       {isScheduleShiftOpen && (
