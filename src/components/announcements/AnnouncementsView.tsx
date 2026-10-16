@@ -126,16 +126,16 @@ export function AnnouncementsView() {
   const update = (item: AnnouncementView) => { setItems(previous => previous.map(a => a.id === item.id ? item : a)); setDetail(item); void refreshNotifications(); };
   async function open(item: AnnouncementView) {
     if (manage) { setDetail(item); return; }
-    setBusy(true); setError(''); try { update(await api.readAnnouncement(item)); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+    setBusy(true); setError(''); try { update(await api.readAnnouncement(item)); } catch (e) { openedId.current = null; setError((e as Error).message); } finally { setBusy(false); }
   }
   useEffect(() => {
-    if (!linkedId) { openedId.current = null; return; }
+    if (!linkedId) { openedId.current = null; setDetail(null); return; }
     if (!hasLoaded || openedId.current === linkedId) return;
     openedId.current = linkedId;
     const linked = items.find(item => item.id === linkedId);
     if (linked) void open(linked); else setError('This announcement is no longer available to your account.');
   }, [linkedId, hasLoaded, items]);
-  const openLinked = (item: AnnouncementView) => navigate(`${manage ? 'administration' : 'personal'}/announcements?id=${encodeURIComponent(item.id)}`);
+  const openLinked = (item: AnnouncementView) => { if (linkedId === item.id) void open(item); else navigate(`${manage ? 'administration' : 'personal'}/announcements?id=${encodeURIComponent(item.id)}`); };
   const visible = items.filter(a => (manage || !expired(a)) && (manage || readFilter === 'all' || (readFilter === 'unread' ? !a.read_at : a.requires_acknowledgment && !a.acknowledged_at)) && (!manage || filter === 'all' || a.status === filter) && `${a.title} ${a.message}`.toLowerCase().includes(query.toLowerCase()));
   return <div className="go-ann-page space-y-6">
     <div className="go-page-header"><PageHeading eyebrow="Stay connected" title="Announcements" description={manage ? 'Share company updates, HR reminders, and important policies.' : 'Company news and updates that matter to you.'} /><div className="go-page-actions"><button type="button" className="go-button go-button-secondary" disabled={loading || busy} onClick={load}><RefreshCw size={16} />Refresh</button>{manage && <button type="button" className="go-button go-button-primary" onClick={() => setEditor('new')}><Plus size={16} />Create announcement</button>}</div></div>
@@ -162,8 +162,9 @@ export function AnnouncementWidget({ onViewAll }: { onViewAll: () => void }) {
   const [detail, setDetail] = useState<AnnouncementView | null>(null);
   useEffect(() => { let active = true; api.getAnnouncements().then(data => { if (active) setItems(data.filter(item => !expired(item)).sort((a, b) => Number(b.requires_acknowledgment && !b.acknowledged_at) - Number(a.requires_acknowledgment && !a.acknowledged_at) || Number(!b.read_at) - Number(!a.read_at)).slice(0, 3)); }).catch(() => { if (active) setError('Company updates could not load. Open Announcements to try again.'); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, []);
   const update = (item: AnnouncementView) => { setDetail(item); setItems(previous => previous.map(a => a.id === item.id ? item : a)); void refreshNotifications(); };
-  return <section className="go-ann-widget go-surface" aria-label="Company updates"><header><div><span className="go-ann-widget-icon"><Megaphone size={19} /></span><h2>Company updates</h2></div><button type="button" onClick={onViewAll}>View all <ArrowRight size={15} /></button></header>
-    {loading ? <p className="go-ann-widget-note" role="status">Loading updates…</p> : error ? <p className="go-ann-widget-note" role="alert">{error}</p> : !items.length ? <p className="go-ann-widget-note">You’re up to date. New announcements will appear here.</p> : <div className="go-ann-widget-list">{items.filter(item => !expired(item)).map(item => <button key={item.id} type="button" disabled={busy} onClick={async () => { setBusy(true); try { update(await api.readAnnouncement(item)); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}><span className={`go-ann-dot ${item.read_at ? 'is-read' : ''}`} aria-label={item.read_at ? 'Read' : 'Unread'} /><span><strong>{item.title}</strong><small>{item.category}{item.pinned ? ' · Pinned' : ''}{item.requires_acknowledgment && !item.acknowledged_at ? ' · Acknowledgment required' : ''}</small></span><ArrowRight size={16} /></button>)}</div>}
+  const activeItems = items.filter(item => !expired(item));
+  return <section className="go-ann-widget go-surface" aria-label="Company updates"><header><div><span className="go-ann-widget-icon"><Megaphone size={19} /></span><h2>{activeItems.some(item => item.requires_acknowledgment && !item.acknowledged_at) ? 'Needs your attention' : 'Company updates'}</h2></div><button type="button" onClick={onViewAll}>View all <ArrowRight size={15} /></button></header>
+    {loading ? <p className="go-ann-widget-note" role="status">Loading updates…</p> : error ? <p className="go-ann-widget-note" role="alert">{error}</p> : !activeItems.length ? <p className="go-ann-widget-note">You’re up to date. New announcements will appear here.</p> : <div className="go-ann-widget-list">{activeItems.map(item => <button key={item.id} type="button" disabled={busy} onClick={async () => { setBusy(true); try { update(await api.readAnnouncement(item)); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}><span className={`go-ann-dot ${item.read_at ? 'is-read' : ''}`} aria-label={item.read_at ? 'Read' : 'Unread'} /><span><strong>{item.title}</strong><small>{item.category}{item.pinned ? ' · Pinned' : ''}{item.requires_acknowledgment && !item.acknowledged_at ? ' · Acknowledgment required' : ''}</small></span><ArrowRight size={16} /></button>)}</div>}
     {detail && <AnnouncementDetail item={detail} onClose={() => setDetail(null)} onChange={update} />}
   </section>;
 }

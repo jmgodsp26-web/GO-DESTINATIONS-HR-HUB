@@ -1,3 +1,5 @@
+import { LoadError, RefreshStatus } from '../common/LoadFeedback';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { PageHeading } from '../common/WorkspaceUI';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useEffect, useCallback } from 'react';
@@ -39,6 +41,7 @@ export const SettingsView: React.FC = () => {
     supabase_configured: false,
   });
 
+  const [loaded, setLoaded] = useState(false), [loadError, setLoadError] = useState(''), [savedSettings, setSavedSettings] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
@@ -50,6 +53,7 @@ export const SettingsView: React.FC = () => {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
 
+  const canDiscard = useUnsavedChanges(Boolean(currentPassword || newPassword || confirmPassword || (isAdmin && loaded && JSON.stringify(settings) !== savedSettings)), isSaving || isUpdatingPassword);
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError(null);
@@ -84,14 +88,14 @@ export const SettingsView: React.FC = () => {
   };
 
   const loadSettings = useCallback(async () => {
-    setIsLoading(true);
+    setIsLoading(true); setLoadError('');
     try {
       const data = await api.getSettings();
       if (data && data.company_name) {
-        setSettings(data);
+        setSettings(data); setSavedSettings(JSON.stringify(data)); setLoaded(true);
       }
     } catch (err) {
-      console.warn('Using local settings defaults:', err);
+      setLoadError('Company settings could not load. Please retry before making changes.');
     } finally {
       setIsLoading(false);
     }
@@ -103,19 +107,12 @@ export const SettingsView: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin) {
-      showToast({
-        type: 'info',
-        title: 'Preferences Saved',
-        message: 'Personal notification settings updated successfully.',
-      });
-      return;
-    }
+    if (!isAdmin || !loaded || loadError) return;
 
     setIsSaving(true);
     try {
       const updated = await api.updateSettings(settings);
-      setSettings(updated);
+      setSettings(updated); setSavedSettings(JSON.stringify(updated));
       showToast({
         type: 'success',
         title: 'Settings Saved',
@@ -132,11 +129,13 @@ export const SettingsView: React.FC = () => {
     }
   };
 
+  if (!loaded) return <div><PageHeading eyebrow="HR Hub" title="Settings" description="Company policies and account settings" />{loadError ? <LoadError message={loadError} onRetry={loadSettings}/> : <p className="go-refresh-status" role="status">Loading company settings…</p>}</div>;
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
+      {loadError && <LoadError message={loadError} onRetry={loadSettings}/>}<RefreshStatus active={isLoading}/>
       {/* Header */}
       <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <PageHeading eyebrow="Preferences" title={isAdmin ? 'Company Settings' : 'Settings & Policies'} description={isAdmin ? 'Manage company details, leave allowances, and notifications.' : 'Check leave rules and choose your notifications.'} />
+        <PageHeading eyebrow="Preferences" title={isAdmin ? 'Company Settings' : 'Settings & Policies'} description={isAdmin ? 'Manage company details, leave allowances, and notifications.' : 'View company policies and manage your password.'} />
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
@@ -337,7 +336,7 @@ export const SettingsView: React.FC = () => {
               </div>
               <input
                 type="checkbox"
-                checked={settings.browser_notifications_enabled}
+                disabled={!isAdmin} checked={settings.browser_notifications_enabled}
                 onChange={(e) =>
                   setSettings({ ...settings, browser_notifications_enabled: e.target.checked })
                 }
@@ -433,15 +432,15 @@ export const SettingsView: React.FC = () => {
           <div className="flex justify-end space-x-3 pt-2">
             <button
               type="button"
-              onClick={loadSettings}
-              disabled={isSaving}
+              onClick={() => { if(canDiscard()) { setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); void loadSettings(); } }}
+              disabled={isSaving || isLoading || Boolean(loadError)}
               className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors"
             >
               Discard Changes
             </button>
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || isLoading || Boolean(loadError)}
               className="flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#182E3F] shadow-xs transition-all disabled:opacity-50"
             >
               <Save className="w-4 h-4" />

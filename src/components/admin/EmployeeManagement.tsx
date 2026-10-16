@@ -341,6 +341,7 @@ export const EmployeeManagement: React.FC = () => {
   return (
     <div className="go-directory space-y-6">
       {loadError && <LoadError message="Could not refresh. Information below may be out of date." onRetry={loadEmployees} />}<RefreshStatus active={isLoading && hasLoaded} />
+      {!policyReady && formError && <LoadError message={formError} onRetry={() => window.location.reload()} />}
       {/* Top Header */}
       {employeeId ? (focusedEmployee ? <EmployeeDetails key={focusedEmployee.id} employee={focusedEmployee}
         onEdit={() => { setEditingEmployee({ ...focusedEmployee }); setEditPassword(''); setFormError(null); }}
@@ -654,7 +655,7 @@ export const EmployeeManagement: React.FC = () => {
                         </div>
                       )}
                       <div>
-                        <h4 className="text-sm font-bold text-slate-900">{emp.full_name}</h4>
+                        <button type="button" className="text-sm font-bold text-slate-900 text-left" onClick={() => navigate(`administration/employees?employee=${encodeURIComponent(emp.id)}`)}>{emp.full_name}</button>
                         <p className="text-xs text-slate-500">{emp.job_title} • {emp.department}</p>
                         <div className="flex items-center space-x-2 mt-0.5">
                           <span className="font-mono text-[12px] text-slate-400">

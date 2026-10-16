@@ -43,8 +43,8 @@ export const HolidayStaffingCoverageWidget: React.FC<
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isRetrying, setIsRetrying] = useState<boolean>(false);
 
-  // 1. 2026 DATE FILTER - Strictly calendar year 2026 (Jan 1, 2026 - Dec 31, 2026)
-  const filtered2026List = useMemo(() => {
+  // Filter the selected calendar year.
+  const filteredYearList = useMemo(() => {
     if (!coverageList || !Array.isArray(coverageList)) return [];
 
     return coverageList
@@ -55,8 +55,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
         const dateStr = item.holiday.date;
         if (!dateStr || typeof dateStr !== 'string') return false;
 
-        // Strictly 2026 calendar year boundary: 2026-01-01 to 2026-12-31
-        // Excludes 2027, 2028+, past years, and any invalid dates
+
 
 
         // If local year selector is set to another year
@@ -65,7 +64,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
       .sort((a, b) => a.holiday.date.localeCompare(b.holiday.date));
   }, [coverageList, selectedYear]);
 
-  // 3. MONTH GROUPING - Group the filtered 2026 holidays by month
+  // Group selected-year holidays by month.
   const groupedByMonth = useMemo(() => {
     const groups: {
       monthKey: string;
@@ -77,7 +76,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
       { monthTitle: string; items: HolidayStaffingCoverage[] }
     >();
 
-    filtered2026List.forEach((item) => {
+    filteredYearList.forEach((item) => {
       const { monthName, year } = formatHolidayDate(item.holiday.date, {
         showYear: true,
       });
@@ -97,7 +96,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
     });
 
     return groups;
-  }, [filtered2026List]);
+  }, [filteredYearList]);
 
   const selectedCoverage = coverageList?.find(
     (c) => c.holiday?.id === selectedHolidayId
@@ -172,7 +171,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
               className="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer pr-1"
               aria-label="Select holiday year"
             >
-              <option value="2026">2026</option>
+              {[...new Set([String(new Date().getFullYear()), String(new Date().getFullYear()+1), ...coverageList.map(item=>item.holiday.date.slice(0,4))])].sort().map(year=><option key={year} value={year}>{year}</option>)}
             </select>
           </div>
 
@@ -229,11 +228,11 @@ export const HolidayStaffingCoverageWidget: React.FC<
         </div>
       </div>
 
-      {!isLoading && filtered2026List.length > 0 && (
+      {!isLoading && filteredYearList.length > 0 && (
         <div className="go-coverage-summary" aria-label="Holiday coverage summary">
-          <div><span>Holidays</span><strong>{filtered2026List.length}</strong><small>In {selectedYear}</small></div>
-          <div><span>Need attention</span><strong>{filtered2026List.filter(item => !(item.pcs_working_count >= item.pcs_required && item.coverage_status === 'Good')).length}</strong><small>Coverage or schedule to review</small></div>
-          <div><span>Pending requests</span><strong>{filtered2026List.reduce((sum, item) => sum + item.total_pending_count, 0)}</strong><small>Leave and holiday shifts</small></div>
+          <div><span>Holidays</span><strong>{filteredYearList.length}</strong><small>In {selectedYear}</small></div>
+          <div><span>Need attention</span><strong>{filteredYearList.filter(item => !(item.pcs_working_count >= item.pcs_required && item.coverage_status === 'Good')).length}</strong><small>Coverage or schedule to review</small></div>
+          <div><span>Pending requests</span><strong>{filteredYearList.reduce((sum, item) => sum + item.total_pending_count, 0)}</strong><small>Leave and holiday shifts</small></div>
         </div>
       )}
       <p className="go-coverage-help"><ShieldCheck className="w-4 h-4" />Coordinator coverage shows scheduled Program Coordinators (PCs) compared with the number required.</p>
@@ -272,7 +271,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
               </div>
             ))}
           </div>
-        ) : filtered2026List.length === 0 ? (
+        ) : filteredYearList.length === 0 ? (
           /* 14. EMPTY STATE */
           <div className="text-center py-12 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/40">
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">

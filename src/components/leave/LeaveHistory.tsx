@@ -1,3 +1,4 @@
+import { Dialog } from '../common/Dialog';
 import { useNavigation } from '../../context/NavigationContext';
 import { LoadError, RefreshStatus } from '../common/LoadFeedback';
 import { useViewPreference } from '../../hooks/useViewPreference';
@@ -32,7 +33,7 @@ import { useToast } from '../../context/ToastContext';
 
 export const LeaveHistory: React.FC = () => {
   const { user } = useAuth();
-  const { params } = useNavigation(); const linkedRequest = params.get('request');
+  const { params, navigate } = useNavigation(); const linkedRequest = params.get('request');
   const { showToast } = useToast();
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
@@ -70,7 +71,8 @@ export const LeaveHistory: React.FC = () => {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!linkedRequest || !hasLoaded) return;
+    if (!linkedRequest) { setSelectedRequest(null); return; }
+    if (!hasLoaded) return;
     const request = requests.find(r => r.id === linkedRequest);
     if (request) { setSelectedRequest(request); setActiveView('requests'); }
   }, [linkedRequest, hasLoaded]);
@@ -82,7 +84,7 @@ export const LeaveHistory: React.FC = () => {
       showToast({
         type: 'info',
         title: 'Leave Request Cancelled',
-        message: 'Your leave application has been cancelled and any reserved days have been restored.',
+        message: 'Your pending leave request has been cancelled. Your balance was not deducted.',
       });
       setCancellingRequest(null);
       setSelectedRequest(null);
@@ -548,19 +550,7 @@ export const LeaveHistory: React.FC = () => {
 
       {/* Request Details Modal */}
       {selectedRequest && (
-        <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="go-surface bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
-              <h3 className="text-sm font-bold text-slate-900">Leave Request Details</h3>
-              <button
-                type="button"
-                onClick={() => setSelectedRequest(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
+        <Dialog title="Leave request details" onClose={() => { setSelectedRequest(null); if(linkedRequest) navigate('personal/leave'); }} busy={isCancelling}>
             <div className="p-6 space-y-4 text-xs">
               <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                 <span className="text-slate-500 font-medium">Status:</span>
@@ -717,33 +707,18 @@ export const LeaveHistory: React.FC = () => {
               )}
               <button
                 type="button"
-                onClick={() => setSelectedRequest(null)}
+                onClick={() => { setSelectedRequest(null); if(linkedRequest) navigate('personal/leave'); }}
                 className="px-4 py-2 text-xs font-semibold bg-slate-800 text-white rounded-xl hover:bg-slate-900 transition-colors cursor-pointer"
               >
                 Close
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Cancel Leave Request Confirmation Modal */}
       {cancellingRequest && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-          <div className="go-surface bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/60">
-              <div className="flex items-center space-x-2 text-rose-700">
-                <Trash2 className="w-5 h-5" />
-                <h3 className="text-sm font-bold">Cancel Leave Request</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCancellingRequest(null)}
-                className="p-1 rounded text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        <Dialog title="Cancel leave request" onClose={() => setCancellingRequest(null)} busy={isCancelling}>
             <div className="p-5 space-y-4">
               <p className="text-xs text-slate-600 leading-relaxed">
                 Are you sure you want to cancel your pending{' '}
@@ -757,7 +732,7 @@ export const LeaveHistory: React.FC = () => {
               <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[12px] text-slate-500 space-y-1">
                 <p><strong>Allocated days:</strong> {cancellingRequest.total_days} day(s)</p>
                 <p className="text-emerald-700 font-medium">
-                  ✓ Any reserved balance days will be restored to your leave balance.
+                  Pending requests do not deduct leave. Your balance will stay the same.
                 </p>
               </div>
               <div className="flex items-center justify-end space-x-2.5 pt-1">
@@ -780,8 +755,7 @@ export const LeaveHistory: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Leave Request Modal */}

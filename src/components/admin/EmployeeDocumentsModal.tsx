@@ -1,3 +1,4 @@
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { DocumentActions } from '../documents/DocumentActions';
 import { readUpload } from '../../utils/files';
 import React, { useState, useEffect, useRef } from 'react';
@@ -43,6 +44,8 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
   const [fileBase64, setFileBase64] = useState<string>('');
   const [dragActive, setDragActive] = useState(false);
 
+  const canClose = useUnsavedChanges(Boolean(docName || selectedFile), uploading || isDeletingDoc);
+  const closeDialog = () => { if (canClose()) onClose(); };
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDocuments = async () => {
@@ -210,7 +213,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeDialog}
             className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -402,7 +405,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
         <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50/50 flex justify-end">
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeDialog}
             className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer"
           >
             Close

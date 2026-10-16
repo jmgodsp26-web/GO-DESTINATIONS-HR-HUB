@@ -14,8 +14,9 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
-  markNotificationRead: (id: string) => Promise<void>;
-  markAllNotificationsRead: () => Promise<void>;
+  notificationError: string;
+  markNotificationRead: (id: string) => Promise<boolean>;
+  markAllNotificationsRead: () => Promise<boolean>;
   completeFirstTimePasswordChange: (newPassword: string) => Promise<void>;
 }
 
@@ -26,6 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [mustChangePassword, setMustChangePassword] = useState<boolean>(false);
+  const [notificationError, setNotificationError] = useState('');
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const refreshNotifications = useCallback(async () => {
@@ -45,7 +47,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!res.mustChangePassword) await refreshNotifications();
     } catch {
       setUser(null);
-      history.replaceState(null, '', location.pathname);
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +60,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const handleAuthExpired = () => {
       setUser(null);
-      history.replaceState(null, '', location.pathname);
       setMustChangePassword(false);
       setNotifications([]);
       setIsLoading(false);
@@ -123,8 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       await api.logout();
-      setUser(null);
       history.replaceState(null, '', location.pathname);
+      setUser(null);
       setMustChangePassword(false);
       setNotifications([]);
     } finally {
@@ -133,23 +133,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const markNotificationRead = async (id: string) => {
-    try {
-      await api.markNotificationRead(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-      );
-    } catch {
-      // ignore
-    }
+    setNotificationError('');
+    try { await api.markNotificationRead(id); setNotifications(prev=>prev.map(n=>n.id===id?{...n,read:true}:n)); return true; }
+    catch { setNotificationError('Could not mark this notification as read. Please try again.'); return false; }
   };
-
   const markAllNotificationsRead = async () => {
-    try {
-      await api.markAllNotificationsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    } catch {
-      // ignore
-    }
+    setNotificationError('');
+    try { await api.markAllNotificationsRead(); setNotifications(prev=>prev.map(n=>({...n,read:true}))); return true; }
+    catch { setNotificationError('Could not mark notifications as read. Please try again.'); return false; }
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -162,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error,
         mustChangePassword,
         notifications,
+        notificationError,
         unreadCount,
         login,
         switchUser,

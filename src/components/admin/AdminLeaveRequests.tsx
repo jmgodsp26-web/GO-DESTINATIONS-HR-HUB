@@ -38,7 +38,8 @@ export const AdminLeaveRequests: React.FC = () => {
   useEffect(()=>{void load();},[load]);
   useEffect(()=>{setSelected([]);},[status,employee,type,date]);
   useEffect(()=>{
-    if (!loaded || !linkedId) return;
+    if (!linkedId) { setDetail(null); setNote(''); return; }
+    if (!loaded) return;
     const item=requests.find(r=>r.id===linkedId);
     if(item && detail?.id!==item.id){setDetail(item);setNote('');setDecision('Approved');setActionError('');}
     else if(!item) setError('This leave request is no longer available.');
@@ -46,7 +47,7 @@ export const AdminLeaveRequests: React.FC = () => {
   const visible=requests.filter(r=>(status==='All'||r.status===status)&&(!employee||r.employee_id===employee)&&(type==='All'||r.leave_type===type)&&(!date||(r.start_date<=date&&r.end_date>=date))).sort((a,b)=>Number(b.status==='Pending')-Number(a.status==='Pending')||a.submitted_at.localeCompare(b.submitted_at));
   const eligible=visible.filter(r=>canReviewRequest(r,user?.id));
   const allSelected=eligible.length>0&&eligible.every(r=>selected.includes(r.id));
-  function closeDetail(){if(canClose()){setDetail(null);setNote('');navigate('administration/leave-requests');}}
+  function closeDetail(){if(navigate('administration/leave-requests')){setDetail(null);setNote('');}}
   function open(item:LeaveRequest){navigate(`administration/leave-requests?request=${encodeURIComponent(item.id)}`);}
   async function review(){
     if(!detail||!canReviewRequest(detail,user?.id))return;

@@ -1,12 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+let openDialogs = 0;
+let originalOverflow = '';
 export function Dialog({ title, children, onClose, className = '', busy = false }: { title: string; children: React.ReactNode; onClose: () => void; className?: string; busy?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null), close = useRef(onClose); close.current = onClose;
   useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null, dialog = ref.current, overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden'; dialog?.showModal();
-    return () => { dialog?.close(); document.body.style.overflow = overflow; if (previous?.isConnected) previous.focus(); };
+    const previous = document.activeElement as HTMLElement | null, dialog = ref.current;
+    if (openDialogs++ === 0) { originalOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden'; }
+    dialog?.showModal();
+    return () => { dialog?.close(); if (--openDialogs === 0) document.body.style.overflow = originalOverflow; if (previous?.isConnected) previous.focus(); };
   }, []);
   return createPortal(<dialog ref={ref} className={`go-native-dialog ${className}`} aria-label={title} aria-busy={busy}
     onCancel={e => { e.preventDefault(); if (!busy) close.current(); }}
