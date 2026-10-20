@@ -232,6 +232,8 @@ export interface NotificationItem {
 
 export const ANNOUNCEMENT_CATEGORIES = ['Company news', 'HR reminder', 'Policy update', 'Event'] as const;
 export interface AnnouncementInput {
+  image_upload?: { data: string; name: string } | null;
+  image_alt?: string;
   title: string;
   message: string;
   category: typeof ANNOUNCEMENT_CATEGORIES[number];
@@ -242,7 +244,8 @@ export interface AnnouncementInput {
   expires_at: string | null;
   status: 'draft' | 'published';
 }
-export interface Announcement extends Omit<AnnouncementInput, 'status'> {
+export interface Announcement extends Omit<AnnouncementInput, 'status' | 'image_upload'> {
+  image?: { id: string; name: string; mime_type: string } | null;
   id: string;
   status: 'draft' | 'published' | 'archived';
   author_id: string;

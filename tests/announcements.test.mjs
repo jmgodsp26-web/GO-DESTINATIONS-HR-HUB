@@ -11,6 +11,59 @@ const other=seed.createEmployee({full_name:'Other Employee',email:'ann-other@exa
 const baseline=seed.exportState();
 const input=(extra={})=>({title:'Synthetic company update',message:'Read this synthetic test policy.',category:'Policy update',departments:[],countries:[],pinned:false,requires_acknowledgment:true,expires_at:null,status:'published',...extra});
 const scenario=(name,fn)=>test(name,()=>fn(new HRDatabase(baseline)));
+const pngData='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jN1sAAAAASUVORK5CYII=';
+const imageInput={image_upload:{data:pngData,name:'Reminder.png'},image_alt:'A meeting reminder poster'};
+scenario('announcement images: metadata-only lists, protected reads and reload',d=>{
+ const a=d.saveAnnouncement(admin,input({...imageInput,status:'draft',departments:['Technology']}));
+ assert.equal(d.getAnnouncementImage(admin,a.id,a.image.id).mime,'image/png');
+ assert.throws(()=>d.getAnnouncementImage(employee,a.id,a.image.id),e=>e.status===404);
+ const published=d.saveAnnouncement(admin,input({departments:['Technology']}),a.id,a.revision);
+ assert.equal(published.image.id,a.image.id);assert.equal(published.image_alt,imageInput.image_alt);
+ assert.equal(JSON.stringify(published).includes('base64'),false);
+ assert.equal(JSON.stringify(d.getAnnouncements(employee)).includes('base64'),false);
+ assert.deepEqual(d.getAnnouncementImage(employee,a.id,a.image.id).bytes,Buffer.from(pngData.split(',')[1],'base64'));
+ assert.throws(()=>d.getAnnouncementImage(other,a.id,a.image.id),e=>e.status===404);
+ assert.throws(()=>d.getAnnouncementImage({...other,role:'admin'},a.id,a.image.id),e=>e.status===404);
+ const restored=new HRDatabase(d.exportState());assert.equal(restored.getAnnouncementImage(employee,a.id,a.image.id).name,'Reminder.png');
+ const state=d.exportState();state.users.find(u=>u.id===employee.id).profile.status='inactive';
+ assert.throws(()=>new HRDatabase(state).getAnnouncementImage(employee,a.id,a.image.id),e=>e.status===403);
+ state.users.find(u=>u.id===employee.id).profile.status='active';state.announcements[0].expires_at=new Date(Date.now()-1000).toISOString();
+ assert.throws(()=>new HRDatabase(state).getAnnouncementImage(employee,a.id,a.image.id),e=>e.status===404);
+ d.archiveAnnouncement(admin,published.id,published.revision);
+ assert.throws(()=>d.getAnnouncementImage(employee,a.id,a.image.id),e=>e.status===404);
+ assert.equal(d.getAnnouncementImage(admin,a.id,a.image.id).mime,'image/png');
+});
+scenario('announcement images: replace and remove revoke old URLs and stale edits cannot erase images',d=>{
+ const a=d.saveAnnouncement(admin,input(imageInput));
+ d.readAnnouncement(employee,a.id,a.revision);d.readAnnouncement(employee,a.id,a.revision,true);
+ const b=d.saveAnnouncement(admin,input({...imageInput,image_alt:'Replacement poster'}),a.id,a.revision);
+ assert.notEqual(b.image.id,a.image.id);assert.equal(d.exportState().announcementImages.length,1);
+ assert.throws(()=>d.getAnnouncementImage(employee,a.id,a.image.id),e=>e.status===404);
+ assert.equal(d.getAnnouncements(employee)[0].acknowledged_at,null);
+ assert.throws(()=>d.saveAnnouncement(admin,input({image_upload:null}),b.id,a.revision),e=>e.status===409);
+ assert.equal(d.getAnnouncementImage(employee,b.id,b.image.id).mime,'image/png');
+ const otherPost=d.saveAnnouncement(admin,input());
+ assert.throws(()=>d.getAnnouncementImage(employee,otherPost.id,b.image.id),e=>e.status===404);
+ const removed=d.saveAnnouncement(admin,input({image_upload:null}),b.id,b.revision);
+ assert.equal(removed.image,null);assert.equal(d.exportState().announcementImages.length,0);
+ assert.throws(()=>d.getAnnouncementImage(employee,b.id,b.image.id),e=>e.status===404);
+});
+scenario('announcement images: invalid, oversized and non-image uploads fail without mutation',d=>{
+ for(const change of [{image_upload:{}},{image_upload:[]},{image_upload:{data:'bad',name:'x.png'}},{image_upload:{data:'data:image/svg+xml;base64,PHN2Zy8+',name:'x.svg'}},{image_upload:{data:'data:image/jpeg;base64,'+Buffer.from('<script>not an image</script>').toString('base64'),name:'x.jpg'}},{image_upload:{data:pngData,name:'x'.repeat(181)}},{image_upload:{data:'data:image/png;base64,'+Buffer.alloc(450001).toString('base64'),name:'x.png'}},{image_alt:''},{image_alt:'x'.repeat(301)}]) {
+  assert.throws(()=>d.saveAnnouncement(admin,input({...imageInput,...change})),e=>e.status===400);
+ }
+ assert.equal(d.exportState().announcementImages.length,0);assert.equal(d.getAnnouncements(admin,true).length,0);
+ assert.throws(()=>d.saveAnnouncement(employee,input(imageInput)),e=>e.status===403);
+});
+scenario('announcement audience: all departments and countries include every active account; country filters still apply',d=>{
+ const all=d.saveAnnouncement(admin,input());assert.equal(d.announcementReport(admin,all.id).recipients.length,3);
+ assert.equal(d.previewAnnouncementAudience(admin,{departments:[],countries:[]}).count,3);
+ const selected=d.saveAnnouncement(admin,input({departments:[],countries:['Canada']}));
+ assert.ok(d.getAnnouncements(other).some(a=>a.id===selected.id));assert.ok(!d.getAnnouncements(employee).some(a=>a.id===selected.id));
+ const companyWide=d.saveAnnouncement(admin,input(),selected.id,selected.revision);
+ assert.ok(d.getAnnouncements(employee).some(a=>a.id===companyWide.id));
+});
+
 scenario('announcements: drafts are private and publication only notifies the matching audience',d=>{
  const draft=d.saveAnnouncement(admin,input({status:'draft',departments:['Technology'],countries:['Philippines']}));
  assert.equal(d.getAnnouncements(employee).length,0);assert.equal(d.getAnnouncements(admin).length,0);
@@ -103,13 +156,24 @@ test('announcements HTTP: cookies, permissions, persistence, concurrency, notifi
   assert.equal((await call('/announcements?view=manage','GET',undefined,employee)).status,403);
   assert.equal((await call('/announcements','POST',input(),employee)).status,403);
   assert.equal((await call('/announcements','POST',input({message:{bad:true}}),admin)).status,400);
-  const draft=await call('/announcements','POST',input({status:'draft',author_name:'Forged author'}),admin);assert.equal(draft.status,201);assert.notEqual(draft.data.author_name,'Forged author');
+  const draft=await call('/announcements','POST',input({...imageInput,status:'draft',author_name:'Forged author'}),admin);assert.equal(draft.status,201);assert.notEqual(draft.data.author_name,'Forged author');
   assert.equal((await call('/announcements','GET',undefined,employee)).data.length,0);
   const path='/announcements/'+draft.data.id;
+  const assetPath=path+'/images/'+draft.data.image.id;
+  async function imageResponse(cookie,route=assetPath){return fetch(`http://127.0.0.1:${port}/api${route}`,{headers:cookie?{Cookie:cookie}:{}});}
+  assert.equal((await imageResponse()).status,401);
+  assert.equal((await imageResponse(employee)).status,404);
+  assert.equal((await imageResponse(admin)).status,200);
   assert.equal((await call(path+'/report','GET',undefined,employee)).status,403);
   assert.equal((await call(path+'/read','POST',{revision:draft.data.revision},employee)).status,404);
   const published=await call(path,'PATCH',{...input({departments:['Technology'],countries:['Philippines']}),expected_revision:draft.data.revision},admin);assert.equal(published.status,200);
   assert.equal((await call('/announcements','GET',undefined,employee)).data.length,1);
+  const image=await imageResponse(employee);assert.equal(image.status,200);assert.equal(image.headers.get('content-type'),'image/png');assert.match(image.headers.get('cache-control'),/no-store/);
+  assert.equal(image.headers.get('x-content-type-options'),'nosniff');
+  assert.deepEqual(Buffer.from(await image.arrayBuffer()),Buffer.from(pngData.split(',')[1],'base64'));
+  assert.equal(JSON.stringify((await call('/announcements','GET',undefined,employee)).data).includes('base64'),false);
+  assert.equal((await call(path,'PATCH',{...input({...imageInput,image_upload:{name:'bad.png',data:'bad'}}),expected_revision:published.data.revision},admin)).status,400);
+  assert.equal((await imageResponse(employee)).status,200);
   assert.equal((await call('/announcements','GET',undefined,admin)).data.length,0);
   assert.ok((await call('/notifications','GET',undefined,employee)).data.some(n=>n.announcement_id===draft.data.id));
   assert.equal((await call(path+'/acknowledge','POST',{revision:published.data.revision},employee)).status,400);
@@ -126,5 +190,6 @@ test('announcements HTTP: cookies, permissions, persistence, concurrency, notifi
   assert.equal((await call('/notifications','GET',undefined,employee)).data.filter(n=>n.announcement_id===draft.data.id).length,0);
   assert.equal((await call(path+'/read','POST',{revision:current.revision},employee)).status,404);
   assert.equal((await call('/announcements?view=manage','GET',undefined,admin)).data[0].status,'archived');
+  assert.equal((await imageResponse(employee)).status,404);assert.equal((await imageResponse(admin)).status,200);
  } finally {const exited=new Promise(r=>child.once('exit',r));child.kill();await exited;await rm(dir,{recursive:true,force:true});}
 });

@@ -20,6 +20,7 @@ export interface PersistentData {
   auditLogs: any[];
   notifications?: any[];
   announcements?: any[];
+  announcementImages?: import('./announcements.js').AnnouncementImage[];
   announcementReceipts?: any[];
   employeeDocuments?: any[];
   companySettings?: Record<string, any>;
@@ -31,7 +32,7 @@ export interface PersistentData {
 }
 // A new namespace deliberately leaves the former project's collections untouched.
 const PREFIX = 'hr_v2_';
-const TABLES = ['users', 'leaveAttachments', 'leaveBalances', 'leaveRequests', 'leaveTransactions', 'holidays', 'holidayShifts', 'auditLogs', 'announcements', 'announcementReceipts', 'notifications', 'employeeDocuments', 'sessions', 'loginAttempts', 'onboardingTemplates', 'onboardingPlans', 'onboardingFiles', 'onboardingMessages'] as const;
+const TABLES = ['users', 'leaveAttachments', 'leaveBalances', 'leaveRequests', 'leaveTransactions', 'holidays', 'holidayShifts', 'auditLogs', 'announcements', 'announcementImages', 'announcementReceipts', 'notifications', 'employeeDocuments', 'sessions', 'loginAttempts', 'onboardingTemplates', 'onboardingPlans', 'onboardingFiles', 'onboardingMessages'] as const;
 const clean = (value: any) => JSON.parse(JSON.stringify(value));
 const rows = (data: PersistentData, table: typeof TABLES[number]): Map<string, any> => new Map(
   table === 'sessions' ? (data.sessions || []).map(([id, value]) => [id, value]) : ((data as any)[table] || []).map((row: any) => [row.id, row])
@@ -42,7 +43,7 @@ function metadata(data: PersistentData) {
 
 // Test-only file persistence exercises restarts without cloud credentials. Never enabled in production.
 let testQueue = Promise.resolve();
-export async function transact<T>(operation: (database: HRDatabase) => Promise<{ result: T; commit: boolean }>, options: { onboardingFileId?: string } = {}): Promise<T> {
+export async function transact<T>(operation: (database: HRDatabase) => Promise<{ result: T; commit: boolean }>, options: { onboardingFileId?: string; announcementImageId?: string } = {}): Promise<T> {
   if (process.env.HR_TEST_STORE) {
     if (process.env.NODE_ENV !== 'test') throw new Error('Test storage is forbidden outside NODE_ENV=test.');
     const previous = testQueue;
@@ -73,8 +74,10 @@ export async function transact<T>(operation: (database: HRDatabase) => Promise<{
     // HR transactions read metadata, keeping file bytes out of every page load.
     const snapshots = await Promise.all(TABLES.map(table => tx.get(table === 'onboardingFiles'
       ? firestore.collection(PREFIX + table).select('id', 'plan_id', 'task_id', 'name', 'mime_type', 'uploaded_at', 'uploaded_by')
+      : table === 'announcementImages' ? firestore.collection(PREFIX + table).select('id')
       : firestore.collection(PREFIX + table))));
     const requestedFile = options.onboardingFileId ? await tx.get(firestore.collection(PREFIX + 'onboardingFiles').doc(options.onboardingFileId)) : undefined;
+    const requestedImage = options.announcementImageId ? await tx.get(firestore.collection(PREFIX + 'announcementImages').doc(options.announcementImageId)) : undefined;
     let before: PersistentData | undefined;
     if (meta.exists) {
       before = { ...meta.data(), employees: [] } as PersistentData;
@@ -86,6 +89,10 @@ export async function transact<T>(operation: (database: HRDatabase) => Promise<{
       if (requestedFile?.exists) {
         const index = before.onboardingFiles!.findIndex(f => f.id === requestedFile.id);
         if (index >= 0) before.onboardingFiles![index] = requestedFile.data() as any;
+      }
+      if (requestedImage?.exists) {
+        const index = before.announcementImages!.findIndex(i => i.id === requestedImage.id);
+        if (index >= 0) before.announcementImages![index] = requestedImage.data() as any;
       }
     } else if (snapshots.some(snapshot => !snapshot.empty)) {
       throw new Error('Database initialization marker missing; refusing to overwrite records.');

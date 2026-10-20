@@ -117,6 +117,7 @@ app.use('/api', async (req: Request, res: Response) => {
   const initialHeaders = res.getHeaders();
   try {
     const onboardingFileId = /^\/onboarding\/files\/([a-f0-9-]{36})\/?$/.exec(req.path)?.[1];
+    const announcementImageId = /^\/announcements\/announcement-[a-f0-9-]{36}\/images\/([a-f0-9-]{36})\/?$/.exec(req.path)?.[1];
     const outcome = await transact(async database => {
       req.url = req.originalUrl;
       res.statusCode = 200;
@@ -133,7 +134,7 @@ app.use('/api', async (req: Request, res: Response) => {
         apiRouter(req, res, (error?: any) => { if (error) reject(error); else { res.statusCode = 404; capture('json', { error: 'API route not found.' }); } });
       }));
       return { result: reply, commit: reply.status < 400 || (req.path === '/api/auth/login' && [401, 403, 429].includes(reply.status)) };
-    }, { onboardingFileId });
+    }, { onboardingFileId, announcementImageId });
     res.send = send; res.json = json; res.end = end as any;
     res.status(outcome.status);
     for (const [header, value] of Object.entries(outcome.headers)) if (value !== undefined) res.setHeader(header, value);
@@ -656,6 +657,18 @@ function announcementReply(res: Response, operation: () => unknown, status = 200
     else throw error;
   }
 }
+apiRouter.get('/api/announcements/:id/images/:imageId', authMiddleware, (req: AuthenticatedRequest, res) => {
+  try {
+    const image = db.getAnnouncementImage(req.user!, req.params.id, req.params.imageId);
+    res.setHeader('Content-Type', image.mime);
+    res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(image.name).replace(/'/g, '%27')}`);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.send(image.bytes);
+  } catch (error) {
+    if (error instanceof AnnouncementError) res.status(error.status).json({ error: error.message });
+    else throw error;
+  }
+});
 apiRouter.get('/api/announcements', authMiddleware, (req: AuthenticatedRequest, res) => {
   announcementReply(res, () => db.getAnnouncements(req.user!, req.query.view === 'manage'));
 });
