@@ -368,8 +368,8 @@ export const api = {
   },
 
   async cancelLeaveRequest(requestId: string): Promise<LeaveRequest> {
-    return request<LeaveRequest>(`/api/leave-requests/${requestId}/cancel`, {
-      method: 'POST',
+    return request<LeaveRequest>(`/api/leave-requests/${encodeURIComponent(requestId)}/cancel`, {
+      method: 'PATCH',
     });
   },
 
