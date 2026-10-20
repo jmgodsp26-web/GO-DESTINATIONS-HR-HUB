@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { useWorkspace } from '../../context/WorkspaceContext';
+import { useOnboarding } from '../../context/OnboardingContext';
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -46,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
   const [showHelpModal, setShowHelpModal] = useState(false);
 
   const { isAdministration: isAdmin } = useWorkspace();
+  const { summary: onboarding } = useOnboarding();
   if (!user) return null;
   const unreadNotifCount = notifications.filter((n) => !n.read).length;
 
@@ -54,6 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
       groupTitle: 'Workspace',
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        ...(onboarding?.available ? [{ id: 'onboarding', label: 'Getting started', icon: ClipboardList }] : []),
         { id: 'profile', label: 'My Profile', icon: User },
       ],
     },
@@ -94,6 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
       groupTitle: 'People & Requests',
       items: [
         { id: 'employees', label: 'Employees', icon: Users },
+        { id: 'onboarding', label: 'Onboarding', icon: ClipboardList },
         { id: 'leave-requests', label: 'Leave Approvals', icon: ClipboardList },
       ],
     },

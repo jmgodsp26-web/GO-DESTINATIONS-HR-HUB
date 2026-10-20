@@ -1,4 +1,5 @@
 import { AnnouncementError, announcementAudience, announcementVisible, validateAnnouncement } from './announcements.js';
+import { OnboardingService, type OnboardingState } from './onboarding.js';
 import type { Announcement, AnnouncementView, AnnouncementReceipt, AnnouncementReport } from '../src/types.js';
 import { validateProfileStorage } from './profile-validation.js';
 import { employeeCalendar } from '../src/utils/employeeCalendar.js';
@@ -79,6 +80,10 @@ export function isProgramCoordinator(user: { job_title?: string; department?: st
 }
 
 export class HRDatabase {
+  private onboardingState: OnboardingState = { templates: [], plans: [], files: [], messages: [] };
+  public onboarding(actor: UserProfile) {
+    return new OnboardingService(this.onboardingState, this.users.map(u => u.profile), actor, { audit: entry => this.logAudit(entry), notifications: this.notifications });
+  }
   private users: UserCredentials[] = [];
   private leaveBalances: LeaveBalance[] = [];
   private leaveTransactions: LeaveTransaction[] = [];
@@ -129,6 +134,10 @@ export class HRDatabase {
 
   public exportState(): PersistentData {
     return {
+      onboardingTemplates: this.onboardingState.templates,
+      onboardingPlans: this.onboardingState.plans,
+      onboardingFiles: this.onboardingState.files,
+      onboardingMessages: this.onboardingState.messages,
       nextEmployeeNumber: this.nextEmployeeNumber,
       leaveAttachments: this.leaveAttachments,
       users: this.users,
@@ -154,6 +163,7 @@ export class HRDatabase {
   }
 
   private hydrateFromStore(data: PersistentData) {
+    this.onboardingState = { templates: data.onboardingTemplates || [], plans: data.onboardingPlans || [], files: data.onboardingFiles || [], messages: data.onboardingMessages || [] };
     this.leaveAttachments = data.leaveAttachments || [];
     this.announcements = data.announcements || [];
     this.announcementReceipts = data.announcementReceipts || [];
@@ -643,6 +653,11 @@ export class HRDatabase {
     for (const shift of removedShifts) this.deletedShiftIds.add(shift.id);
     this.employeeDocuments = this.employeeDocuments.filter(d => d.employee_id !== employeeId);
     this.leaveAttachments = this.leaveAttachments.filter(f => f.employee_id !== employeeId);
+    const onboardingIds = new Set(this.onboardingState.plans.filter(p => p.employee_id === employeeId).map(p => p.id));
+    this.onboardingState.plans = this.onboardingState.plans.filter(p => !onboardingIds.has(p.id));
+    this.onboardingState.files = this.onboardingState.files.filter(f => !onboardingIds.has(f.plan_id));
+    this.onboardingState.messages = this.onboardingState.messages.filter(m => !onboardingIds.has(m.plan_id));
+    this.notifications = this.notifications.filter(n => !n.onboarding_id || !onboardingIds.has(n.onboarding_id));
 
     // 6. Terminate all active sessions immediately
     this.revokeAllSessionsForUser(employeeId);
@@ -2389,7 +2404,11 @@ export class HRDatabase {
 
   // --- NOTIFICATIONS ---
   public getNotifications(userId: string): NotificationItem[] {
+    const actor = this.users.find(u => u.id === userId)?.profile;
+    const onboarding = actor && actor.status === 'active' ? this.onboarding(actor) : null;
+    onboarding?.reminders();
     return this.notifications
+      .filter(n => !n.onboarding_id || Boolean(onboarding?.canSeeNotification(n)))
       .filter((n) => n.user_id === userId && (!n.announcement_id || this.announcements.some(a => {
         const user = this.users.find(u => u.id === userId)?.profile;
         return user && a.id === n.announcement_id && a.revision === n.announcement_revision && announcementVisible(a, user);
