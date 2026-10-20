@@ -1,4 +1,5 @@
 import { AnnouncementError } from './server/announcements.js';
+import { OnboardingError } from './server/onboarding.js';
 import { visibleCoverage } from './server/coverage.js';
 import { decodeUpload } from './server/files.js';
 import express, { Request, Response, NextFunction } from 'express';
@@ -115,6 +116,7 @@ app.use('/api', async (req: Request, res: Response) => {
   const end = res.end.bind(res);
   const initialHeaders = res.getHeaders();
   try {
+    const onboardingFileId = /^\/onboarding\/files\/([a-f0-9-]{36})\/?$/.exec(req.path)?.[1];
     const outcome = await transact(async database => {
       req.url = req.originalUrl;
       res.statusCode = 200;
@@ -131,7 +133,7 @@ app.use('/api', async (req: Request, res: Response) => {
         apiRouter(req, res, (error?: any) => { if (error) reject(error); else { res.statusCode = 404; capture('json', { error: 'API route not found.' }); } });
       }));
       return { result: reply, commit: reply.status < 400 || (req.path === '/api/auth/login' && [401, 403, 429].includes(reply.status)) };
-    });
+    }, { onboardingFileId });
     res.send = send; res.json = json; res.end = end as any;
     res.status(outcome.status);
     for (const [header, value] of Object.entries(outcome.headers)) if (value !== undefined) res.setHeader(header, value);
@@ -618,6 +620,32 @@ apiRouter.get('/api/audit-logs', adminOnlyMiddleware, (_req: AuthenticatedReques
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
+});
+
+// Onboarding: authorization is also enforced against the current stored actor.
+function onboardingReply(res: Response, operation: () => unknown, status = 200) {
+  try { res.status(status).json(operation()); }
+  catch (error) { if (error instanceof OnboardingError) res.status(error.status).json({ error: error.message }); else throw error; }
+}
+apiRouter.get('/api/onboarding/summary', authMiddleware, (req: AuthenticatedRequest, res) => onboardingReply(res, () => db.onboarding(req.user!).summary()));
+apiRouter.get('/api/onboarding/templates', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => onboardingReply(res, () => db.onboarding(req.user!).listTemplates()));
+apiRouter.post('/api/onboarding/templates', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => onboardingReply(res, () => db.onboarding(req.user!).saveTemplate(req.body), 201));
+apiRouter.patch('/api/onboarding/templates/:id', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => onboardingReply(res, () => db.onboarding(req.user!).saveTemplate(req.body, req.params.id)));
+apiRouter.post('/api/onboarding/templates/:id/archive', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => onboardingReply(res, () => db.onboarding(req.user!).archiveTemplate(req.params.id, req.body.expected_revision)));
+apiRouter.get('/api/onboarding/plans', authMiddleware, (req: AuthenticatedRequest, res) => onboardingReply(res, () => db.onboarding(req.user!).list(req.query.view === 'manage')));
+apiRouter.post('/api/onboarding/plans', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => onboardingReply(res, () => db.onboarding(req.user!).create(req.body), 201));
+apiRouter.get('/api/onboarding/plans/:id', authMiddleware, (req: AuthenticatedRequest, res) => onboardingReply(res, () => db.onboarding(req.user!).get(req.params.id, req.query.view === 'manage')));
+apiRouter.patch('/api/onboarding/plans/:id', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => onboardingReply(res, () => db.onboarding(req.user!).update(req.params.id, req.body)));
+apiRouter.post('/api/onboarding/plans/:id/actions/:action', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => onboardingReply(res, () => db.onboarding(req.user!).planAction(req.params.id, req.params.action, req.body)));
+apiRouter.post('/api/onboarding/plans/:id/tasks/:task/actions/:action', authMiddleware, (req: AuthenticatedRequest, res) => onboardingReply(res, () => db.onboarding(req.user!).taskAction(req.params.id, req.params.task, req.params.action, req.body, req.query.view === 'manage')));
+apiRouter.get('/api/onboarding/files/:id', authMiddleware, (req: AuthenticatedRequest, res) => {
+  try {
+    const file = db.onboarding(req.user!).file(req.params.id), { mime, bytes } = decodeUpload(file.data);
+    const inline = req.query.preview === '1' && ['application/pdf', 'image/png', 'image/jpeg'].includes(mime);
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(file.name).replace(/'/g, '%27')}`);
+    res.send(bytes);
+  } catch (error) { res.status(error instanceof OnboardingError ? error.status : 400).json({ error: (error as Error).message }); }
 });
 
 // Announcements: publication and readership reports are admin-only.

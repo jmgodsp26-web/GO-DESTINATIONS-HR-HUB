@@ -76,6 +76,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       action: () => { onNavigate(isAdmin ? 'my-workspace' : 'admin-dashboard'); onClose(); },
     }] : []),
     // Navigation
+    { id: 'nav-onboarding', category: 'Navigation', title: isAdmin ? 'Onboarding' : 'Getting started', subtitle: 'New hire checklists and assigned onboarding tasks', icon: ClipboardList, action: () => { onNavigate('onboarding'); onClose(); } },
     {
       id: 'nav-dash',
       category: 'Navigation',

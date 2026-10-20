@@ -1,4 +1,5 @@
 import type { AnnouncementInput, AnnouncementView, AnnouncementReport } from '../types';
+import type { OnboardingAssignmentInput, OnboardingPlanView, OnboardingSummary, OnboardingTemplate, OnboardingTemplateInput } from '../types/onboarding';
 import {
   UserProfile,
   LeaveBalance,
@@ -49,6 +50,20 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const api = {
+  getOnboardingSummary(): Promise<OnboardingSummary> { return request('/api/onboarding/summary'); },
+  getOnboardingTemplates(): Promise<OnboardingTemplate[]> { return request('/api/onboarding/templates'); },
+  saveOnboardingTemplate(input: OnboardingTemplateInput, existing?: OnboardingTemplate): Promise<OnboardingTemplate> {
+    return request('/api/onboarding/templates' + (existing ? '/' + existing.id : ''), { method: existing ? 'PATCH' : 'POST', body: JSON.stringify({ ...input, ...(existing ? { expected_revision: existing.revision } : {}) }) });
+  },
+  archiveOnboardingTemplate(t: OnboardingTemplate): Promise<OnboardingTemplate> { return request(`/api/onboarding/templates/${t.id}/archive`, { method: 'POST', body: JSON.stringify({ expected_revision: t.revision }) }); },
+  getOnboardingPlans(manage = false): Promise<OnboardingPlanView[]> { return request('/api/onboarding/plans' + (manage ? '?view=manage' : '')); },
+  getOnboardingPlan(id: string, manage = false): Promise<OnboardingPlanView> { return request('/api/onboarding/plans/' + encodeURIComponent(id) + (manage ? '?view=manage' : '')); },
+  assignOnboarding(input: OnboardingAssignmentInput): Promise<OnboardingPlanView> { return request('/api/onboarding/plans', { method: 'POST', body: JSON.stringify(input) }); },
+  updateOnboarding(p: OnboardingPlanView, input: Pick<OnboardingAssignmentInput, 'start_date' | 'assignments' | 'name' | 'welcome'>): Promise<OnboardingPlanView> { return request(`/api/onboarding/plans/${p.id}`, { method: 'PATCH', body: JSON.stringify({ ...input, expected_revision: p.revision }) }); },
+  onboardingPlanAction(p: OnboardingPlanView, action: string, note = ''): Promise<OnboardingPlanView> { return request(`/api/onboarding/plans/${p.id}/actions/${action}`, { method: 'POST', body: JSON.stringify({ expected_revision: p.revision, note }) }); },
+  onboardingTaskAction(p: OnboardingPlanView, task: string, action: string, data: Record<string, unknown> = {}, manage = false): Promise<OnboardingPlanView> {
+    return request(`/api/onboarding/plans/${p.id}/tasks/${encodeURIComponent(task)}/actions/${action}` + (manage ? '?view=manage' : ''), { method: 'POST', body: JSON.stringify({ ...data, expected_revision: p.revision }) });
+  },
   getAllDocuments(): Promise<EmployeeDocument[]> { return request('/api/documents?scope=all'); },
   previewAnnouncementAudience(departments: string[], countries: string[]): Promise<{ count: number }> {
     return request('/api/announcements/audience-preview', { method: 'POST', body: JSON.stringify({ departments, countries }) });

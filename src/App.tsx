@@ -1,5 +1,7 @@
 import { resolveRoute, routeHash, type WorkspaceRoute } from './utils/navigation';
 import { NavigationContext } from './context/NavigationContext';
+import { OnboardingProvider } from './context/OnboardingContext';
+const OnboardingView = lazy(() => import('./components/onboarding/OnboardingView').then(module => ({ default: module.OnboardingView })));
 const AnnouncementsView = lazy(() => import('./components/announcements/AnnouncementsView').then(module => ({ default: module.AnnouncementsView })));
 import { MotionConfig } from 'motion/react';
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
@@ -118,6 +120,7 @@ const MainApp: React.FC = () => {
         {/* Main Content Viewport */}
         <main id="workspace-content" tabIndex={-1} key={`${mode}:${currentTab}`} className="go-main flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
 <Suspense fallback={<p className="go-refresh-status" role="status">Opening workspace…</p>}>
+          {currentTab === 'onboarding' && <OnboardingView />}
           {/* Employee Views */}
           {!isAdministration && (
             <>
@@ -145,6 +148,7 @@ const MainApp: React.FC = () => {
                 'requests',
                 'history',
                 'announcements',
+                'onboarding',
                 'calendar',
                 'holidays',
                 'documents',
@@ -178,6 +182,7 @@ const MainApp: React.FC = () => {
               {currentTab === 'settings' && <SettingsView />}
               {/* Fallback for unrecognized tab */}
               {![
+                'onboarding',
                 'admin-dashboard',
                 'dashboard',
                 'employees',
@@ -219,7 +224,7 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <ToastProvider>
-          <MainApp />
+          <OnboardingProvider><MainApp /></OnboardingProvider>
         </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>

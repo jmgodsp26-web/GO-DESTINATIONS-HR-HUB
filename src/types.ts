@@ -208,7 +208,7 @@ export interface AuditLog {
   user_id: string;
   user_name: string;
   user_role: UserRole;
-  target_type: 'employee' | 'leave_request' | 'holiday' | 'leave_balance' | 'security' | 'announcement';
+  target_type: 'employee' | 'leave_request' | 'holiday' | 'leave_balance' | 'security' | 'announcement' | 'onboarding';
   target_id: string;
   details: string;
   timestamp: string;
@@ -226,6 +226,8 @@ export interface NotificationItem {
   request_id?: string;
   announcement_id?: string;
   announcement_revision?: number;
+  onboarding_id?: string;
+  onboarding_task_id?: string;
 }
 
 export const ANNOUNCEMENT_CATEGORIES = ['Company news', 'HR reminder', 'Policy update', 'Event'] as const;

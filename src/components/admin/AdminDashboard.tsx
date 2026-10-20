@@ -150,6 +150,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         <PageHeading eyebrow="Administration" title="Team overview"
           description={`Welcome back, ${user.full_name.split(' ')[0]}. Here’s what’s happening across your team.`} />
         <div className="go-page-actions">
+          <button type="button" onClick={() => onNavigateTab('administration/onboarding')} className="go-button go-button-secondary"><ClipboardList size={16} /> Onboarding</button>
           <button type="button" onClick={() => onNavigateTab('employees')} className="go-button go-button-secondary">
             <Users size={16} /> View employees
           </button>

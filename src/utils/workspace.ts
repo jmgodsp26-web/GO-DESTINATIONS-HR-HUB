@@ -3,7 +3,7 @@ import type { UserRole } from '../types';
 export type WorkspaceMode = 'personal' | 'administration';
 const adminTabs = new Set(['admin-dashboard', 'employees', 'leave-requests', 'audit-logs', 'reports']);
 const personalTabs = new Set(['dashboard', 'profile', 'leave']);
-const sharedTabs = new Set(['announcements', 'calendar', 'holidays', 'documents', 'notifications', 'settings']);
+const sharedTabs = new Set(['onboarding', 'announcements', 'calendar', 'holidays', 'documents', 'notifications', 'settings']);
 
 export function navigateWorkspace(role: UserRole, mode: WorkspaceMode, target: string): { mode: WorkspaceMode; tab: string } {
   if (target === 'my-workspace' || target === 'employee-dashboard') target = 'dashboard';
