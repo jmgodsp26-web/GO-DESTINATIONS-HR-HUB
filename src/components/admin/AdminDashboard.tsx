@@ -77,12 +77,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
   // Department distribution calculation
   const deptMap: Record<string, { total: number; onLeave: number }> = {};
   employees.filter(e=>e.status==='active').forEach((emp) => {
-    const dept = emp.department || 'Technology';
+    const dept = emp.department || 'Unassigned department';
     if (!deptMap[dept]) deptMap[dept] = { total: 0, onLeave: 0 };
     deptMap[dept].total += 1;
   });
   currentlyOnLeave.forEach((req) => {
-    const dept = req.employee_department || 'Technology';
+    const dept = employees.find(emp => emp.id === req.employee_id)?.department || 'Unassigned department';
     if (deptMap[dept]) {
       deptMap[dept].onLeave += 1;
     }
@@ -298,51 +298,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
       </DataRegion>
       <DataRegion state={sections.employees} label="team information" onRetry={loadData}>
-<DataRegion state={sections.requests} label="department leave" onRetry={loadData}>{/* 5. Department Absence Heatmap & Distribution */}
-      <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
-        <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
-          <div className="flex items-center space-x-2">
-            <Building2 className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              Approved leave by department
-            </h3>
+<DataRegion state={sections.requests} label="department leave" onRetry={loadData}>
+      <section className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs" aria-label="Leave by department">
+        <div className="flex flex-wrap items-start justify-between gap-3 pb-3.5 border-b border-slate-100 mb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-indigo-600" aria-hidden="true" />
+              <h3 className="text-sm font-bold text-slate-900">Leave by Department</h3>
+            </div>
+            <p className="mt-2 text-xs text-slate-500">Shows approved leave covering today.</p>
           </div>
-          <span className="text-xs text-slate-400 font-medium">By department</span>
+          <span className="text-xs text-slate-500 font-medium">{formatHolidayDate(todayStr).formatted}</span>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {Object.entries(deptMap).map(([dept, data]) => {
-            const presenceRate = data.total > 0 ? Math.round(((data.total - data.onLeave) / data.total) * 100) : 100;
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {Object.entries(deptMap).sort(([nameA, a], [nameB, b]) => b.onLeave - a.onLeave || nameA.localeCompare(nameB)).map(([dept, data]) => {
+            const departmentLeaves = currentlyOnLeave.filter(request => (employees.find(emp => emp.id === request.employee_id)?.department || 'Unassigned department') === dept);
             return (
-              <div
-                key={dept}
-                className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-900">{dept}</span>
-                    <span className="text-[12px] font-semibold text-slate-500">{data.total} Staff</span>
-                  </div>
-                  <div className="mt-2.5 flex items-baseline justify-between">
-                    <span className="text-sm font-semibold text-slate-700">{presenceRate}% not on approved leave</span>
-                    <span className="text-[12px] text-slate-500 tabular-nums">
-                      {data.onLeave > 0 ? `${data.onLeave} out` : 'No approved leave'}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-3 w-full h-1.5 bg-slate-200/80 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      data.onLeave > 0 ? 'bg-amber-500' : 'bg-emerald-500'
-                    }`}
-                    style={{ width: `${presenceRate}%` }}
-                  />
-                </div>
+              <div key={dept} className={`p-4 rounded-xl border min-w-0 ${data.onLeave ? 'border-amber-200 bg-amber-50/50' : 'border-slate-200/80 bg-slate-50/50'}`}>
+                <h4 className="text-sm font-bold text-slate-900 break-words">{dept}</h4>
+                <p className="mt-2 text-sm text-slate-700 leading-relaxed"><strong className="tabular-nums">{data.onLeave} of {data.total}</strong> {data.total === 1 ? 'employee' : 'employees'} on leave today</p>
+                {departmentLeaves.length > 0 && <ul className="mt-3 space-y-2 border-t border-amber-200/60 pt-3">
+                  {departmentLeaves.map(request => {
+                    const name = employees.find(emp => emp.id === request.employee_id)?.full_name || request.employee_name;
+                    return <li key={request.id}><button type="button" className="w-full text-left flex items-center justify-between gap-2 rounded-lg py-2 text-xs font-semibold text-slate-700 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" aria-label={`View leave details for ${name}`} onClick={() => onNavigateTab(`administration/leave-requests?request=${encodeURIComponent(request.id)}`)}><span className="break-words">{name}</span><ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" /></button></li>;
+                  })}
+                </ul>}
               </div>
             );
           })}
         </div>
-      </div>
+        {!Object.keys(deptMap).length && <p className="text-sm text-slate-500 py-4">No active employees to display.</p>}
+      </section>
 
       </DataRegion></DataRegion>
       {/* 6. Celebrations & Milestones Widget */}
@@ -358,18 +344,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
             <div className="flex items-center space-x-2">
               <UserCheck className="w-4 h-4 text-emerald-600" />
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                Employees Out Today
+                Employees on Leave Today
               </h3>
             </div>
             <span className="text-xs text-slate-500 font-medium tabular-nums">
-              {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              {formatHolidayDate(todayStr).formatted}
             </span>
           </div>
 
           <div className="space-y-2.5">
             {currentlyOnLeave.length === 0 ? (
               <p className="text-xs text-slate-400 py-6 text-center">
-                No approved leave covers today. This does not indicate live attendance.
+                No employees have approved leave today.
               </p>
             ) : (
               currentlyOnLeave.map((item) => (
