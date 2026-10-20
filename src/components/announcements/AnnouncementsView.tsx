@@ -8,6 +8,7 @@ import { Megaphone, Plus, Pin, ArrowRight, X, CheckCheck, Eye, Pencil, Archive, 
 import { ANNOUNCEMENT_CATEGORIES, OFFICIAL_DEPARTMENTS, type AnnouncementInput, type AnnouncementView, type AnnouncementReport } from '../../types';
 import { EMPLOYEE_COUNTRIES } from '../../utils/countryUtils';
 import { api } from '../../services/api';
+import { readUpload } from '../../utils/files';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { PageHeading } from '../common/WorkspaceUI';
@@ -18,9 +19,26 @@ const expired = (item: AnnouncementView) => Boolean(item.expires_at && Date.pars
 const audienceLabel = (item: Pick<AnnouncementInput, 'departments' | 'countries'>) => `${item.departments.join(', ') || 'All departments'} · ${item.countries.join(', ') || 'All countries'}`;
 const blank = (): AnnouncementInput => ({ title: '', message: '', category: 'Company news', departments: [], countries: [], pinned: false, requires_acknowledgment: false, expires_at: null, status: 'draft' });
 
-function Message({ item }: { item: Pick<AnnouncementInput, 'category' | 'title' | 'message' | 'pinned'> }) {
+const imageUrl = (item?: AnnouncementView) => item?.image ? `/api/announcements/${encodeURIComponent(item.id)}/images/${encodeURIComponent(item.image.id)}` : undefined;
+function AnnouncementImage({ src, alt, compact = false }: { src?: string; alt: string; compact?: boolean }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  if (!src) return null;
+  return <figure className={`go-ann-image ${compact ? 'is-compact' : ''}`}>
+    {failed ? <p role="status">Image unavailable. Refresh the announcement to try again.</p> : <img src={src} alt={alt} loading="lazy" onError={() => setFailed(true)} />}
+    {!compact && !failed && !src.startsWith('data:') && <figcaption><a href={src} target="_blank" rel="noopener noreferrer">Open full-size image</a></figcaption>}
+  </figure>;
+}
+function AudienceSelection({ label, values, selected, custom, onMode, onToggle }: { label: string; values: readonly string[]; selected: string[]; custom: boolean; onMode: (custom: boolean) => void; onToggle: (value: string) => void }) {
+  const group = React.useId();
+  return <fieldset><legend>{label}</legend><div className="go-ann-audience-modes">
+    <label><input type="radio" name={group} checked={!custom} onChange={() => onMode(false)} />All {label.toLowerCase()} (select all)</label>
+    <label><input type="radio" name={group} checked={custom} onChange={() => onMode(true)} />Choose {label.toLowerCase()}</label>
+  </div>{custom && <><div className="go-ann-choice-grid">{values.map(value => <label key={value}><input type="checkbox" checked={selected.includes(value)} onChange={() => onToggle(value)} />{value}</label>)}</div>{!selected.length && <p className="go-ann-selection-note">Select at least one, or choose All {label.toLowerCase()}.</p>}</>}</fieldset>;
+}
+function Message({ item, imageSrc }: { item: Pick<AnnouncementInput, 'category' | 'title' | 'message' | 'pinned' | 'image_alt'>; imageSrc?: string }) {
   return <article className="go-ann-message"><div className="go-ann-tags"><span>{item.category}</span>{item.pinned && <span><Pin size={12} />Pinned</span>}</div>
-    <h3>{item.title || 'Announcement title'}</h3><p>{item.message || 'Your announcement message will appear here.'}</p></article>;
+    <h3>{item.title || 'Announcement title'}</h3><p>{item.message || 'Your announcement message will appear here.'}</p><AnnouncementImage src={imageSrc} alt={item.image_alt || 'Announcement image'} /></article>;
 }
 function AnnouncementDetail({ item, preview = false, onClose, onChange }: { item: AnnouncementView; preview?: boolean; onClose: () => void; onChange: (item: AnnouncementView) => void }) {
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -33,7 +51,7 @@ function AnnouncementDetail({ item, preview = false, onClose, onChange }: { item
   return <Dialog className="go-ann-dialog" busy={busy} title={preview ? 'Announcement preview' : 'Company announcement'} onClose={() => { if (!busy) onClose(); }}>
     <div className="go-ann-dialog-body">
       {preview && <p className="go-ann-note">Admin preview. This does not mark the announcement as read or acknowledged.</p>}
-      <Message item={item} />
+      <Message item={item} imageSrc={imageUrl(item)} />
       <p className="go-ann-meta">By {item.author_name} · {dateLabel(item.published_at)} · Version {item.revision}</p>
       {item.expires_at && <p className="go-ann-meta">Available until {dateLabel(item.expires_at)}</p>}
       {error && <p className="go-ann-error" role="alert">{error}</p>}
@@ -47,38 +65,64 @@ function AnnouncementDetail({ item, preview = false, onClose, onChange }: { item
 function AnnouncementEditor({ existing, onClose, onSaved }: { existing?: AnnouncementView; onClose: () => void; onSaved: (item: AnnouncementView) => void }) {
   const [form, setForm] = useState<AnnouncementInput>(existing ? { ...existing, status: existing.status === 'published' ? 'published' : 'draft' } : blank());
   const [preview, setPreview] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const [imageBusy, setImageBusy] = useState(false);
+  const [customDepartments, setCustomDepartments] = useState(Boolean(form.departments.length));
+  const [customCountries, setCustomCountries] = useState(Boolean(form.countries.length));
+  const incompleteAudience = (customDepartments && !form.departments.length) || (customCountries && !form.countries.length);
+  const imageSrc = form.image_upload === undefined ? imageUrl(existing) : form.image_upload?.data;
+  const imageName = form.image_upload === undefined ? existing?.image?.name : form.image_upload?.name;
   const initial = useRef(JSON.stringify(form));
-  const canClose = useUnsavedChanges(JSON.stringify(form) !== initial.current, busy);
+  const canClose = useUnsavedChanges(JSON.stringify(form) !== initial.current || customDepartments !== Boolean(existing?.departments.length) || customCountries !== Boolean(existing?.countries.length), busy || imageBusy);
   const closeEditor = () => { if (canClose()) onClose(); };
   const [audience, setAudience] = useState<{ count?: number; error?: string }>({});
   useEffect(() => {
+    if (incompleteAudience) { setAudience({ count: 0 }); return; }
     let active = true; setAudience({});
     const timer = setTimeout(() => { api.previewAnnouncementAudience(form.departments, form.countries).then(result => { if (active) setAudience(result); }).catch(() => { if (active) setAudience({ error: 'Recipient count could not load. Check your audience before publishing.' }); }); }, 250);
     return () => { active = false; clearTimeout(timer); };
-  }, [form.departments, form.countries]);
+  }, [form.departments, form.countries, incompleteAudience]);
   const patch = (data: Partial<AnnouncementInput>) => setForm(previous => ({ ...previous, ...data }));
   const toggle = (key: 'departments' | 'countries', value: string) => setForm(previous => ({ ...previous, [key]: previous[key].includes(value) ? previous[key].filter(v => v !== value) : [...previous[key], value] }));
   const localExpiry = form.expires_at ? new Date(Date.parse(form.expires_at) - new Date(form.expires_at).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
+  async function uploadImage(file?: File) {
+    if (!file) return;
+    setImageBusy(true); setError('');
+    try {
+      if (!['image/png', 'image/jpeg'].includes(file.type)) throw new Error('Choose a JPG or PNG image, up to 450 KB.');
+      const data = await readUpload(file);
+      const check = new Image(); check.src = data;
+      try { await check.decode(); } catch { throw new Error('This image could not be opened. Choose a valid JPG or PNG file.'); }
+      patch({ image_upload: { data, name: file.name } });
+    } catch (e) { setError((e as Error).message); } finally { setImageBusy(false); }
+  }
   async function save(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setError('');
+    event.preventDefault();
+    if (imageBusy || busy) return;
+    if (incompleteAudience) { setError('Choose at least one department or country in each selected group, or select All.'); setPreview(false); return; }
+    setBusy(true); setError('');
     const status = ((event.nativeEvent as SubmitEvent).submitter?.getAttribute('data-status') || form.status) as 'draft' | 'published';
     try { const result = await api.saveAnnouncement({ ...form, status }, existing); onSaved(result); }
     catch (e) { setError((e as Error).message); setPreview(false); }
     finally { setBusy(false); }
   }
-  return <Dialog className="go-ann-dialog" busy={busy} title={existing ? 'Edit announcement' : 'Create announcement'} onClose={closeEditor}>
+  return <Dialog className="go-ann-dialog" busy={busy || imageBusy} title={existing ? 'Edit announcement' : 'Create announcement'} onClose={closeEditor}>
     <form onSubmit={save} noValidate={preview} className="go-ann-editor">
-      <fieldset disabled={busy}>
+      <fieldset disabled={busy || imageBusy}>
         <div className="go-ann-editor-tabs"><button type="button" aria-pressed={!preview} onClick={() => setPreview(false)}>Write</button><button type="button" aria-pressed={preview} onClick={() => setPreview(true)}><Eye size={15} />Preview</button></div>
         {/* Server validation also applies when publishing from the preview. */}
-        {preview && <div className="go-ann-preview"><Message item={form} /><p className="go-ann-meta">Audience: {audienceLabel(form)}</p>{form.requires_acknowledgment && <p className="go-ann-note">Acknowledgment required</p>}</div>}
+        {preview && <div className="go-ann-preview"><Message item={form} imageSrc={imageSrc} /><p className="go-ann-meta">Audience: {incompleteAudience ? 'Choose recipients before publishing' : audienceLabel(form)}</p>{form.requires_acknowledgment && <p className="go-ann-note">Acknowledgment required</p>}</div>}
         <div className={preview ? 'go-ann-fields go-ann-fields-preview' : 'go-ann-fields'}>
           <label>Title<input required maxLength={160} value={form.title} onChange={e => patch({ title: e.target.value })} placeholder="What does your team need to know?" /></label>
           <label>Category<select value={form.category} onChange={e => patch({ category: e.target.value as AnnouncementInput['category'] })}>{ANNOUNCEMENT_CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></label>
           <label>Message<textarea required maxLength={10000} rows={7} value={form.message} onChange={e => patch({ message: e.target.value })} placeholder="Write a clear update with any next steps for employees." /><span className="go-ann-hint">Plain text · {form.message.length.toLocaleString()} / 10,000 characters</span></label>
-          <section className="go-ann-audience"><h3>Who should see this?</h3><p>Leave a group unselected to include everyone in that group. If you choose both, employees must match a selected department and country. Country uses the employee’s profile location.</p>
-            <fieldset><legend>Departments</legend><div className="go-ann-choice-grid">{OFFICIAL_DEPARTMENTS.map(value => <label key={value}><input type="checkbox" checked={form.departments.includes(value)} onChange={() => toggle('departments', value)} />{value}</label>)}</div></fieldset>
-            <fieldset><legend>Countries</legend><div className="go-ann-choice-grid">{EMPLOYEE_COUNTRIES.map(value => <label key={value}><input type="checkbox" checked={form.countries.includes(value)} onChange={() => toggle('countries', value)} />{value}</label>)}</div></fieldset>
+          <section className="go-ann-upload"><h3>Image (optional)</h3><p>Add a poster, reminder or company update. JPG or PNG, up to 450 KB.</p>
+            <label>{imageSrc ? 'Replace image' : 'Upload image'}<input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; void uploadImage(file); }} /></label>
+            {imageBusy && <p role="status">Checking image…</p>}
+            {imageSrc && <><AnnouncementImage src={imageSrc} alt={form.image_alt || 'Image preview'} compact /><p className="go-ann-meta">{imageName}</p><label>Image description<input required maxLength={300} value={form.image_alt || ''} onChange={e => patch({ image_alt: e.target.value })} placeholder="Briefly describe the image for screen readers" /></label><span className="go-ann-hint">Include important dates and instructions in the message too.</span><button type="button" className="go-ann-remove-image" onClick={() => patch({ image_upload: null, image_alt: '' })}><X size={15} />Remove image</button></>}
+          </section>
+          <section className="go-ann-audience"><h3>Who should see this?</h3><p>For a company-wide update, select All departments and All countries. If you choose specific groups, employees must match both. Country uses the employee’s profile location.</p>
+            <AudienceSelection label="Departments" values={OFFICIAL_DEPARTMENTS} selected={form.departments} custom={customDepartments} onMode={custom => { setCustomDepartments(custom); if (!custom) patch({ departments: [] }); }} onToggle={value => toggle('departments', value)} />
+            <AudienceSelection label="Countries" values={EMPLOYEE_COUNTRIES} selected={form.countries} custom={customCountries} onMode={custom => { setCustomCountries(custom); if (!custom) patch({ countries: [] }); }} onToggle={value => toggle('countries', value)} />
           </section>
           <div className="go-ann-options"><label><input type="checkbox" checked={form.pinned} onChange={e => patch({ pinned: e.target.checked })} />Pin at the top</label><label><input type="checkbox" checked={form.requires_acknowledgment} onChange={e => patch({ requires_acknowledgment: e.target.checked })} />Require acknowledgment</label></div>
           <label>Expiry date and time (optional)<input type="datetime-local" value={localExpiry} onChange={e => patch({ expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })} /><span className="go-ann-hint">Uses your browser’s local time. Expired announcements are hidden from employees.</span></label>
@@ -87,9 +131,9 @@ function AnnouncementEditor({ existing, onClose, onSaved }: { existing?: Announc
       <div className="go-live-audience" role="status">{audience.error || (audience.count === undefined ? 'Checking audience…' : `${audience.count} active ${audience.count === 1 ? 'employee' : 'employees'} will receive this announcement.`)}{audience.count === 0 && <p>No employees currently match. Change the audience or save a draft.</p>}</div>
       {existing?.status === 'published' && <p className="go-ann-note">Publishing changes sends a new notification and resets read and acknowledgment status for this version.</p>}
       {error && <p className="go-ann-error" role="alert">{error}</p>}
-      <footer><button type="button" onClick={closeEditor} disabled={busy}>Cancel</button>
-        {existing?.status !== 'published' && <button type="submit" data-status="draft" disabled={busy}>{busy ? 'Saving…' : 'Save draft'}</button>}
-        <button type="submit" data-status="published" className="go-ann-primary" disabled={busy || audience.count === 0 || audience.count === undefined || Boolean(audience.error)}>{busy ? 'Saving…' : existing?.status === 'published' ? 'Publish changes' : 'Publish announcement'}</button>
+      <footer><button type="button" onClick={closeEditor} disabled={busy || imageBusy}>Cancel</button>
+        {existing?.status !== 'published' && <button type="submit" data-status="draft" disabled={busy || imageBusy || incompleteAudience}>{busy ? 'Saving…' : 'Save draft'}</button>}
+        <button type="submit" data-status="published" className="go-ann-primary" disabled={busy || imageBusy || incompleteAudience || audience.count === 0 || audience.count === undefined || Boolean(audience.error)}>{busy ? 'Saving…' : existing?.status === 'published' ? 'Publish changes' : 'Publish announcement'}</button>
       </footer>
     </form>
   </Dialog>;
@@ -146,7 +190,7 @@ export function AnnouncementsView() {
       <div className="go-ann-list">{visible.map(item => <article key={item.id} className={`go-ann-card ${item.pinned ? 'is-pinned' : ''}`}>
         <div className="go-ann-tags"><span>{item.category}</span>{item.pinned && <span><Pin size={12} />Pinned</span>}{manage && <span>{item.status === 'published' && expired(item) ? 'Expired' : item.status}</span>}{!manage && !item.read_at && <span className="go-ann-unread">{item.revision > 1 ? 'Updated' : 'New'}</span>}{item.requires_acknowledgment && <span>{item.acknowledged_at ? 'Acknowledged' : 'Acknowledgment required'}</span>}</div>
         <button type="button" className="go-ann-title" disabled={busy} onClick={() => openLinked(item)}>{item.title}<ArrowRight size={18} /></button>
-        <p className="go-ann-excerpt">{item.message}</p><p className="go-ann-meta">{item.author_name} · {dateLabel(item.published_at || item.updated_at)}</p>
+        <p className="go-ann-excerpt">{item.message}</p><AnnouncementImage src={imageUrl(item)} alt={item.image_alt || 'Announcement image'} compact /><p className="go-ann-meta">{item.author_name} · {dateLabel(item.published_at || item.updated_at)}</p>
         {manage && <><p className="go-ann-meta">{audienceLabel(item)}{item.expires_at ? ` · Expires ${dateLabel(item.expires_at)}` : ''}</p><div className="go-ann-card-actions">{item.status !== 'archived' && <button type="button" onClick={() => setEditor(item)}><Pencil size={14} />Edit</button>}{item.published_at && <button type="button" onClick={() => setReport(item)}><Eye size={14} />Read report</button>}{item.status !== 'archived' && <button type="button" onClick={() => setArchive(item)}><Archive size={14} />Archive</button>}</div></>}
       </article>)}</div>}
     {editor && <AnnouncementEditor existing={editor === 'new' ? undefined : editor} onClose={() => setEditor(null)} onSaved={item => { setEditor(null); setFilter(item.status); void load(); void refreshNotifications(); }} />}

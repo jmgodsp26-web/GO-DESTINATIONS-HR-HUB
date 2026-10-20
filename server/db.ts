@@ -1,4 +1,4 @@
-import { AnnouncementError, announcementAudience, announcementVisible, validateAnnouncement } from './announcements.js';
+import { AnnouncementError, announcementAudience, announcementVisible, validateAnnouncement, decodeAnnouncementImage, type AnnouncementImage } from './announcements.js';
 import { OnboardingService, type OnboardingState } from './onboarding.js';
 import type { Announcement, AnnouncementView, AnnouncementReceipt, AnnouncementReport } from '../src/types.js';
 import { validateProfileStorage } from './profile-validation.js';
@@ -93,6 +93,7 @@ export class HRDatabase {
   private auditLogs: AuditLog[] = [];
   private notifications: NotificationItem[] = [];
   private announcements: Announcement[] = [];
+  private announcementImages: AnnouncementImage[] = [];
   private announcementReceipts: AnnouncementReceipt[] = [];
   private employeeDocuments: EmployeeDocument[] = [];
   private sessions: Map<string, SessionRecord> = new Map();
@@ -150,6 +151,7 @@ export class HRDatabase {
       auditLogs: this.auditLogs,
       notifications: this.notifications,
       announcements: this.announcements,
+      announcementImages: this.announcementImages,
       announcementReceipts: this.announcementReceipts,
       employeeDocuments: this.employeeDocuments,
       companySettings: this.companySettings,
@@ -166,6 +168,7 @@ export class HRDatabase {
     this.onboardingState = { templates: data.onboardingTemplates || [], plans: data.onboardingPlans || [], files: data.onboardingFiles || [], messages: data.onboardingMessages || [] };
     this.leaveAttachments = data.leaveAttachments || [];
     this.announcements = data.announcements || [];
+    this.announcementImages = data.announcementImages || [];
     this.announcementReceipts = data.announcementReceipts || [];
     this.loginAttempts = (data.loginAttempts || []).filter(row => row.expiresAt > Date.now());
     this.nextEmployeeNumber = Math.max(data.nextEmployeeNumber || 100, ...((data.users || []).map(u => Number(u.profile?.employee_id?.replace('HR-', '')) + 1).filter(Number.isFinite)));
@@ -2334,13 +2337,19 @@ export class HRDatabase {
     if (id && !current) throw new AnnouncementError('Announcement not found.', 404);
     if (current && current.revision !== expectedRevision) throw new AnnouncementError('This announcement changed. Refresh and reopen it before editing.', 409);
     if (current?.status === 'archived') throw new AnnouncementError('Archived announcements cannot be edited. Create a new announcement.');
-    const data = validateAnnouncement(input);
+    const { image_upload, ...data } = validateAnnouncement(input);
     if (current?.status === 'published' && data.status === 'draft') throw new AnnouncementError('Archive a published announcement to remove it from employee view.');
+    let image = image_upload === null ? null : current?.image || null;
+    const image_alt = data.image_alt ?? current?.image_alt ?? '';
+    if ((image_upload || image) && !image_alt) throw new AnnouncementError('Add a short image description for employees using screen readers.');
+    if (image_upload) image = { id: crypto.randomUUID(), name: image_upload.name, mime_type: decodeAnnouncementImage(image_upload.data).mime };
     const now = new Date().toISOString();
-    const next: Announcement = { ...data, id: current?.id || 'announcement-' + crypto.randomUUID(),
+    const next: Announcement = { ...data, image, image_alt: image ? image_alt : '', id: current?.id || 'announcement-' + crypto.randomUUID(),
       author_id: current?.author_id || user.id, author_name: current?.author_name || user.full_name,
       created_at: current?.created_at || now, updated_at: now, published_at: data.status === 'published' ? now : null,
       revision: (current?.revision || 0) + 1 };
+    if (image_upload && image) this.announcementImages.push({ id: image.id, data: image_upload.data });
+    if (current?.image && current.image.id !== image?.id) this.announcementImages = this.announcementImages.filter(i => i.id !== current.image!.id);
     if (current) this.announcements[this.announcements.indexOf(current)] = next;
     else this.announcements.push(next);
     // Replace obsolete notifications, including those for an audience that changed.
@@ -2356,6 +2365,15 @@ export class HRDatabase {
     this.logAudit({ action: next.status === 'published' ? 'Publish Announcement' : 'Save Announcement Draft', user_id: user.id, user_name: user.full_name, user_role: user.role,
       target_type: 'announcement', target_id: next.id, details: `Saved announcement revision ${next.revision}.` });
     return this.announcementView(next, user);
+  }
+
+  public getAnnouncementImage(actor: UserProfile, id: string, imageId: string) {
+    const user = this.announcementActor(actor);
+    const announcement = this.announcements.find(a => a.id === id && a.image?.id === imageId);
+    if (!announcement || (user.role !== 'admin' && !announcementVisible(announcement, user))) throw new AnnouncementError('Image not available.', 404);
+    const image = this.announcementImages.find(i => i.id === imageId);
+    if (!image?.data) throw new AnnouncementError('Image not available.', 404);
+    return { ...decodeAnnouncementImage(image.data), name: announcement.image!.name };
   }
 
   public archiveAnnouncement(actor: UserProfile, id: string, expectedRevision: unknown): AnnouncementView {
