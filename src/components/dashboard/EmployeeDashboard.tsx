@@ -25,11 +25,12 @@ export const EmployeeDashboard: React.FC<{ onNavigateTab: (tab: string) => void 
   const { sections, run } = useSections();
   const load = useCallback(() => {
     const today = getTodayDateString(user?.timezone);
-    void run('balances', () => api.getLeaveBalances(), setBalances);
-    void run('requests', () => api.getLeaveRequests({ scope: 'mine' }), setRequests);
-    void run('holidays', () => api.getHolidays({ country: employeeCalendar(user).country, is_active: true, upcoming_only: true, reference_date: today }), data => setHolidays(getUpcomingHolidays(data, { referenceDateStr: today, strictFutureOnly: false, userLocation: employeeCalendar(user) })));
-    void run('shifts', () => api.getHolidayShifts({ employee_id: user?.id }), setShifts);
-    void run('documents', () => api.getMyDocuments(), setDocuments);
+    const dashboard = api.getPersonalDashboard();
+    void run('balances', () => dashboard.then(data => data.balances), setBalances);
+    void run('requests', () => dashboard.then(data => data.requests), setRequests);
+    void run('holidays', () => dashboard.then(data => data.holidays), data => setHolidays(getUpcomingHolidays(data, { referenceDateStr: today, strictFutureOnly: false, userLocation: employeeCalendar(user) })));
+    void run('shifts', () => dashboard.then(data => data.shifts), setShifts);
+    void run('documents', () => dashboard.then(() => api.getMyDocuments()), setDocuments);
   }, [run, user?.id, user?.country, user?.holiday_calendar, user?.holiday_region, user?.timezone]);
   useEffect(load, [load]);
   if (!user) return null;
@@ -39,7 +40,7 @@ export const EmployeeDashboard: React.FC<{ onNavigateTab: (tab: string) => void 
   const paid = balances.filter(b => b.leave_type !== 'Unpaid Leave');
   const leaveLink = (r: LeaveRequest) => onNavigateTab(`personal/leave?request=${encodeURIComponent(r.id)}`);
   return <div className="go-dashboard go-employee-workspace go-personal-home space-y-6">
-    <div className="go-page-header"><PageHeading eyebrow="My workspace" title={`Hello, ${name}`} description="Your next steps, time off, and company updates." /><button className="go-button go-button-secondary" type="button" onClick={load} disabled={Object.values(sections).some(s => s.loading)}><RefreshCw size={16} />Refresh</button></div>
+    <div className="go-page-header"><PageHeading eyebrow="My workspace" title={`Hello, ${name}`} description="Your next steps, time off, and company updates." /><button className="go-button go-button-secondary" type="button" onClick={()=>{api.invalidateReadCache();load();}} disabled={Object.values(sections).some(s => s.loading)}><RefreshCw size={16} />Refresh</button></div>
     <section className="go-personal-banner" aria-label="Your profile and quick actions">
       <div className="go-personal-identity">{user.avatar_url?.trim() ? <img src={user.avatar_url} alt="" className="go-personal-avatar" /> : <span className="go-personal-avatar" aria-hidden="true">{user.full_name.split(' ').map(n=>n[0]).slice(0,2).join('')}</span>}<div><strong>{user.full_name}</strong><p>{[user.job_title,user.department].filter(Boolean).join(' · ')}</p></div></div>
       <div className="go-personal-actions"><button id="dashboard-request-leave-btn" type="button" disabled={!sections.balances?.ready || Boolean(sections.balances?.error)} onClick={()=>setLeaveOpen(true)} className="go-button go-button-accent"><Plus size={16} />Request leave</button><button type="button" disabled={!sections.holidays?.ready || Boolean(sections.holidays?.error)} onClick={()=>{setShiftHoliday(undefined);setShiftOpen(true);}} className="go-button go-button-inverse"><Briefcase size={16} />Holiday shift</button><button type="button" onClick={()=>onNavigateTab('leave')} className="go-button go-button-inverse"><History size={16} />My requests</button></div>

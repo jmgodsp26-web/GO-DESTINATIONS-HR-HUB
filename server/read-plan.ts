@@ -3,6 +3,10 @@ import { createHash } from 'node:crypto';
 // Only reviewed GET handlers use a reduced collection set. New/unknown routes
 // retain the full store until their dependencies have been checked.
 export const READ_TABLES = {
+  '/dashboard/personal': ['leaveBalances', 'leaveRequests', 'holidays', 'holidayShifts'],
+  '/dashboard/administration': ['leaveBalances', 'leaveRequests', 'holidays'],
+  '/onboarding/summary': ['onboardingPlans'],
+  '/leave-attachments': ['leaveAttachments'],
   '/auth/me': [],
   '/profile': [],
   '/settings': [],
@@ -26,16 +30,34 @@ export const READ_TABLES = {
 
 export type ReadTable = 'users' | 'sessions' | typeof READ_TABLES[keyof typeof READ_TABLES][number];
 export interface ReadPlan { sessionId: string; tables?: ReadTable[]; }
+export const sessionIdFor = (token: string) => createHash('sha256').update(token).digest('hex');
 
 export function readPlanFor(method: string, pathname: string, token: string): ReadPlan | undefined {
   if (!['GET', 'HEAD'].includes(method) || !token) return undefined;
   const route = pathname.replace(/\/+$/, '').toLowerCase();
   const key = /^\/holiday-coverage\/[^/]+$/.test(route) ? '/holiday-coverage'
+    : /^\/leave-attachments\/[^/]+$/.test(route) ? '/leave-attachments'
     : /^\/documents\/[^/]+\/file$/.test(route) || /^\/admin\/employees\/[^/]+\/documents$/.test(route) ? '/documents'
     : /^\/announcements\/[^/]+\/report$/.test(route) ? '/announcements' : route;
   const dependencies = READ_TABLES[key as keyof typeof READ_TABLES];
   return {
-    sessionId: createHash('sha256').update(token).digest('hex'),
+    sessionId: sessionIdFor(token),
     ...(dependencies ? { tables: ['users', 'sessions', ...dependencies] } : {}),
   };
+}
+
+// Reviewed business operations still acquire the metadata serialization barrier,
+// but do not need unrelated documents, onboarding or announcement collections.
+const LEAVE_TABLES = ['users', 'sessions', 'leaveBalances', 'leaveRequests', 'leaveTransactions', 'holidays', 'leaveAttachments', 'auditLogs', 'notifications'] as const;
+export function writeTablesFor(method: string, pathname: string) {
+  const route = pathname.replace(/\/+$/, '').toLowerCase();
+  if ((method === 'POST' && route === '/leave-requests') ||
+      (method === 'PATCH' && /^\/leave-requests\/[^/]+\/(review|cancel)$/.test(route)) ||
+      (method === 'DELETE' && /^\/leave-requests\/[^/]+$/.test(route))) return [...LEAVE_TABLES];
+  if (method === 'POST' && route === '/holidays') return ['users', 'sessions', 'holidays', 'auditLogs'] as const;
+  if (method === 'PATCH' && /^\/holidays\/[^/]+(?:\/toggle-active)?$/.test(route)) return ['users', 'sessions', 'holidays', 'holidayShifts', 'auditLogs'] as const;
+  if ((method === 'POST' && /^\/admin\/employees\/[^/]+\/documents$/.test(route)) ||
+      (method === 'DELETE' && /^\/admin\/employees\/[^/]+\/documents\/[^/]+$/.test(route))) return ['users', 'sessions', 'employeeDocuments'] as const;
+  if (method === 'PATCH' && route === '/settings') return ['users', 'sessions'] as const;
+  return undefined;
 }
