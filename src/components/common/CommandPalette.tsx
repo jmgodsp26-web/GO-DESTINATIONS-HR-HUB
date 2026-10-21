@@ -1,3 +1,4 @@
+import { Dialog } from './Dialog';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -54,6 +55,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const { isAdministration: isAdmin } = useWorkspace();
 
@@ -61,7 +63,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     if (isOpen) {
       setQuery('');
       setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      const timer = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
@@ -275,6 +278,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     );
   });
 
+  useEffect(() => {
+    if (isOpen) {
+      resultsRef.current?.querySelector<HTMLElement>(`[data-command-index="${selectedIndex}"]`)
+        ?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [selectedIndex, query, isOpen]);
+
   // Handle keyboard arrow navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -288,17 +298,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       if (filteredCommands[selectedIndex]) {
         filteredCommands[selectedIndex].action();
       }
-    } else if (e.key === 'Escape') {
-      onClose();
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <Dialog title="Find a page or action" onClose={onClose} className="max-w-xl">
       <div
-        className="w-full max-w-xl go-surface bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden animate-in zoom-in-95 duration-150"
+        className="w-full bg-white overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar */}
@@ -307,6 +315,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           <input
             ref={inputRef}
             type="text"
+            aria-label="Find a page or action"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -319,21 +328,27 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {query && (
             <button
               type="button"
-              onClick={() => setQuery('')}
+              aria-label="Clear search"
+              onClick={() => { setQuery(''); setSelectedIndex(0); inputRef.current?.focus(); }}
               className="p-1 text-slate-400 hover:text-slate-600 rounded"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
           <div className="flex items-center space-x-1 pl-2 ml-2 border-l border-slate-200 shrink-0">
-            <kbd className="px-1.5 py-0.5 text-[12px] font-mono text-slate-400 bg-white border border-slate-200 rounded shadow-2xs">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close search (Escape)"
+              className="px-1.5 py-0.5 text-[12px] font-mono text-slate-600 bg-white border border-slate-200 rounded shadow-2xs hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-[#3A5D83]"
+            >
               ESC
-            </kbd>
+            </button>
           </div>
         </div>
 
         {/* Results List */}
-        <div className="max-h-96 overflow-y-auto p-2 divide-y divide-slate-100">
+        <div ref={resultsRef} className="max-h-96 overflow-y-auto p-2 divide-y divide-slate-100">
           {filteredCommands.length === 0 ? (
             <div className="py-12 text-center text-xs text-slate-400">
               <Search className="w-6 h-6 mx-auto text-slate-300 mb-2" />
@@ -346,11 +361,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               const isSelected = idx === selectedIndex;
 
               return (
-                <div
+                <button
+                  type="button"
                   key={cmd.id}
+                  data-command-index={idx}
                   onClick={cmd.action}
+                  onFocus={() => setSelectedIndex(idx)}
                   onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`px-3 py-2.5 rounded-xl cursor-pointer flex items-center justify-between transition-colors ${
+                  className={`w-full text-left focus-visible:outline-2 focus-visible:outline-[#3A5D83] px-3 py-2.5 rounded-xl cursor-pointer flex items-center justify-between transition-colors ${
                     isSelected
                       ? 'bg-[#3A5D83]/10 text-[#3A5D83]'
                       : 'hover:bg-slate-50 text-slate-700'
@@ -395,7 +413,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                       <ArrowRight className="w-3.5 h-3.5" />
                     </div>
                   )}
-                </div>
+                </button>
               );
             })
           )}
@@ -414,6 +432,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           <span className="text-slate-400 font-medium">HR Hub Quick Jump</span>
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 };

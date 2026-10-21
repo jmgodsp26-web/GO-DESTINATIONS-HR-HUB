@@ -5,12 +5,27 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { createServer } from 'node:net';
+import { api } from '../src/services/api.ts';
 test('HTTP workflow lifecycle, privacy, attachments and persistence', async () => {
 const repo=fileURLToPath(new URL('..',import.meta.url));
 const dir=await mkdtemp(tmpdir()+'/hr-http-audit-');
 const socket=createServer();await new Promise(r=>socket.listen(0,'127.0.0.1',r));const port=socket.address().port;await new Promise(r=>socket.close(r));
 const child=spawn(process.execPath,['build/server.cjs'],{cwd:repo,env:{...process.env,NODE_ENV:'test',HR_TEST_STORE:dir+'/store.json',PORT:String(port),INITIAL_ADMIN_EMAIL:'admin@example.test',INITIAL_ADMIN_PASSWORD:'Isolated-Audit-Temporary-938!'},stdio:'ignore'});
 const results=[];
+// Exercise the real browser API against the isolated test server, including its HTTP method.
+// Supply the test session cookie that a browser would normally send automatically.
+async function cancelFromClient(id, cookie) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (input, options = {}) => {
+    assert.equal(typeof input, 'string');
+    assert.ok(input.startsWith('/api/leave-requests/'));
+    const headers = new Headers(options.headers);
+    if (cookie) headers.set('Cookie', cookie);
+    return originalFetch(new URL(input, `http://127.0.0.1:${port}`), { ...options, headers });
+  };
+  try { return await api.cancelLeaveRequest(id); }
+  finally { globalThis.fetch = originalFetch; }
+}
 async function check(name,fn){await fn();results.push({name,status:'PASS'});}
 async function call(path,method='GET',body,cookie){const r=await fetch(`http://127.0.0.1:${port}${path}`,{method,headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});return {status:r.status,cookie:r.headers.get('set-cookie')?.split(';')[0],data:await r.json()};}
 async function sign(email,password){const r=await call('/api/auth/login','POST',{identifier:email,password});assert.equal(r.status,200);return r.cookie;}
@@ -40,7 +55,7 @@ try{
  let created;
  await check('HTTP leave submission persists Pending',async()=>{created=await call('/api/leave-requests','POST',request(),employee.cookie);assert.equal(created.status,201);assert.equal(created.data.status,'Pending');assert.equal((await call('/api/leave-requests','GET',undefined,employee.cookie)).data.length,1);});
  await check('HTTP approval deducts one day',async()=>{assert.equal((await call(`/api/leave-requests/${created.data.id}/review`,'PATCH',{action:'Approved'},admin)).status,200);assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,1);});
- await check('HTTP cancellation refunds one day',async()=>{assert.equal((await call(`/api/leave-requests/${created.data.id}/cancel`,'PATCH',{},employee.cookie)).status,200);assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,0);});
+ await check('HTTP cancellation refunds one day',async()=>{assert.equal((await cancelFromClient(created.data.id,employee.cookie)).status,'Cancelled');assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,0);});
  await check('HTTP invalid review action denied',async()=>assert.equal((await call(`/api/leave-requests/${created.data.id}/review`,'PATCH',{action:'Invalid'},admin)).status,400));
  await check('HTTP concurrent duplicate submission commits only once',async()=>{const responses=await Promise.all([1,2].map(()=>call('/api/leave-requests','POST',request('2026-10-15'),employee.cookie)));assert.deepEqual(responses.map(r=>r.status).sort(),[201,400]);});
  await check('employee cannot read others balances',async()=>{const r=await call(`/api/leave-balances?employee_id=${other.id}`,'GET',undefined,employee.cookie);assert.ok(r.data.every(b=>b.employee_id===employee.id));});
@@ -70,7 +85,21 @@ try{
    assert.equal((await call(r.data.attachment_url,'GET',undefined,other.cookie)).status,404);assert.equal((await call(r.data.attachment_url)).status,401);
  });
  await check('missing or unsafe document rejected',async()=>{for(const file_data of [undefined,{},'data:text/html;base64,aGVsbG8='])assert.equal((await call(`/api/admin/employees/${employee.id}/documents`,'POST',{name:'bad-file',file_data},admin)).status,400);});
+ await check('browser client cancels pending leave without changing PTO and rejects unauthorized or repeated cancellation',async()=>{
+   const before=await call('/api/leave-balances','GET',undefined,employee.cookie);
+   const pending=await call('/api/leave-requests','POST',request('2026-11-03'),employee.cookie);
+   assert.equal(pending.status,201);assert.equal(pending.data.status,'Pending');
+   await assert.rejects(()=>cancelFromClient(pending.data.id,other.cookie),/Unauthorized/);
+   const cancelled=await cancelFromClient(pending.data.id,employee.cookie);
+   assert.equal(cancelled.id,pending.data.id);assert.equal(cancelled.status,'Cancelled');
+   const saved=await call('/api/leave-requests?scope=mine','GET',undefined,employee.cookie);
+   assert.equal(saved.data.find(r=>r.id===pending.data.id).status,'Cancelled');
+   await assert.rejects(()=>cancelFromClient(pending.data.id,employee.cookie),/already been cancelled/);
+   await assert.rejects(()=>cancelFromClient('missing-request',employee.cookie),/not found/);
+   const after=await call('/api/leave-balances','GET',undefined,employee.cookie);
+   assert.deepEqual(after.data.map(b=>[b.id,b.allocated_days,b.used_days]),before.data.map(b=>[b.id,b.allocated_days,b.used_days]));
+ });
  await check('bodyless logout works and invalidates session',async()=>{assert.equal((await call('/api/auth/logout','POST',undefined,employee.cookie)).status,200);assert.equal((await call('/api/auth/me','GET',undefined,employee.cookie)).status,401);});
 }finally{const exited=new Promise(r=>child.once('exit',r));child.kill();await exited;await rm(dir,{recursive:true,force:true});}
-assert.equal(results.length,23);
+assert.equal(results.length,24);
 });

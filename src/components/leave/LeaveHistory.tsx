@@ -47,6 +47,9 @@ export const LeaveHistory: React.FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
   const [cancellingRequest, setCancellingRequest] = useState<LeaveRequest | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState('');
+
+  useEffect(() => { setCancelError(''); }, [cancellingRequest?.id]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true); setLoadError('');
@@ -77,19 +80,23 @@ export const LeaveHistory: React.FC = () => {
     if (request) { setSelectedRequest(request); setActiveView('requests'); }
   }, [linkedRequest, hasLoaded]);
   const handleConfirmCancelLeave = async () => {
-    if (!cancellingRequest) return;
+    if (!cancellingRequest || isCancelling) return;
+    setCancelError('');
     setIsCancelling(true);
     try {
-      await api.cancelLeaveRequest(cancellingRequest.id);
+      const cancelled = await api.cancelLeaveRequest(cancellingRequest.id);
+      setRequests(current => current.map(request => request.id === cancelled.id ? cancelled : request));
       showToast({
         type: 'info',
         title: 'Leave Request Cancelled',
-        message: 'Your pending leave request has been cancelled. Your balance was not deducted.',
+        message: 'Your leave request has been cancelled. Your PTO balance is unchanged.',
       });
       setCancellingRequest(null);
       setSelectedRequest(null);
+      if (linkedRequest) navigate('personal/leave');
       await loadData();
     } catch (err: any) {
+      setCancelError(err.message || 'Could not cancel leave request. Please try again.');
       showToast({
         type: 'error',
         title: 'Cancellation Failed',
@@ -730,11 +737,12 @@ export const LeaveHistory: React.FC = () => {
                 </span>?
               </p>
               <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[12px] text-slate-500 space-y-1">
-                <p><strong>Allocated days:</strong> {cancellingRequest.total_days} day(s)</p>
+                <p><strong>Requested days:</strong> {cancellingRequest.total_days} day(s)</p>
                 <p className="text-emerald-700 font-medium">
-                  Pending requests do not deduct leave. Your balance will stay the same.
+                  This request is not yet approved. No PTO has been deducted.
                 </p>
               </div>
+              {cancelError && <p role="alert" className="text-xs text-rose-700">{cancelError}</p>}
               <div className="flex items-center justify-end space-x-2.5 pt-1">
                 <button
                   type="button"
