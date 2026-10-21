@@ -10,7 +10,10 @@ import rateLimit from 'express-rate-limit';
 import { createServer as createViteServer } from 'vite';
 import { db } from './server/db.js';
 import { transact, initializeDatabase } from './server/persistence.js';
-import { readPlanFor } from './server/read-plan.js';
+import { readPlanFor, writeTablesFor, sessionIdFor } from './server/read-plan.js';
+import { personalDashboard, administrationDashboard } from './server/dashboard.js';
+import { compressedAssets } from './server/assets.js';
+import { sendJson } from './server/json-response.js';
 import { withDatabase } from './server/request-context.js';
 import { getFirestoreDb } from './server/firestore.js';
 import { UserProfile } from './src/types.js';
@@ -112,11 +115,18 @@ app.use('/api', async (req: Request, res: Response) => {
     return res.status(401).json({ error: 'Authentication required. Please log in.' });
   }
   const originalUrl = req.url;
+  const requestStarted = performance.now();
   const send = res.send.bind(res);
   const json = res.json.bind(res);
   const end = res.end.bind(res);
   const initialHeaders = res.getHeaders();
   const readPlan = readPlanFor(req.method, req.path, sessionToken(req));
+  const writeTables = writeTablesFor(req.method, req.path);
+  const writeSessionId = writeTables ? sessionIdFor(sessionToken(req)) : undefined;
+  const writeLeaveRequestId = writeTables && /^\/leave-requests\/([^/]+)(?:\/(?:review|cancel))?\/?$/.exec(req.path)?.[1];
+  const employeeDocumentId = /^\/documents\/([^/]+)\/file\/?$/.exec(req.path)?.[1];
+  const leaveAttachmentId = /^\/leave-attachments\/([a-f0-9-]{36})\/?$/.exec(req.path)?.[1];
+  const legacyDocuments = /^\/(?:my-documents|admin\/employees\/[^/]+\/documents)\/?$/.test(req.path) && ['GET', 'HEAD'].includes(req.method);
   try {
     const onboardingFileId = /^\/onboarding\/files\/([a-f0-9-]{36})\/?$/.exec(req.path)?.[1];
     const announcementImageId = /^\/announcements\/announcement-[a-f0-9-]{36}\/images\/([a-f0-9-]{36})\/?$/.exec(req.path)?.[1];
@@ -136,11 +146,12 @@ app.use('/api', async (req: Request, res: Response) => {
         apiRouter(req, res, (error?: any) => { if (error) reject(error); else { res.statusCode = 404; capture('json', { error: 'API route not found.' }); } });
       }));
       return { result: reply, commit: reply.status < 400 || (req.path === '/api/auth/login' && [401, 403, 429].includes(reply.status)) };
-    }, { onboardingFileId, announcementImageId, readPlan });
+    }, { onboardingFileId, announcementImageId, employeeDocumentId, leaveAttachmentId, legacyDocuments, readPlan, writeTables, writeSessionId, writeLeaveRequestId: writeLeaveRequestId || undefined });
     res.send = send; res.json = json; res.end = end as any;
     res.status(outcome.status);
     for (const [header, value] of Object.entries(outcome.headers)) if (value !== undefined) res.setHeader(header, value);
-    if (outcome.kind === 'json') json(outcome.body);
+    res.setHeader('Server-Timing', `app;dur=${(performance.now() - requestStarted).toFixed(1)}`);
+    if (outcome.kind === 'json') await sendJson(req, res, outcome.body);
     else if (outcome.kind === 'send') send(outcome.body);
     else end(outcome.body);
   } catch (error) {
@@ -182,6 +193,8 @@ function adminOnlyMiddleware(req: AuthenticatedRequest, res: Response, next: Nex
 }
 
 // --- API ROUTES ---
+apiRouter.get('/api/dashboard/personal', authMiddleware, (req: AuthenticatedRequest, res) => res.json(personalDashboard(db, req.user!)));
+apiRouter.get('/api/dashboard/administration', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => res.json(administrationDashboard(db, req.user!)));
 
 // Health & System Status
 apiRouter.get('/api/health', (_req: Request, res: Response) => {
@@ -866,7 +879,7 @@ async function start() {
     });
     // Vite filenames contain content hashes. Cache those assets across visits;
     // HTML and authenticated API responses continue to revalidate/no-store.
-    app.use('/assets', express.static(path.join(distPath, 'assets'), { index: false, fallthrough: false, maxAge: '1y', immutable: true }));
+    app.use('/assets', compressedAssets(path.join(distPath, 'assets')), express.static(path.join(distPath, 'assets'), { index: false, fallthrough: false, maxAge: '1y', immutable: true }));
     for (const file of ['browser-compat.js', 'logo.jpg']) {
       app.get('/' + file, (_req, res) => res.sendFile(path.join(distPath, file)));
     }

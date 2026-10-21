@@ -42,20 +42,26 @@ try {
   let ready = false;
   for (let i = 0; i < 100; i++) { try { await call('/api/health'); ready = true; break; } catch {} await new Promise(r => setTimeout(r, 100)); }
   assert.ok(ready, 'Local test server did not start');
-  for (const users of [3, 30, 90]) {
+  for (const users of [3, 30, 90]) for (const combined of [false, true]) {
     const durations = [], started = performance.now();
     await Promise.all(Array.from({ length: users }, async (_, i) => {
-      const [profile, balances, leave, holidays] = await Promise.all([
-        call('/api/profile', i), call('/api/leave-balances?scope=mine', i), call('/api/leave-requests?scope=mine', i), call('/api/holidays', i),
-      ]);
-      assert.equal(profile.data.id, `capacity-${i}`);
-      assert.ok(balances.data.every(b => b.employee_id === profile.data.id));
-      assert.ok(leave.data.every(r => r.employee_id === profile.data.id));
-      assert.match(profile.headers.get('cache-control'), /no-store/);
-      durations.push(...[profile, balances, leave, holidays].map(r => r.ms));
+      const start = performance.now();
+      if (combined) {
+        const dashboard = await call('/api/dashboard/personal', i);
+        assert.ok(dashboard.data.balances.every(b => b.employee_id === `capacity-${i}`));
+        assert.ok(dashboard.data.requests.every(r => r.employee_id === `capacity-${i}`));
+        assert.match(dashboard.headers.get('cache-control'), /no-store/);
+      } else {
+        const [balances, leave] = await Promise.all([
+          call('/api/leave-balances?scope=mine', i), call('/api/leave-requests?scope=mine', i), call('/api/holidays', i), call('/api/holiday-shifts?employee_id=capacity-' + i, i),
+        ]);
+        assert.ok(balances.data.every(b => b.employee_id === `capacity-${i}`));
+        assert.ok(leave.data.every(r => r.employee_id === `capacity-${i}`));
+      }
+      durations.push(performance.now() - start);
     }));
     durations.sort((a, b) => a - b);
-    timings.push({ users, requests: durations.length, failures: 0, p50_ms: Math.round(durations[Math.ceil(durations.length * .5) - 1]), p95_ms: Math.round(durations[Math.ceil(durations.length * .95) - 1]), total_ms: Math.round(performance.now() - started) });
+    timings.push({ mode: combined ? 'combined dashboard' : 'separate core requests', users, requests: users * (combined ? 1 : 4), failures: 0, p50_dashboard_ms: Math.round(durations[Math.ceil(durations.length * .5) - 1]), p95_dashboard_ms: Math.round(durations[Math.ceil(durations.length * .95) - 1]), total_ms: Math.round(performance.now() - started) });
   }
   const holiday = await call('/api/holidays', 0, 'POST', { name: 'Synthetic capacity holiday', date: '2027-01-04', country: 'Philippines' });
   assert.equal(holiday.data.name, 'Synthetic capacity holiday');

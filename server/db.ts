@@ -2490,8 +2490,8 @@ export class HRDatabase {
     const current = this.announcementActor(actor, all || Boolean(employeeId && employeeId !== actor.id));
     return this.employeeDocuments.filter(d => all || d.employee_id === (employeeId || current.id))
       .sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at)).map(({ file_data, ...doc }) => ({ ...doc,
-        file_available: Boolean(file_data), mime_type: file_data?.match(/^data:([^;]+);/)?.[1],
-        ...(file_data ? { file_url: `/api/documents/${encodeURIComponent(doc.id)}/file` } : {}) }));
+        file_available: doc.file_available ?? Boolean(file_data), mime_type: doc.mime_type || file_data?.match(/^data:([^;]+);/)?.[1],
+        ...((doc.file_available ?? Boolean(file_data)) ? { file_url: `/api/documents/${encodeURIComponent(doc.id)}/file` } : {}) }));
   }
   public documentFile(actor: UserProfile, id: string): EmployeeDocument {
     const user = this.announcementActor(actor);
@@ -2521,6 +2521,8 @@ export class HRDatabase {
       category: doc.category,
       file_size: doc.file_size,
       file_data: doc.file_data,
+      file_available: Boolean(doc.file_data),
+      mime_type: doc.file_data?.match(/^data:([^;]+);/)?.[1],
       uploaded_at: new Date().toISOString(),
       uploaded_by_name: doc.uploaded_by_name,
     };

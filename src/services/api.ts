@@ -1,4 +1,6 @@
 import type { AnnouncementInput, AnnouncementView, AnnouncementReport } from '../types';
+import type { PersonalDashboardData, AdministrationDashboardData } from '../types/dashboard';
+import { createReadCache } from './readCache';
 import type { OnboardingAssignmentInput, OnboardingPlanView, OnboardingSummary, OnboardingTemplate, OnboardingTemplateInput } from '../types/onboarding';
 import {
   UserProfile,
@@ -23,7 +25,14 @@ import {
 // Authentication credentials live only in the server-issued HttpOnly cookie.
 try { localStorage.removeItem('hr_portal_auth_token'); sessionStorage.removeItem('hr_portal_auth_token'); } catch {}
 
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+const reads = createReadCache();
+if (typeof window !== 'undefined') {
+  window.addEventListener('auth:expired', () => reads.reset());
+  window.addEventListener('focus', () => reads.clear());
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) reads.clear(); });
+}
+
+async function send<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -39,6 +48,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (!response.ok) {
     if (response.status === 401) {
+      reads.reset();
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('auth:expired', { detail: { message: data.error } }));
       }
@@ -49,7 +59,22 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   return data as T;
 }
 
+async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  if ((options.method || 'GET').toUpperCase() === 'GET') {
+    // Only dashboard responses are retained briefly for a return visit. Other
+    // reads just share an identical in-flight request and always fetch afresh.
+    return reads.read(endpoint, () => send<T>(endpoint, options), endpoint.startsWith('/api/dashboard/') ? 5000 : 0);
+  }
+  const authentication = /^\/api\/auth\/(login|logout|change-password)$/.test(endpoint);
+  if (authentication) reads.reset(); else reads.clear();
+  try { return await send<T>(endpoint, options); }
+  finally { if (authentication) reads.reset(); else reads.clear(); }
+}
+
 export const api = {
+  invalidateReadCache() { reads.clear(); },
+  getPersonalDashboard(): Promise<PersonalDashboardData> { return request('/api/dashboard/personal'); },
+  getAdministrationDashboard(): Promise<AdministrationDashboardData> { return request('/api/dashboard/administration'); },
   getOnboardingSummary(): Promise<OnboardingSummary> { return request('/api/onboarding/summary'); },
   getOnboardingTemplates(): Promise<OnboardingTemplate[]> { return request('/api/onboarding/templates'); },
   saveOnboardingTemplate(input: OnboardingTemplateInput, existing?: OnboardingTemplate): Promise<OnboardingTemplate> {

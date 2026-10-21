@@ -35,6 +35,7 @@ export interface PersistentData {
 // A new namespace deliberately leaves the former project's collections untouched.
 const PREFIX = 'hr_v2_';
 const TABLES = ['users', 'leaveAttachments', 'leaveBalances', 'leaveRequests', 'leaveTransactions', 'holidays', 'holidayShifts', 'auditLogs', 'announcements', 'announcementImages', 'announcementReceipts', 'notifications', 'employeeDocuments', 'sessions', 'loginAttempts', 'onboardingTemplates', 'onboardingPlans', 'onboardingFiles', 'onboardingMessages'] as const;
+const DOCUMENT_FIELDS = ['id', 'employee_id', 'name', 'category', 'file_size', 'uploaded_at', 'uploaded_by_name', 'file_available', 'mime_type'];
 const clean = (value: any) => JSON.parse(JSON.stringify(value));
 const rows = (data: PersistentData, table: typeof TABLES[number]): Map<string, any> => new Map(
   table === 'sessions' ? (data.sessions || []).map(([id, value]) => [id, value]) : ((data as any)[table] || []).map((row: any) => [row.id, row])
@@ -46,7 +47,12 @@ function metadata(data: PersistentData) {
 // Test-only file persistence exercises restarts without cloud credentials. Never enabled in production.
 let testQueue = Promise.resolve();
 type Operation<T> = (database: HRDatabase) => Promise<{ result: T; commit: boolean }>;
-interface TransactionOptions { onboardingFileId?: string; announcementImageId?: string; readPlan?: ReadPlan; }
+interface TransactionOptions {
+  onboardingFileId?: string; announcementImageId?: string;
+  employeeDocumentId?: string; leaveAttachmentId?: string; legacyDocuments?: boolean;
+  writeSessionId?: string; writeLeaveRequestId?: string;
+  readPlan?: ReadPlan; writeTables?: readonly typeof TABLES[number][];
+}
 export async function transact<T>(operation: Operation<T>, options: TransactionOptions = {}): Promise<T> {
   if (process.env.HR_TEST_STORE) {
     if (process.env.NODE_ENV !== 'test') throw new Error('Test storage is forbidden outside NODE_ENV=test.');
@@ -77,17 +83,57 @@ export async function transact<T>(operation: Operation<T>, options: TransactionO
 // Export the real Firestore adapter so regression tests can verify reads and
 // writes without touching production or using cloud credentials.
 export async function transactFirestore<T>(firestore: Firestore, operation: Operation<T>, options: TransactionOptions = {}): Promise<T> {
-  const tables = options.readPlan?.tables || TABLES;
+  const tables = options.readPlan?.tables || options.writeTables || TABLES;
   return firestore.runTransaction(async tx => {
     const metaRef = firestore.doc(PREFIX + 'meta/state');
-    const meta = await tx.get(metaRef);
-    if (options.readPlan && !meta.exists) throw new Error('Database initialization marker missing.');
+    const [meta, writeSession, writeRequest] = await Promise.all([
+      tx.get(metaRef),
+      options.writeSessionId ? tx.get(firestore.collection(PREFIX + 'sessions').doc(options.writeSessionId)) : undefined,
+      options.writeLeaveRequestId ? tx.get(firestore.collection(PREFIX + 'leaveRequests').doc(options.writeLeaveRequestId)) : undefined,
+    ]);
+    const leaveEmployeeId = writeRequest?.data()?.employee_id || writeSession?.data()?.userId;
+    if ((options.readPlan || options.writeTables) && !meta.exists) throw new Error('Database initialization marker missing.');
+    const documentBackfills: { id: string; file_available: boolean; mime_type?: string }[] = [];
     // Onboarding blobs are fetched only for an explicit file request. Ordinary
     // HR transactions read metadata, keeping file bytes out of every page load.
     const snapshots = await Promise.all(tables.map(async table => {
+      if (table === 'sessions' && options.writeSessionId) return { docs: writeSession?.exists ? [writeSession] : [], empty: !writeSession?.exists };
       if (table === 'sessions' && options.readPlan) {
         const session = await tx.get(firestore.collection(PREFIX + table).doc(options.readPlan.sessionId));
         return { docs: session.exists ? [session] : [], empty: !session.exists };
+      }
+      if (options.writeTables) {
+        // Reviewed handlers only append these records. No history read is
+        // necessary, and diffing an empty input cannot delete older entries.
+        if (['auditLogs', 'leaveTransactions', 'leaveAttachments'].includes(table)) return { docs: [], empty: true };
+        if (table === 'leaveRequests' && options.writeLeaveRequestId) return { docs: writeRequest?.exists ? [writeRequest] : [], empty: !writeRequest?.exists };
+        if (leaveEmployeeId && (table === 'leaveRequests' || table === 'leaveBalances')) return tx.get(firestore.collection(PREFIX + table).where('employee_id', '==', leaveEmployeeId));
+      }
+      if (table === 'employeeDocuments' && options.employeeDocumentId) {
+        const file = await tx.get(firestore.collection(PREFIX + table).doc(options.employeeDocumentId));
+        return { docs: file.exists ? [file] : [], empty: !file.exists };
+      }
+      if (table === 'leaveAttachments') {
+        if (options.leaveAttachmentId) {
+          const file = await tx.get(firestore.collection(PREFIX + table).doc(options.leaveAttachmentId));
+          return { docs: file.exists ? [file] : [], empty: !file.exists };
+        }
+        return tx.get(firestore.collection(PREFIX + table).select('id', 'employee_id', 'name'));
+      }
+      if (table === 'employeeDocuments' && !options.legacyDocuments) {
+        const list = await tx.get(firestore.collection(PREFIX + table).select(...DOCUMENT_FIELDS));
+        const docs = await Promise.all(list.docs.map(async doc => {
+          const data = doc.data();
+          if (typeof data.file_available === 'boolean') return doc;
+          // Old records are annotated on their first successful read. Merge only
+          // availability/MIME fields; the original confidential bytes stay intact.
+          const original = (await tx.get(doc.ref)).data();
+          const file_available = Boolean(original?.file_data);
+          const mime_type = typeof original?.file_data === 'string' ? original.file_data.match(/^data:([^;]+);/)?.[1] : undefined;
+          documentBackfills.push({ id: doc.id, file_available, ...(mime_type ? { mime_type } : {}) });
+          return { id: doc.id, data: () => ({ ...data, file_available, ...(mime_type ? { mime_type } : {}) }) };
+        }));
+        return { docs, empty: list.empty };
       }
       return tx.get(table === 'onboardingFiles'
       ? firestore.collection(PREFIX + table).select('id', 'plan_id', 'task_id', 'name', 'mime_type', 'uploaded_at', 'uploaded_by')
@@ -133,6 +179,10 @@ export async function transactFirestore<T>(firestore: Firestore, operation: Oper
           if (JSON.stringify(oldRows.get(id)) !== JSON.stringify(next)) tx.set(firestore.collection(PREFIX + table).doc(id), next);
         }
         for (const id of oldRows.keys()) if (!newRows.has(id)) tx.delete(firestore.collection(PREFIX + table).doc(id));
+      }
+      const retainedDocuments = rows(after, 'employeeDocuments');
+      for (const { id, ...fields } of documentBackfills.slice(0, 100)) {
+        if (retainedDocuments.has(id)) tx.set(firestore.collection(PREFIX + 'employeeDocuments').doc(id), fields, { merge: true });
       }
     }
     return outcome.result;

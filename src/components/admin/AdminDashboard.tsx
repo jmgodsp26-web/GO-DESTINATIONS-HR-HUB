@@ -49,10 +49,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
   const [isAssigningShift, setIsAssigningShift] = useState(false);
 
   const loadData = useCallback(() => {
-    void run('employees', api.getAllEmployees, setEmployees);
-    void run('requests', () => api.getLeaveRequests(), setRequests);
-    void run('holidays', () => api.getHolidays(), setHolidays);
-    void run('coverage', () => api.getAllHolidayCoverage({ upcoming_only: true, reference_date: getTodayDateString(user?.timezone) }), setHolidayCoverages);
+    const dashboard = api.getAdministrationDashboard();
+    void run('employees', () => dashboard.then(data => data.employees), setEmployees);
+    void run('requests', () => dashboard.then(data => data.requests), setRequests);
+    void run('holidays', () => dashboard.then(data => data.holidays), setHolidays);
+    // Show the useful summary before calculating the larger staffing view.
+    void run('coverage', () => dashboard.then(() => api.getAllHolidayCoverage({ upcoming_only: true, reference_date: getTodayDateString(user?.timezone) })), setHolidayCoverages);
   }, [run, user?.timezone]);
 
   useEffect(() => {
@@ -176,7 +178,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
 
 
-      <DataRegion state={sections.requests} label="pending requests" onRetry={loadData}>
+      <DataRegion state={sections.requests} label="pending requests" onRetry={()=>{api.invalidateReadCache();loadData();}}>
 {/* 4. Quick Approval Queue */}
       <div className="go-review-queue go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-200/70 flex items-center justify-between bg-slate-50/50">
@@ -278,12 +280,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
       </div>
 
       </DataRegion>
-      <DataRegion state={sections.coverage} label="holiday coverage" onRetry={loadData}>
+      <DataRegion state={sections.coverage} label="holiday coverage" onRetry={()=>{api.invalidateReadCache();loadData();}}>
 {/* 3. Upcoming Holidays & Shifts Section */}
-      <DataRegion state={sections.employees} label="employees for the holiday roster" onRetry={loadData}><HolidayStaffingCoverageWidget
+      <DataRegion state={sections.employees} label="employees for the holiday roster" onRetry={()=>{api.invalidateReadCache();loadData();}}><HolidayStaffingCoverageWidget
         coverageList={holidayCoverages}
         allEmployees={employees}
-        onRefresh={loadData}
+        onRefresh={()=>{api.invalidateReadCache();loadData();}}
         onOpenScheduleShift={(holidayId) => {
           setAssignShiftForm({
             employee_id: employees[0]?.id || '',
@@ -297,8 +299,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
       /></DataRegion>
 
       </DataRegion>
-      <DataRegion state={sections.employees} label="team information" onRetry={loadData}>
-<DataRegion state={sections.requests} label="department leave" onRetry={loadData}>
+      <DataRegion state={sections.employees} label="team information" onRetry={()=>{api.invalidateReadCache();loadData();}}>
+<DataRegion state={sections.requests} label="department leave" onRetry={()=>{api.invalidateReadCache();loadData();}}>
       <section className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs" aria-label="Leave by department">
         <div className="flex flex-wrap items-start justify-between gap-3 pb-3.5 border-b border-slate-100 mb-4">
           <div>
@@ -332,12 +334,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
       </DataRegion></DataRegion>
       {/* 6. Celebrations & Milestones Widget */}
-      <DataRegion state={sections.employees} label="team milestones" onRetry={loadData}><CelebrationsWidget employees={employees} onNavigateTab={onNavigateTab} /></DataRegion>
+      <DataRegion state={sections.employees} label="team milestones" onRetry={()=>{api.invalidateReadCache();loadData();}}><CelebrationsWidget employees={employees} onNavigateTab={onNavigateTab} /></DataRegion>
       <AnnouncementWidget onViewAll={() => onNavigateTab('personal/announcements')} />
 
       {/* 7. Two Column Layout: Currently on Leave & Upcoming Holidays */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-<DataRegion state={!sections.employees?.ready || sections.employees?.error ? sections.employees : sections.requests} label="approved leave" onRetry={loadData}>
+<DataRegion state={!sections.employees?.ready || sections.employees?.error ? sections.employees : sections.requests} label="approved leave" onRetry={()=>{api.invalidateReadCache();loadData();}}>
         {/* Currently on Leave list */}
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
@@ -396,7 +398,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         </div>
 
 </DataRegion>
-<DataRegion state={sections.holidays} label="upcoming holidays" onRetry={loadData}>
+<DataRegion state={sections.holidays} label="upcoming holidays" onRetry={()=>{api.invalidateReadCache();loadData();}}>
         {/* Company Holidays list */}
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">

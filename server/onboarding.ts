@@ -124,8 +124,9 @@ export class OnboardingService {
   }
   get(id: string, manage = false) { return this.view(this.plan(id, manage), manage); }
   summary() {
-    const plans = this.list(), active = plans.filter(p => p.status === 'Active');
-    const tasks = active.flatMap(p => p.tasks.map(t => ({ ...t, today: getTodayDateString(p.timezone) })));
+    const plans = this.state.plans.filter(p => p.employee_id === this.actor.id || p.tasks.some(t => t.assigned_to === this.actor.id));
+    const active = plans.filter(p => p.status === 'Active');
+    const tasks = active.flatMap(p => p.tasks.filter(t => t.assigned_to === this.actor.id).map(t => ({ ...t, today: getTodayDateString(this.users.find(u => u.id === p.employee_id)?.timezone || 'UTC') })));
     return { available: plans.length > 0, active: active.length, incomplete: tasks.filter(t => !taskDone(t)).length,
       overdue: tasks.filter(t => !taskDone(t) && t.status !== 'Needs review' && t.due_date < t.today).length, needs_review: tasks.filter(t => t.status === 'Needs review').length };
   }
