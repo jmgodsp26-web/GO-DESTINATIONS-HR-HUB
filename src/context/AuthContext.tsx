@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { UserProfile, NotificationItem } from '../types';
 import { api } from '../services/api';
 
@@ -29,28 +29,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [mustChangePassword, setMustChangePassword] = useState<boolean>(false);
   const [notificationError, setNotificationError] = useState('');
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const notificationGeneration = useRef(0);
+  const notificationRequest = useRef<Promise<void> | null>(null);
+
+  const invalidateNotifications = useCallback(() => {
+    notificationGeneration.current++;
+    notificationRequest.current = null;
+  }, []);
 
   const refreshNotifications = useCallback(async () => {
-    try {
-      const items = await api.getNotifications();
-      setNotifications(items);
-    } catch {
-      // ignore in background
-    }
+    if (notificationRequest.current) return notificationRequest.current;
+    const generation = notificationGeneration.current;
+    const request = (async () => {
+      try {
+        const items = await api.getNotifications();
+        if (generation === notificationGeneration.current) setNotifications(items);
+      } catch {
+        // Preserve the last successful list; the next visible poll retries.
+      }
+    })();
+    notificationRequest.current = request;
+    try { await request; }
+    finally { if (notificationRequest.current === request) notificationRequest.current = null; }
   }, []);
 
   const refreshUser = useCallback(async () => {
+    invalidateNotifications();
     try {
       const res = await api.getMe();
       setUser(res.user);
       setMustChangePassword(Boolean(res.mustChangePassword));
-      if (!res.mustChangePassword) await refreshNotifications();
     } catch {
       setUser(null);
     } finally {
       setIsLoading(false);
     }
-  }, [refreshNotifications]);
+  }, [invalidateNotifications]);
 
   useEffect(() => {
     refreshUser();
@@ -59,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Instantly handle session expiry without unhandled promise rejections
   useEffect(() => {
     const handleAuthExpired = () => {
+      invalidateNotifications();
       setUser(null);
       setMustChangePassword(false);
       setNotifications([]);
@@ -66,18 +81,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     window.addEventListener('auth:expired', handleAuthExpired);
     return () => window.removeEventListener('auth:expired', handleAuthExpired);
-  }, []);
+  }, [invalidateNotifications]);
 
-  // Periodic polling to keep notification counter badge real-time
+  // Notifications load independently of sign-in/dashboard rendering. Poll only
+  // visible tabs, never overlap requests, and refresh when the user returns.
   useEffect(() => {
     if (!user || mustChangePassword) return;
-    const interval = setInterval(() => {
-      refreshNotifications();
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [user, mustChangePassword, refreshNotifications]);
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let polling = false;
+    const poll = async () => {
+      if (stopped || document.hidden || polling) return;
+      if (timer) clearTimeout(timer);
+      polling = true;
+      await refreshNotifications();
+      polling = false;
+      if (!stopped && !document.hidden) timer = setTimeout(poll, 60000 + Math.random() * 10000);
+    };
+    const visibility = () => {
+      if (timer) clearTimeout(timer);
+      if (!document.hidden) void poll();
+    };
+    void poll();
+    document.addEventListener('visibilitychange', visibility);
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+      document.removeEventListener('visibilitychange', visibility);
+      invalidateNotifications();
+    };
+  }, [user?.id, mustChangePassword, refreshNotifications, invalidateNotifications]);
 
   const login = async (identifier: string, passwordHash?: string) => {
+    invalidateNotifications();
+    setNotifications([]);
     setError(null);
     try {
       const res = await api.login(identifier, passwordHash);
@@ -87,7 +124,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setMustChangePassword(false);
       }
-      if (!res.mustChangePassword) await refreshNotifications();
     } catch (err: any) {
       setError(err.message || 'Login failed.');
       throw err;
@@ -104,13 +140,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchUser = async (identifier: string, password?: string) => {
+    invalidateNotifications();
+    setNotifications([]);
     setIsLoading(true);
     setError(null);
     try {
       const res = await api.login(identifier, password || '');
       setUser(res.user);
       setMustChangePassword(Boolean(res.mustChangePassword));
-      if (!res.mustChangePassword) await refreshNotifications();
     } catch (err: any) {
       setError(err.message || 'Failed to switch user.');
     } finally {
@@ -120,6 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     if (!window.dispatchEvent(new Event('workspace:before-navigate', { cancelable: true }))) return;
+    invalidateNotifications();
     setIsLoading(true);
     try {
       await api.logout();
@@ -133,13 +171,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const markNotificationRead = async (id: string) => {
+    invalidateNotifications();
     setNotificationError('');
-    try { await api.markNotificationRead(id); setNotifications(prev=>prev.map(n=>n.id===id?{...n,read:true}:n)); return true; }
+    try { await api.markNotificationRead(id); invalidateNotifications(); setNotifications(prev=>prev.map(n=>n.id===id?{...n,read:true}:n)); return true; }
     catch { setNotificationError('Could not mark this notification as read. Please try again.'); return false; }
   };
   const markAllNotificationsRead = async () => {
+    invalidateNotifications();
     setNotificationError('');
-    try { await api.markAllNotificationsRead(); setNotifications(prev=>prev.map(n=>({...n,read:true}))); return true; }
+    try { await api.markAllNotificationsRead(); invalidateNotifications(); setNotifications(prev=>prev.map(n=>({...n,read:true}))); return true; }
     catch { setNotificationError('Could not mark notifications as read. Please try again.'); return false; }
   };
 

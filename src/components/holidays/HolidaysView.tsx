@@ -2,7 +2,7 @@ import { LoadError, RefreshStatus } from '../common/LoadFeedback';
 import { useViewPreference } from '../../hooks/useViewPreference';
 import { PageHeading } from '../common/WorkspaceUI';
 import { useWorkspace } from '../../context/WorkspaceContext';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Holiday, HolidayStaffingCoverage, UserProfile, HolidayType, HolidayScope } from '../../types';
@@ -46,6 +46,7 @@ export const HolidaysView: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState('');
   const [hasLoaded, setHasLoaded] = useState(false);
+  const loadGeneration = useRef(0);
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -91,6 +92,7 @@ export const HolidaysView: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const loadData = useCallback(async () => {
+    const generation = ++loadGeneration.current;
     setIsLoading(true); setLoadError('');
     try {
       // Fetch holidays with active filters applied on backend if desired, or fetch all and filter in memory for smooth client UX
@@ -99,28 +101,48 @@ export const HolidaysView: React.FC = () => {
         api.getAllHolidayCoverage(isAdmin ? undefined : { view: 'personal' }),
         isAdmin ? api.getAllEmployees() : Promise.resolve([]),
       ]);
+      if (generation !== loadGeneration.current) return;
       setHolidays(holRes);
       setCoverageList(covRes);
       setEmployees(empRes);
 
-      if (selectedCoverage) {
-        const updated = covRes.find((c) => c.holiday.id === selectedCoverage.holiday.id);
-        if (updated) setSelectedCoverage(updated);
-      }
+      setSelectedCoverage(current => current ? covRes.find(c => c.holiday.id === current.holiday.id) || null : null);
       setHasLoaded(true);
     } catch (err: any) {
+      if (generation !== loadGeneration.current) return;
       setLoadError(err.message || 'Could not load records.');
       if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
         console.error('Failed to load holidays & coverage:', err);
       }
     } finally {
-      setIsLoading(false);
+      if (generation === loadGeneration.current) setIsLoading(false);
     }
-  }, [selectedCoverage, isAdmin]);
+  }, [isAdmin]);
+
+  // A confirmed holiday write already returns the saved row. Refresh staffing
+  // separately instead of reloading holidays and the entire employee directory.
+  const refreshCoverage = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    setIsLoading(true); setLoadError('');
+    try {
+      const coverage = await api.getAllHolidayCoverage(isAdmin ? undefined : { view: 'personal' });
+      if (generation !== loadGeneration.current) return;
+      setCoverageList(coverage);
+      setSelectedCoverage(current => current ? coverage.find(c => c.holiday.id === current.holiday.id) || null : null);
+    } catch {
+      if (generation !== loadGeneration.current) return;
+      setLoadError('Your change was saved, but staffing information could not refresh. Please refresh before reviewing coverage.');
+    } finally { if (generation === loadGeneration.current) setIsLoading(false); }
+  }, [isAdmin]);
+
+  const applySavedHoliday = (saved: Holiday) => {
+    setHolidays(current => [...current.filter(h => h.id !== saved.id), saved].sort((a, b) => a.date.localeCompare(b.date)));
+  };
 
   useEffect(() => {
     loadData();
-  }, []);
+    return () => { loadGeneration.current++; };
+  }, [loadData]);
 
 
   const todayStr = getTodayDateString(user?.timezone);
@@ -266,7 +288,7 @@ export const HolidaysView: React.FC = () => {
     setError(null);
 
     try {
-      await api.addHoliday({
+      const saved = await api.addHoliday({
         name: formData.name.trim(),
         date: formData.date,
         country: formData.scope === 'Company-wide' ? 'Company-wide' : formData.country,
@@ -281,8 +303,9 @@ export const HolidaysView: React.FC = () => {
         title: 'Holiday Added',
         message: `${formData.name.trim()} added to the holiday directory.`,
       });
+      applySavedHoliday(saved);
       setIsAddModalOpen(false);
-      await loadData();
+      void refreshCoverage();
     } catch (err: any) {
       setError(err.message || 'Failed to add holiday.');
     } finally {
@@ -301,7 +324,7 @@ export const HolidaysView: React.FC = () => {
     setError(null);
 
     try {
-      await api.updateHoliday(editingHoliday.id, {
+      const saved = await api.updateHoliday(editingHoliday.id, {
         name: formData.name.trim(),
         date: formData.date,
         country: formData.scope === 'Company-wide' ? 'Company-wide' : formData.country,
@@ -316,8 +339,9 @@ export const HolidaysView: React.FC = () => {
         title: 'Holiday Updated',
         message: `${formData.name.trim()} updated successfully.`,
       });
+      applySavedHoliday(saved);
       setEditingHoliday(null);
-      await loadData();
+      void refreshCoverage();
     } catch (err: any) {
       setError(err.message || 'Failed to update holiday.');
     } finally {
@@ -328,12 +352,13 @@ export const HolidaysView: React.FC = () => {
   const handleToggleActive = async (holiday: Holiday) => {
     try {
       const updated = await api.toggleHolidayActive(holiday.id);
+      applySavedHoliday(updated);
       showToast({
         type: updated.is_active ? 'success' : 'info',
         title: updated.is_active ? 'Holiday Activated' : 'Holiday Deactivated',
         message: `${holiday.name} is now ${updated.is_active ? 'active on employee calendars' : 'hidden from employee calendars'}.`,
       });
-      await loadData();
+      void refreshCoverage();
     } catch (err: any) {
       showToast({
         type: 'error',
@@ -365,7 +390,7 @@ export const HolidaysView: React.FC = () => {
       if (selectedCoverage?.holiday.id === targetId) {
         setSelectedCoverage(null);
       }
-      await loadData();
+      void refreshCoverage();
     } catch (err: any) {
       showToast({
         type: 'error',
@@ -410,7 +435,7 @@ export const HolidaysView: React.FC = () => {
         status: 'Approved',
         admin_note: '',
       });
-      await loadData();
+      void refreshCoverage();
     } catch (err: any) {
       showToast({
         type: 'error',
@@ -425,7 +450,7 @@ export const HolidaysView: React.FC = () => {
   if (!hasLoaded) return <div><PageHeading eyebrow="HR Hub" title="Company holidays" description="Your records and requests" />{loadError ? <LoadError onRetry={loadData} /> : <p className="go-refresh-status" role="status">Loading company holidays…</p>}</div>;
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
-      {loadError && <LoadError message="Could not refresh. Information below may be out of date." onRetry={loadData} />}<RefreshStatus active={isLoading && hasLoaded} />
+      {loadError && <LoadError message={loadError} onRetry={loadData} />}<RefreshStatus active={isLoading && hasLoaded} />
       {/* Top Header */}
       <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeading eyebrow="Planning" title={isAdmin ? 'Holidays & Shifts' : 'Company Holidays'} description={isAdmin ? 'Manage holidays by location and plan who is working.' : 'Explore your holiday calendar and request a holiday shift.'} />

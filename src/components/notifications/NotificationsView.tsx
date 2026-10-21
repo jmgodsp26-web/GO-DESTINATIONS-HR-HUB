@@ -1,6 +1,6 @@
 import { notificationDestination } from '../../utils/navigation';
 import { PageHeading } from '../common/WorkspaceUI';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { api } from '../../services/api';
@@ -24,6 +24,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
     useAuth();
   const { showToast } = useToast();
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'leaves'>('all');
+  useEffect(() => { void refreshNotifications(); }, [refreshNotifications]);
 
   const notifList = notifications || [];
   const filteredNotifications = notifList.filter((notif) => {

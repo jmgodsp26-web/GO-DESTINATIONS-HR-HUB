@@ -33,9 +33,13 @@ export const Header: React.FC<HeaderProps> = ({
     unreadCount,
     markNotificationRead,
     markAllNotificationsRead,
+    refreshNotifications,
   } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (showNotifications && user) void refreshNotifications();
+  }, [showNotifications, user?.id, refreshNotifications]);
 
   // Format today's date for contextual display
   const todayFormatted = new Date().toLocaleDateString('en-US', {

@@ -2,6 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getFirestoreDb } from './firestore.js';
 import { HRDatabase } from './db.js';
+import type { Firestore } from 'firebase-admin/firestore';
+import type { ReadPlan } from './read-plan.js';
 
 export interface PersistentData {
   onboardingTemplates?: import('../src/types/onboarding.js').OnboardingTemplate[];
@@ -43,7 +45,9 @@ function metadata(data: PersistentData) {
 
 // Test-only file persistence exercises restarts without cloud credentials. Never enabled in production.
 let testQueue = Promise.resolve();
-export async function transact<T>(operation: (database: HRDatabase) => Promise<{ result: T; commit: boolean }>, options: { onboardingFileId?: string; announcementImageId?: string } = {}): Promise<T> {
+type Operation<T> = (database: HRDatabase) => Promise<{ result: T; commit: boolean }>;
+interface TransactionOptions { onboardingFileId?: string; announcementImageId?: string; readPlan?: ReadPlan; }
+export async function transact<T>(operation: Operation<T>, options: TransactionOptions = {}): Promise<T> {
   if (process.env.HR_TEST_STORE) {
     if (process.env.NODE_ENV !== 'test') throw new Error('Test storage is forbidden outside NODE_ENV=test.');
     const previous = testQueue;
@@ -67,21 +71,35 @@ export async function transact<T>(operation: (database: HRDatabase) => Promise<{
   }
   const firestore = getFirestoreDb();
   if (!firestore) throw new Error('Persistent database unavailable.');
+  return transactFirestore(firestore, operation, options);
+}
+
+// Export the real Firestore adapter so regression tests can verify reads and
+// writes without touching production or using cloud credentials.
+export async function transactFirestore<T>(firestore: Firestore, operation: Operation<T>, options: TransactionOptions = {}): Promise<T> {
+  const tables = options.readPlan?.tables || TABLES;
   return firestore.runTransaction(async tx => {
     const metaRef = firestore.doc(PREFIX + 'meta/state');
     const meta = await tx.get(metaRef);
+    if (options.readPlan && !meta.exists) throw new Error('Database initialization marker missing.');
     // Onboarding blobs are fetched only for an explicit file request. Ordinary
     // HR transactions read metadata, keeping file bytes out of every page load.
-    const snapshots = await Promise.all(TABLES.map(table => tx.get(table === 'onboardingFiles'
+    const snapshots = await Promise.all(tables.map(async table => {
+      if (table === 'sessions' && options.readPlan) {
+        const session = await tx.get(firestore.collection(PREFIX + table).doc(options.readPlan.sessionId));
+        return { docs: session.exists ? [session] : [], empty: !session.exists };
+      }
+      return tx.get(table === 'onboardingFiles'
       ? firestore.collection(PREFIX + table).select('id', 'plan_id', 'task_id', 'name', 'mime_type', 'uploaded_at', 'uploaded_by')
       : table === 'announcementImages' ? firestore.collection(PREFIX + table).select('id')
-      : firestore.collection(PREFIX + table))));
+      : firestore.collection(PREFIX + table));
+    }));
     const requestedFile = options.onboardingFileId ? await tx.get(firestore.collection(PREFIX + 'onboardingFiles').doc(options.onboardingFileId)) : undefined;
     const requestedImage = options.announcementImageId ? await tx.get(firestore.collection(PREFIX + 'announcementImages').doc(options.announcementImageId)) : undefined;
     let before: PersistentData | undefined;
     if (meta.exists) {
       before = { ...meta.data(), employees: [] } as PersistentData;
-      TABLES.forEach((table, i) => {
+      tables.forEach((table, i) => {
         (before as any)[table] = table === 'sessions'
           ? snapshots[i].docs.map(doc => [doc.id, doc.data()])
           : snapshots[i].docs.map(doc => doc.data());
@@ -101,9 +119,13 @@ export async function transact<T>(operation: (database: HRDatabase) => Promise<{
     const outcome = await operation(database);
     if (!before || outcome.commit) {
       const after = database.exportState();
-      // Metadata is a serialization barrier across service instances and concurrent writes.
-      tx.set(metaRef, metadata(after));
-      for (const table of TABLES) {
+      // Business writes keep the existing serialization barrier. A page read
+      // must not rewrite it just to refresh one user's session activity.
+      if (!options.readPlan || !before || JSON.stringify(metadata(before)) !== JSON.stringify(metadata(after))) {
+        tx.set(metaRef, metadata(after));
+      }
+      // Only diff collections actually loaded. Omitted data is never deleted.
+      for (const table of tables) {
         const oldRows = before ? rows(before, table) : new Map<string, any>();
         const newRows = rows(after, table);
         for (const [id, value] of newRows) {
@@ -117,5 +139,13 @@ export async function transact<T>(operation: (database: HRDatabase) => Promise<{
   });
 }
 export async function initializeDatabase() {
+  // A warm-up must not download every HR record and attachment. Existing
+  // databases only need their marker checked; creation still uses the guarded
+  // transaction below, which refuses to overwrite collections without a marker.
+  if (!process.env.HR_TEST_STORE) {
+    const firestore = getFirestoreDb();
+    if (!firestore) throw new Error('Persistent database unavailable.');
+    if ((await firestore.doc(PREFIX + 'meta/state').get()).exists) return;
+  }
   await transact(async () => ({ result: undefined, commit: false }));
 }
