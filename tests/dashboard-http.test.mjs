@@ -76,6 +76,23 @@ test('dashboard HTTP: role boundaries, own records, current balances, file priva
     assert.ok(Number(compressed.headers.get('content-length')) < uncompressed.length);
     assert.deepEqual(Buffer.from(await compressed.arrayBuffer()), uncompressed);
 
+    const importRow = {full_name:'Synthetic import',email:'import@example.test',department:'Technology',job_title:'Developer',country:'Philippines',holiday_calendar:'United States',phone:'',date_joined:'2024-01-01',date_of_birth:'',role:'employee',annual_leave_days:0,sick_leave_days:0};
+    const importBody = {employees:[importRow],password:'Synthetic-Import-Password-123'};
+    assert.equal((await call('/employees/import', undefined, 'POST', importBody)).status,401);
+    assert.equal((await call('/employees/import', 1, 'POST', importBody)).status,403);
+    const imported = await call('/employees/import',0,'POST',importBody);
+    assert.equal(imported.status,200);assert.equal(imported.data.results[0].status,'created');
+    assert.equal((await call('/employees/import',0,'POST',importBody)).data.results[0].status,'skipped');
+    const beforeInvalid = (await call('/employees',0)).data.length;
+    const invalidBatch = await call('/employees/import',0,'POST',{...importBody,employees:[{...importRow,email:'fresh@example.test',full_name:'Fresh'},{...importRow,email:'invalid',full_name:'Bad'}]});
+    assert.equal(invalidBatch.status,400);
+    assert.equal((await call('/employees',0)).data.length,beforeInvalid);
+    const firstLogin = await call('/auth/login',undefined,'POST',{identifier:importRow.email,password:importBody.password});
+    assert.equal(firstLogin.status,200);
+    const importCookie=firstLogin.headers.get('set-cookie').split(';')[0];
+    const restricted=await originalFetch(root+'/api/employees',{headers:{Cookie:importCookie}});
+    assert.equal(restricted.status,403);
+
     // Use the real client API; no production origin or credentials are involved.
     let active = 1, dashboardCalls = 0;
     globalThis.fetch = (input, options = {}) => {

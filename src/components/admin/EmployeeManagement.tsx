@@ -1,3 +1,4 @@
+import { EmployeeImport } from './EmployeeImport';
 import { EmployeeDetails } from './EmployeeDetails';
 import { Dialog } from '../common/Dialog';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
@@ -59,6 +60,8 @@ export const EmployeeManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState('');
   const [hasLoaded, setHasLoaded] = useState(false);
+
+  const [importOpen, setImportOpen] = useState(false);
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -366,6 +369,7 @@ export const EmployeeManagement: React.FC = () => {
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-300 bg-white text-slate-700 rounded-lg font-semibold text-xs disabled:opacity-50">
             <Download className="w-4 h-4" /> Export Employee List
           </button>
+        <button type="button" disabled={isLoading || !!loadError} onClick={() => setImportOpen(true)} className="border border-slate-300 rounded-lg px-4 py-2.5 text-xs font-semibold">Import Employees</button>
         <button
           type="button"
           id="add-employee-modal-btn"
@@ -770,6 +774,8 @@ export const EmployeeManagement: React.FC = () => {
       </div>
 
       </>}
+      {importOpen && <EmployeeImport existing={employees} onClose={() => setImportOpen(false)} onComplete={() => { void loadEmployees(); }} />}
+
       {/* 1. Add Employee Modal */}
       {isAddModalOpen && (
         <Dialog title="Add employee" onClose={closeAdd} busy={isSubmitting || isPhotoProcessing}>

@@ -1,3 +1,4 @@
+import { importErrors, importPreview, type ImportEmployee } from '../src/utils/employeeImport.js';
 import { AnnouncementError, announcementAudience, announcementVisible, validateAnnouncement, decodeAnnouncementImage, type AnnouncementImage } from './announcements.js';
 import { OnboardingService, type OnboardingState } from './onboarding.js';
 import type { Announcement, AnnouncementView, AnnouncementReceipt, AnnouncementReport } from '../src/types.js';
@@ -322,6 +323,29 @@ export class HRDatabase {
         is_pc: isProgramCoordinator(u.profile),
         leave_balances: balances,
       };
+    });
+  }
+
+  public importEmployees(rows: ImportEmployee[], password: string, actor: UserProfile) {
+    if (actor.role !== 'admin') throw new Error('Administrator access required.');
+    if (!Array.isArray(rows) || rows.length < 1 || rows.length > 5) throw new Error('Import batches must contain 1–5 employees.');
+    if (typeof password !== 'string' || password.trim().length < 12 || Buffer.byteLength(password.trim(), 'utf8') > 72) throw new Error('Temporary password must contain at least 12 characters and at most 72 bytes.');
+    // Whitelist fields: never accept credential hashes, IDs, status or other stored internals.
+    const keys = ['full_name','email','department','job_title','country','holiday_calendar','phone','date_joined','date_of_birth','role','annual_leave_days','sick_leave_days'] as const;
+    const clean = rows.map(row => {
+      if (!row || typeof row !== 'object') throw new Error('Invalid employee row.');
+      const value = Object.fromEntries(keys.map(key => [key, typeof row[key] === 'string' ? (row[key] as string).trim() : row[key]])) as unknown as ImportEmployee;
+      if (typeof value.email === 'string') value.email = value.email.toLowerCase();
+      // Validate the full batch before making any mutations.
+      const errors = importErrors(value);
+      if (errors.length) throw new Error(errors.join('; '));
+      return value;
+    });
+    const preview = importPreview(clean, this.users.map(u => u.profile));
+    return preview.map(({row,skip}) => {
+      if (skip) return { email:row.email, full_name:row.full_name, status:'skipped' as const, message:skip };
+      const profile = this.createEmployee({...row, password}, actor);
+      return { email:profile.email, full_name:profile.full_name, status:'created' as const, employee_id:profile.employee_id };
     });
   }
 
