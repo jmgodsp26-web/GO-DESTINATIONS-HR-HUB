@@ -218,6 +218,10 @@ export const api = {
     return request<(UserProfile & { leave_balances: LeaveBalance[] })[]>('/api/employees');
   },
 
+  async importEmployees(employees: import('../utils/employeeImport').ImportEmployee[], password: string): Promise<{results:{email:string;full_name:string;status:'created'|'skipped';message?:string;employee_id?:string}[]}> {
+    return request('/api/employees/import', {method:'POST', body:JSON.stringify({employees,password})});
+  },
+
   async createEmployee(data: {
     full_name: string;
     email: string;

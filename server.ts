@@ -432,6 +432,12 @@ apiRouter.post('/api/employees', adminOnlyMiddleware, (req: AuthenticatedRequest
   }
 });
 
+apiRouter.post('/api/employees/import', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    res.json({ results: db.importEmployees(req.body.employees, req.body.password, req.user!) });
+  } catch (error: any) { res.status(400).json({ error: error.message || 'Employee import failed.' }); }
+});
+
 apiRouter.patch('/api/employees/:id', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const updated = db.updateEmployee(req.params.id, req.body, req.user!);
