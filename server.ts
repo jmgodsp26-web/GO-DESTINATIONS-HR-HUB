@@ -193,6 +193,16 @@ function adminOnlyMiddleware(req: AuthenticatedRequest, res: Response, next: Nex
 }
 
 // --- API ROUTES ---
+apiRouter.get('/api/celebrations', authMiddleware, (req:AuthenticatedRequest,res) => res.json(db.getCelebrations(req.user!)));
+apiRouter.patch('/api/celebrations/visibility',authMiddleware,(req:AuthenticatedRequest,res)=>{
+  try { res.json(db.setBirthdayVisibility(req.user!,req.body.employee_id || req.user!.id,req.body.visible)); }
+  catch(error:any){res.status(400).json({error:error.message});}
+});
+apiRouter.post('/api/celebrations/reaction',authMiddleware,(req:AuthenticatedRequest,res)=>{
+  try {res.json(db.reactToCelebration(req.user!,req.body.celebration_id,req.body.emoji));}
+  catch(error:any){res.status(400).json({error:error.message});}
+});
+
 apiRouter.get('/api/dashboard/personal', authMiddleware, (req: AuthenticatedRequest, res) => res.json(personalDashboard(db, req.user!)));
 apiRouter.get('/api/dashboard/administration', adminOnlyMiddleware, (req: AuthenticatedRequest, res) => res.json(administrationDashboard(db, req.user!)));
 

@@ -6,6 +6,8 @@ import type { Firestore } from 'firebase-admin/firestore';
 import type { ReadPlan } from './read-plan.js';
 
 export interface PersistentData {
+  celebrationPreferences?: import('./celebrations.js').CelebrationPreference[];
+  celebrationReactions?: import('./celebrations.js').CelebrationReaction[];
   onboardingTemplates?: import('../src/types/onboarding.js').OnboardingTemplate[];
   onboardingPlans?: import('../src/types/onboarding.js').OnboardingPlan[];
   onboardingFiles?: import('../src/types/onboarding.js').OnboardingFile[];
@@ -34,7 +36,7 @@ export interface PersistentData {
 }
 // A new namespace deliberately leaves the former project's collections untouched.
 const PREFIX = 'hr_v2_';
-const TABLES = ['users', 'leaveAttachments', 'leaveBalances', 'leaveRequests', 'leaveTransactions', 'holidays', 'holidayShifts', 'auditLogs', 'announcements', 'announcementImages', 'announcementReceipts', 'notifications', 'employeeDocuments', 'sessions', 'loginAttempts', 'onboardingTemplates', 'onboardingPlans', 'onboardingFiles', 'onboardingMessages'] as const;
+const TABLES = ['celebrationPreferences', 'celebrationReactions', 'users', 'leaveAttachments', 'leaveBalances', 'leaveRequests', 'leaveTransactions', 'holidays', 'holidayShifts', 'auditLogs', 'announcements', 'announcementImages', 'announcementReceipts', 'notifications', 'employeeDocuments', 'sessions', 'loginAttempts', 'onboardingTemplates', 'onboardingPlans', 'onboardingFiles', 'onboardingMessages'] as const;
 const DOCUMENT_FIELDS = ['id', 'employee_id', 'name', 'category', 'file_size', 'uploaded_at', 'uploaded_by_name', 'file_available', 'mime_type'];
 const clean = (value: any) => JSON.parse(JSON.stringify(value));
 const rows = (data: PersistentData, table: typeof TABLES[number]): Map<string, any> => new Map(

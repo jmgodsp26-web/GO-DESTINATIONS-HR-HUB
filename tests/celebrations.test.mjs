@@ -1,0 +1,33 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {celebrationsFor} from '../server/celebrations.ts';
+import {HRDatabase} from '../server/db.ts';
+const actor={id:'a',full_name:'Actor',status:'active',timezone:'Asia/Manila'};
+const user={id:'b',full_name:'Birthday colleague',status:'active',date_of_birth:'1990-10-27',hire_date:'2023-10-27'};
+test('celebrations respect local date, disclose no birth years/ages, handle year boundary and leap days',()=>{
+ const data=celebrationsFor([actor,user],[],[],actor,new Date('2026-10-26T17:00:00Z'));
+ assert.equal(data.today,'2026-10-27');assert.equal(data.items.length,2);assert.equal(data.items[0].days_until,0);
+ assert.equal(data.items.find(i=>i.type==='anniversary').years,3);
+ assert.equal('years' in data.items.find(i=>i.type==='birthday'),false);assert.equal(JSON.stringify(data).includes('1990'),false);
+ const leap=celebrationsFor([{...user,date_of_birth:'1992-02-29',hire_date:''}],[],[],actor,new Date('2027-02-28T00:00:00Z'));
+ assert.equal(leap.items[0].date,'2027-02-28');
+ const next=celebrationsFor([{...user,date_of_birth:'1990-01-01',hire_date:''}],[],[],actor,new Date('2026-12-28T00:00:00Z'));
+ assert.equal(next.items[0].date,'2027-01-01');
+ assert.equal(celebrationsFor([{...user,status:'disabled'}],[],[],actor,new Date('2026-10-27')).items.length,0);
+ assert.equal(celebrationsFor([user],[{id:'b',birthday_visible:false}],[],actor,new Date('2026-10-27')).items.filter(i=>i.type==='birthday').length,0);
+});
+test('reactions replace/remove, persist, hide inaccessible celebrations, and group celebrant notifications',()=>{
+ process.env.INITIAL_ADMIN_EMAIL='celebrations-admin@example.test';process.env.INITIAL_ADMIN_PASSWORD='Synthetic-Celebrations-123';
+ const db=HRDatabase.bootstrap(), admin=db.getAllEmployees()[0];
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const employee=db.createEmployee({full_name:'Celebrant',email:'celebrant@example.test',date_of_birth:'1990'+today.slice(4),hire_date:'2020'+today.slice(4)},admin);
+ const id=db.getCelebrations(admin).items.find(i=>i.employee_id===employee.id&&i.type==='birthday').id;
+ db.reactToCelebration(admin,id,'🎉');db.reactToCelebration(admin,id,'❤️');
+ assert.equal(db.exportState().celebrationReactions.length,1);assert.equal(db.exportState().notifications.filter(n=>n.id.startsWith('celebration:')).length,1);
+ const fresh=new HRDatabase(db.exportState());assert.equal(fresh.getCelebrations(employee).items.find(i=>i.id===id).reactions.find(r=>r.emoji==='❤️').people.length,1);
+ assert.throws(()=>db.setBirthdayVisibility({...employee,id:'other'},employee.id,false),/Access denied/);
+ assert.throws(()=>db.reactToCelebration(admin,id,'invalid'));
+ db.reactToCelebration(admin,id,null);assert.equal(db.exportState().celebrationReactions.length,0);
+ db.setBirthdayVisibility(employee,employee.id,false);assert.throws(()=>db.reactToCelebration(admin,id,'🎉'));
+ assert.equal(db.getCelebrations(employee).visibility_settings,undefined);
+});

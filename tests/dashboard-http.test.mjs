@@ -93,6 +93,15 @@ test('dashboard HTTP: role boundaries, own records, current balances, file priva
     const restricted=await originalFetch(root+'/api/employees',{headers:{Cookie:importCookie}});
     assert.equal(restricted.status,403);
 
+    assert.equal((await call('/celebrations')).status,401);
+    const team = await call('/celebrations',1);
+    assert.equal(team.status,200);assert.equal(team.data.visibility_settings,undefined);
+    assert.equal((await call('/celebrations/visibility',1,'PATCH',{employee_id:other.id,visible:false})).status,400);
+    assert.equal((await call('/celebrations/visibility',1,'PATCH',{visible:false})).status,200);
+    assert.equal((await call('/celebrations',1)).data.birthday_visible,false);
+    assert.equal((await call('/celebrations/visibility',0,'PATCH',{employee_id:other.id,visible:false})).status,200);
+    assert.equal((await call('/celebrations/reaction',1,'POST',{celebration_id:'invalid',emoji:'🎉'})).status,400);
+
     // Use the real client API; no production origin or credentials are involved.
     let active = 1, dashboardCalls = 0;
     globalThis.fetch = (input, options = {}) => {

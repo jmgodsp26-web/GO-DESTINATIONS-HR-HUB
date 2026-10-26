@@ -1,3 +1,4 @@
+import { TeamCelebrations } from './TeamCelebrations';
 import React, { useCallback, useEffect, useState } from 'react';
 import { OnboardingWidget } from '../onboarding/OnboardingWidget';
 import { CalendarDays, Plus, Briefcase, History, Plane, HeartPulse, CalendarCheck, ArrowRight, FolderOpen, ShieldCheck, Bell, RefreshCw } from 'lucide-react';
@@ -45,6 +46,7 @@ export const EmployeeDashboard: React.FC<{ onNavigateTab: (tab: string) => void 
       <div className="go-personal-identity">{user.avatar_url?.trim() ? <img src={user.avatar_url} alt="" className="go-personal-avatar" /> : <span className="go-personal-avatar" aria-hidden="true">{user.full_name.split(' ').map(n=>n[0]).slice(0,2).join('')}</span>}<div><strong>{user.full_name}</strong><p>{[user.job_title,user.department].filter(Boolean).join(' · ')}</p></div></div>
       <div className="go-personal-actions"><button id="dashboard-request-leave-btn" type="button" disabled={!sections.balances?.ready || Boolean(sections.balances?.error)} onClick={()=>setLeaveOpen(true)} className="go-button go-button-accent"><Plus size={16} />Request leave</button><button type="button" disabled={!sections.holidays?.ready || Boolean(sections.holidays?.error)} onClick={()=>{setShiftHoliday(undefined);setShiftOpen(true);}} className="go-button go-button-inverse"><Briefcase size={16} />Holiday shift</button><button type="button" onClick={()=>onNavigateTab('leave')} className="go-button go-button-inverse"><History size={16} />My requests</button></div>
     </section>
+    <TeamCelebrations />
     <OnboardingWidget onNavigate={onNavigateTab} />
     <DataRegion state={sections.balances} label="leave balances" onRetry={()=>void run('balances',api.getLeaveBalances,setBalances)}>
       <section aria-label="Your leave balances"><div className="flex justify-between items-center mb-3"><h2 className="go-workflow-label">Your leave balances</h2><button type="button" className="go-button go-button-quiet" onClick={()=>onNavigateTab('leave')}>See all balances <ArrowRight size={15}/></button></div>
