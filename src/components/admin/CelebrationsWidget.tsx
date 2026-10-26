@@ -31,12 +31,12 @@ export interface CelebrationItem {
   employeeAvatar: string;
   employeeJobTitle: string;
   type: CelebrationType;
-  rawDate: string; // The original full date e.g. "1994-08-26" or "2023-08-28"
+  rawDate?: string; // Hire date only; birthday cards never include a birth year.
   nextOccurrenceDate: Date;
   nextOccurrenceStr: string; // "Aug 26"
   daysUntil: number; // 0 = today, 1 = tomorrow, etc.
-  yearsCount?: number; // e.g. 2 for 2nd work anniversary or age for birthday
-  milestoneTitle: string; // e.g. "3rd Work Anniversary", "Birthday (Turning 32)"
+  yearsCount?: number; // Completed service years for work anniversaries only.
+  milestoneTitle: string;
 }
 
 export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
@@ -62,7 +62,6 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
       if (dobStr && dobStr.includes('-')) {
         const parts = dobStr.split('-');
         if (parts.length >= 3) {
-          const birthYear = parseInt(parts[0], 10);
           const birthMonth = parseInt(parts[1], 10) - 1; // 0-indexed
           const birthDay = parseInt(parts[2], 10);
 
@@ -78,7 +77,6 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
 
             const diffTime = nextDob.getTime() - today.getTime();
             const daysUntil = Math.round(diffTime / (1000 * 60 * 60 * 24));
-            const calculatedAge = !isNaN(birthYear) ? nextDob.getFullYear() - birthYear : undefined;
 
             items.push({
               id: `${emp.id}-birthday`,
@@ -89,17 +87,13 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
               employeeAvatar: emp.avatar_url || '',
               employeeJobTitle: emp.job_title,
               type: 'birthday',
-              rawDate: dobStr,
               nextOccurrenceDate: nextDob,
               nextOccurrenceStr: nextDob.toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
               }),
               daysUntil,
-              yearsCount: calculatedAge,
-              milestoneTitle: calculatedAge
-                ? `Birthday (Turning ${calculatedAge})`
-                : 'Birthday Celebration',
+              milestoneTitle: daysUntil === 0 ? 'Birthday today!' : 'Upcoming birthday',
             });
           }
         }
@@ -472,7 +466,7 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
                       <span className="text-slate-300">•</span>
                       <span className="text-slate-500 text-[12px]">
                         {item.type === 'birthday'
-                          ? `Born on ${item.rawDate}`
+                          ? `Birthday on ${item.nextOccurrenceStr}`
                           : `Hired on ${item.rawDate}`}
                       </span>
                     </div>
