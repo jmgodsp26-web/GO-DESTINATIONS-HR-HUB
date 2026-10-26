@@ -218,6 +218,10 @@ export const api = {
     return request<(UserProfile & { leave_balances: LeaveBalance[] })[]>('/api/employees');
   },
 
+  async getCelebrations():Promise<any>{return request('/api/celebrations');},
+  async reactToCelebration(celebration_id:string,emoji:string|null):Promise<any>{return request('/api/celebrations/reaction',{method:'POST',body:JSON.stringify({celebration_id,emoji})});},
+  async setBirthdayVisibility(employee_id:string,visible:boolean){return request('/api/celebrations/visibility',{method:'PATCH',body:JSON.stringify({employee_id,visible})});},
+
   async importEmployees(employees: import('../utils/employeeImport').ImportEmployee[], password: string): Promise<{results:{email:string;full_name:string;status:'created'|'skipped';message?:string;employee_id?:string}[]}> {
     return request('/api/employees/import', {method:'POST', body:JSON.stringify({employees,password})});
   },

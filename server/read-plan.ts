@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 // Only reviewed GET handlers use a reduced collection set. New/unknown routes
 // retain the full store until their dependencies have been checked.
 export const READ_TABLES = {
+  '/celebrations': ['celebrationPreferences','celebrationReactions'],
   '/dashboard/personal': ['leaveBalances', 'leaveRequests', 'holidays', 'holidayShifts'],
   '/dashboard/administration': ['leaveBalances', 'leaveRequests', 'holidays'],
   '/onboarding/summary': ['onboardingPlans'],
@@ -54,6 +55,8 @@ export function writeTablesFor(method: string, pathname: string) {
   if ((method === 'POST' && route === '/leave-requests') ||
       (method === 'PATCH' && /^\/leave-requests\/[^/]+\/(review|cancel)$/.test(route)) ||
       (method === 'DELETE' && /^\/leave-requests\/[^/]+$/.test(route))) return [...LEAVE_TABLES];
+  if (method === 'PATCH' && route === '/celebrations/visibility') return ['users','sessions','celebrationPreferences'] as const;
+  if (method === 'POST' && route === '/celebrations/reaction') return ['users','sessions','celebrationPreferences','celebrationReactions','notifications'] as const;
   if (method === 'POST' && route === '/employees/import') return ['users', 'sessions', 'leaveBalances', 'auditLogs'] as const;
   if (method === 'POST' && route === '/holidays') return ['users', 'sessions', 'holidays', 'auditLogs'] as const;
   if (method === 'PATCH' && /^\/holidays\/[^/]+(?:\/toggle-active)?$/.test(route)) return ['users', 'sessions', 'holidays', 'holidayShifts', 'auditLogs'] as const;

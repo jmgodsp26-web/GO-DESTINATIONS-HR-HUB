@@ -1,3 +1,4 @@
+import { celebrationsFor, REACTIONS, type CelebrationPreference, type CelebrationReaction } from './celebrations.js';
 import { importErrors, importPreview, type ImportEmployee } from '../src/utils/employeeImport.js';
 import { AnnouncementError, announcementAudience, announcementVisible, validateAnnouncement, decodeAnnouncementImage, type AnnouncementImage } from './announcements.js';
 import { OnboardingService, type OnboardingState } from './onboarding.js';
@@ -92,6 +93,8 @@ export class HRDatabase {
   private holidays: Holiday[] = [];
   private holidayShifts: HolidayShiftRequest[] = [];
   private auditLogs: AuditLog[] = [];
+  private celebrationPreferences: CelebrationPreference[] = [];
+  private celebrationReactions: CelebrationReaction[] = [];
   private notifications: NotificationItem[] = [];
   private announcements: Announcement[] = [];
   private announcementImages: AnnouncementImage[] = [];
@@ -150,6 +153,8 @@ export class HRDatabase {
       holidays: this.holidays,
       holidayShifts: this.holidayShifts,
       auditLogs: this.auditLogs,
+      celebrationPreferences: this.celebrationPreferences,
+      celebrationReactions: this.celebrationReactions,
       notifications: this.notifications,
       announcements: this.announcements,
       announcementImages: this.announcementImages,
@@ -211,6 +216,8 @@ export class HRDatabase {
     if (data.auditLogs) {
       this.auditLogs = data.auditLogs;
     }
+    this.celebrationPreferences = data.celebrationPreferences || [];
+    this.celebrationReactions = data.celebrationReactions || [];
     if (data.notifications) {
       this.notifications = data.notifications;
     }
@@ -324,6 +331,29 @@ export class HRDatabase {
         leave_balances: balances,
       };
     });
+  }
+
+  public getCelebrations(actor: UserProfile) {
+    const data=celebrationsFor(this.users.map(u=>u.profile),this.celebrationPreferences,this.celebrationReactions,actor);
+    return {...data,...(actor.role==='admin'?{visibility_settings:this.users.filter(u=>u.profile.status==='active').map(u=>({id:u.id,name:u.profile.full_name,visible:this.celebrationPreferences.find(p=>p.id===u.id)?.birthday_visible!==false}))}:{})};
+  }
+  public setBirthdayVisibility(actor:UserProfile, employeeId:string, visible:boolean) {
+    if (actor.id!==employeeId && actor.role!=='admin') throw new Error('Access denied.');
+    if(typeof visible!=='boolean' || !this.users.some(u=>u.id===employeeId)) throw new Error('Invalid employee or visibility.');
+    this.celebrationPreferences=this.celebrationPreferences.filter(p=>p.id!==employeeId);
+    this.celebrationPreferences.push({id:employeeId,birthday_visible:visible});
+    return {success:true};
+  }
+  public reactToCelebration(actor:UserProfile, celebrationId:string, emoji:string|null) {
+    if(emoji!==null && !(REACTIONS as readonly string[]).includes(emoji))throw new Error('Choose an available reaction.');
+    const celebration=this.getCelebrations(actor).items.find(c=>c.id===celebrationId && c.days_until===0);
+    if(!celebration) throw new Error('This celebration is not available for reactions today.');
+    const id=celebrationId+':'+actor.id;
+    this.celebrationReactions=this.celebrationReactions.filter(r=>r.id!==id);
+    if(emoji) this.celebrationReactions.push({id,celebration_id:celebrationId,user_id:actor.id,emoji});
+    const noticeId='celebration:'+celebration.employee_id+':'+celebration.date;
+    if(emoji && actor.id!==celebration.employee_id && !this.notifications.some(n=>n.id===noticeId))this.notifications.unshift({id:noticeId,user_id:celebration.employee_id,title:'Your team is celebrating you!',message:'Your teammates sent celebration reactions. Open My Workspace to see them.',type:'system',read:false,created_at:new Date().toISOString(),link_tab:'dashboard'});
+    return this.getCelebrations(actor);
   }
 
   public importEmployees(rows: ImportEmployee[], password: string, actor: UserProfile) {
