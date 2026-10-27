@@ -1056,7 +1056,8 @@ export const EmployeeManagement: React.FC = () => {
                     type="number"
                     min="0"
                     max="40"
-                    value={newEmployee.sick_leave_days}
+                    disabled={newEmployee.country === 'Philippines'}
+                    value={newEmployee.country === 'Philippines' ? 0 : newEmployee.sick_leave_days}
                     onChange={(e) =>
                       setNewEmployee({ ...newEmployee, sick_leave_days: parseInt(e.target.value) || 0 })
                     }

@@ -202,6 +202,7 @@ export const SettingsView: React.FC = () => {
             <h2 className="text-sm font-bold text-slate-900">Leave Allowances &amp; Rules</h2>
           </div>
 
+          <p className="mb-4 text-sm text-slate-600">Philippines employees start with 0 days of Sick, Emergency and Medical Leave. Vacation Leave follows the default below. Other countries keep the company defaults. These defaults apply to new accounts; existing balances are not changed.</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
               <label className="block font-semibold text-slate-800 mb-1">Vacation Leave Default</label>
@@ -238,7 +239,7 @@ export const SettingsView: React.FC = () => {
                 />
                 <span className="text-slate-500 font-medium">days / year</span>
               </div>
-              <p className="text-[12px] text-slate-400 mt-2">Medical leave days available each year.</p>
+              <p className="text-[12px] text-slate-400 mt-2">Sick leave allowance for new employees outside the Philippines.</p>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
@@ -257,7 +258,7 @@ export const SettingsView: React.FC = () => {
                 />
                 <span className="text-slate-500 font-medium">days / year</span>
               </div>
-              <p className="text-[12px] text-slate-400 mt-2">Days available for emergency leave.</p>
+              <p className="text-[12px] text-slate-400 mt-2">Emergency leave allowance for new employees outside the Philippines.</p>
             </div>
           </div>
 
