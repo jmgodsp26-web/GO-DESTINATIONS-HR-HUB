@@ -89,7 +89,7 @@ export const LeaveHistory: React.FC = () => {
       showToast({
         type: 'info',
         title: 'Leave Request Cancelled',
-        message: 'Your leave request has been cancelled. Your PTO balance is unchanged.',
+        message: cancellingRequest.status === 'Approved' && isPaidLeaveType(cancellingRequest.leave_type) ? `Your leave request has been cancelled. ${cancellingRequest.total_days} day(s) have been returned to your balance.` : 'Your leave request has been cancelled. Your PTO balance is unchanged.',
       });
       setCancellingRequest(null);
       setSelectedRequest(null);
@@ -700,7 +700,7 @@ export const LeaveHistory: React.FC = () => {
             </div>
 
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-              {selectedRequest.status === 'Pending' ? (
+              {['Pending', 'Approved'].includes(selectedRequest.status) ? (
                 <button
                   type="button"
                   onClick={() => setCancellingRequest(selectedRequest)}
@@ -728,7 +728,7 @@ export const LeaveHistory: React.FC = () => {
         <Dialog title="Cancel leave request" onClose={() => setCancellingRequest(null)} busy={isCancelling}>
             <div className="p-5 space-y-4">
               <p className="text-xs text-slate-600 leading-relaxed">
-                Are you sure you want to cancel your pending{' '}
+                Are you sure you want to cancel your {cancellingRequest.status.toLowerCase()}{' '}
                 <strong className="text-slate-900 font-semibold">{cancellingRequest.leave_type}</strong> application for{' '}
                 <span className="font-semibold text-slate-800">
                   {cancellingRequest.start_date === cancellingRequest.end_date
@@ -739,7 +739,7 @@ export const LeaveHistory: React.FC = () => {
               <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[12px] text-slate-500 space-y-1">
                 <p><strong>Requested days:</strong> {cancellingRequest.total_days} day(s)</p>
                 <p className="text-emerald-700 font-medium">
-                  This request is not yet approved. No PTO has been deducted.
+                  {cancellingRequest.status === 'Approved' ? (isPaidLeaveType(cancellingRequest.leave_type) ? `${cancellingRequest.total_days} day(s) will be returned to your balance. Cancel only if you will not take this leave.` : 'This is unpaid leave. No paid balance will be refunded.') : 'This request is not yet approved. No PTO has been deducted.'}
                 </p>
               </div>
               {cancelError && <p role="alert" className="text-xs text-rose-700">{cancelError}</p>}
