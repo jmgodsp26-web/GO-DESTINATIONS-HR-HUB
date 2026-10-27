@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Award, Cake, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Heart, PartyPopper, Pause, Play, Sparkles } from 'lucide-react';
 import { api } from '../../services/api';
+import { goAnniversaryLabel } from '../../utils/celebrations';
 import './team-celebrations.css';
 
 export interface CelebrationItem {
@@ -76,9 +77,9 @@ export function CelebrationSpotlight({ item, busy, peopleOpen, onReact, onToggle
     <div className="go-celebration-copy">
       <div className="go-celebration-kicker"><span className="go-celebration-badge">{today ? <Sparkles size={14} aria-hidden="true" /> : <CalendarDays size={14} aria-hidden="true" />}{today ? 'Celebrating today' : 'Coming up'}</span>{!today && <span>{when(item.days_until)}</span>}</div>
       <h3 key={`${item.id}-title`} className="go-celebration-title">
-        {birthday ? today ? <>It’s <span>{item.name}’s</span><br />birthday today!</> : <>Upcoming birthday:<br /><span>{item.name}</span></> : today ? <>Happy work anniversary,<br /><span>{item.name}!</span></> : <>Upcoming work anniversary:<br /><span>{item.name}</span></>}
+        {birthday ? today ? <>It’s <span>{item.name}’s</span><br />birthday today!</> : <>Upcoming birthday:<br /><span>{item.name}</span></> : today ? <>Happy {goAnniversaryLabel(item.years)}!<br /><span>{item.name}</span></> : <>Upcoming {goAnniversaryLabel(item.years)}:<br /><span>{item.name}</span></>}
       </h3>
-      <p className="go-celebration-message">{birthday ? today ? 'Wishing you a wonderful day from all of us at GO!' : 'A special day is on the way. Let’s celebrate together!' : today ? `Celebrating ${item.years} ${item.years === 1 ? 'year' : 'years'} with GO. Thank you for everything you do!` : `${item.years} ${item.years === 1 ? 'year' : 'years'} with GO on ${displayDate(item.date)}. A milestone worth celebrating!`}</p>
+      <p className="go-celebration-message">{birthday ? today ? 'Your GO team wishes you a wonderful birthday!' : 'A special day is on the way. Let’s celebrate together!' : today ? `Celebrating ${item.years} ${item.years === 1 ? 'year' : 'years'} with GO. Thank you for everything you do!` : `${item.years} ${item.years === 1 ? 'year' : 'years'} with GO on ${displayDate(item.date)}. A milestone worth celebrating!`}</p>
       <div className="go-celebration-date-line">{birthday ? <Cake size={17} aria-hidden="true" /> : <Award size={17} aria-hidden="true" />}<span>{displayDate(item.date)}<span aria-hidden="true"> · </span>{birthday ? 'Birthday' : 'Work anniversary'}</span></div>
       {today ? <div className="go-celebration-reactions">
         <p className="go-celebration-reaction-prompt">Send a little celebration</p>

@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { goAnniversaryLabel } from '../src/utils/celebrations.ts';
 
 let dir, Spotlight, Board, AdminBoard;
 before(async () => {
@@ -29,6 +30,7 @@ test('birthday board distinguishes upcoming and today, omits years, and offers r
   assert.doesNotMatch(future, /aria-label="Celebration reactions"/);
   const today = render({ ...item, days_until: 0 });
   assert.match(visible(today), /It’s Test Colleague’s birthday today!/);
+  assert.match(visible(today), /Your GO team wishes you a wonderful birthday!/);
   assert.match(today, /aria-label="Celebration reactions"/);
   assert.equal((today.match(/aria-pressed="false"/g) || []).length, 4);
   const board = renderToStaticMarkup(React.createElement(Board));
@@ -37,15 +39,23 @@ test('birthday board distinguishes upcoming and today, omits years, and offers r
 
 test('anniversary board distinguishes service years, and shared reaction details stay accessible', () => {
   const anniversary = render({ ...item, type: 'anniversary', years: 1, days_until: 1 });
-  assert.match(visible(anniversary), /Upcoming work anniversary: Test Colleague/);
+  assert.match(visible(anniversary), /Upcoming 1st GO Anniversary: Test Colleague/);
   assert.match(visible(anniversary), /1 year with GO on January 1/);
   const today = render({ ...item, type: 'anniversary', years: 5, days_until: 0, my_reaction: '🎉', reactions: [{ emoji: '🎉', people: [{ id: 'peer', name: 'Synthetic Teammate' }] }] }, { peopleOpen: true, busy: true });
-  assert.match(visible(today), /Happy work anniversary, Test Colleague!/);
+  assert.match(visible(today), /Happy 5th GO Anniversary! Test Colleague/);
   assert.match(visible(today), /5 years with GO/);
   assert.match(today, /aria-pressed="true"/);
   assert.match(today, /aria-label="Who reacted"/);
   assert.match(visible(today), /Synthetic Teammate/);
   assert.match(today, /disabled=""/);
+});
+
+test('GO anniversary messages use correct service-year ordinals, including teen and later milestones', () => {
+  for (const [years, ordinal] of [[1, '1st'], [2, '2nd'], [3, '3rd'], [4, '4th'], [11, '11th'], [12, '12th'], [13, '13th'], [21, '21st'], [22, '22nd'], [23, '23rd'], [111, '111th']]) {
+    assert.equal(goAnniversaryLabel(years), `${ordinal} GO Anniversary`);
+    assert.ok(visible(render({ ...item, type: 'anniversary', years, days_until: 0 })).includes(`Happy ${ordinal} GO Anniversary!`));
+  }
+  for (const value of [undefined, 0, -1, 1.5, NaN]) assert.equal(goAnniversaryLabel(value), 'GO Anniversary');
 });
 
 test('admin birthday cards omit the original birth year and calculated age', () => {

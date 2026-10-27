@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { UserProfile, LeaveBalance } from '../../types';
+import { goAnniversaryLabel } from '../../utils/celebrations';
 import {
   Cake,
   Award,
@@ -122,15 +123,6 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
 
             // Only show anniversaries of at least 1 year (or future 1st anniversary)
             if (completedYears > 0) {
-              const suffix =
-                completedYears === 1
-                  ? 'st'
-                  : completedYears === 2
-                  ? 'nd'
-                  : completedYears === 3
-                  ? 'rd'
-                  : 'th';
-
               items.push({
                 id: `${emp.id}-anniversary`,
                 employeeId: emp.id,
@@ -148,7 +140,7 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
                 }),
                 daysUntil,
                 yearsCount: completedYears,
-                milestoneTitle: `${completedYears}${suffix} Work Anniversary`,
+                milestoneTitle: daysUntil === 0 ? `Happy ${goAnniversaryLabel(completedYears)}!` : `Upcoming ${goAnniversaryLabel(completedYears)}`,
               });
             }
           }
@@ -203,12 +195,12 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
     const subject =
       item.type === 'birthday'
         ? `Happy Birthday, ${item.employeeName.split(' ')[0]}! 🎂🎉`
-        : `Happy ${item.milestoneTitle}, ${item.employeeName.split(' ')[0]}! 🏆🎖️`;
+        : `Happy ${goAnniversaryLabel(item.yearsCount)}, ${item.employeeName.split(' ')[0]}! 🏆🎖️`;
 
     const body =
       item.type === 'birthday'
-        ? `Hi ${item.employeeName.split(' ')[0]},\n\nWishing you a wonderful birthday filled with joy and celebration! Thank you for everything you contribute to our team.\n\nBest regards,\nHR Team`
-        : `Hi ${item.employeeName.split(' ')[0]},\n\nCongratulations on celebrating your ${item.milestoneTitle} with us! Thank you for your continued dedication, leadership, and impact on our team.\n\nBest regards,\nHR Team`;
+        ? `Hi ${item.employeeName.split(' ')[0]},\n\nYour GO team wishes you a wonderful birthday! Thank you for everything you contribute to our team.\n\nBest regards,\nHR Team`
+        : `Hi ${item.employeeName.split(' ')[0]},\n\nHappy ${goAnniversaryLabel(item.yearsCount)}! Thank you for your continued dedication, leadership, and impact on our team.\n\nBest regards,\nHR Team`;
 
     window.location.href = `mailto:${encodeURIComponent(item.employeeEmail)}?subject=${encodeURIComponent(
       subject
