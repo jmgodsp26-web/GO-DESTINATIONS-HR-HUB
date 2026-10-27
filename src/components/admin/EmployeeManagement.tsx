@@ -111,7 +111,8 @@ export const EmployeeManagement: React.FC = () => {
 
   // Adjust Balance State
   const [selectedLeaveTypeToAdjust, setSelectedLeaveTypeToAdjust] = useState<LeaveType>('Vacation Leave');
-  const [newAllocatedDays, setNewAllocatedDays] = useState<number>(15);
+  // Keep the editable value as text so decimals and clearing the field are not rounded to zero.
+  const [newAllocatedDays, setNewAllocatedDays] = useState('15');
 
   const [formError, setFormError] = useState<string | null>(null);
   const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
@@ -316,15 +317,20 @@ export const EmployeeManagement: React.FC = () => {
   // 4. Adjust Balance
   const handleAdjustBalance = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!adjustingBalanceEmployee) return;
+    if (!adjustingBalanceEmployee || isSubmitting) return;
     setFormError(null);
+    const allocatedDays = Number(newAllocatedDays);
+    if (!newAllocatedDays.trim() || !Number.isFinite(allocatedDays) || allocatedDays < 0 || allocatedDays > 100 || !Number.isInteger(allocatedDays * 2)) {
+      setFormError('Enter an allowance from 0 to 100 days in half-day increments, such as 0.5, 1 or 1.5.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
       await api.adjustLeaveBalance(
         adjustingBalanceEmployee.employee.id,
         selectedLeaveTypeToAdjust,
-        Number(newAllocatedDays)
+        allocatedDays
       );
       showToast({
         type: 'success',
@@ -348,7 +354,7 @@ export const EmployeeManagement: React.FC = () => {
       {/* Top Header */}
       {employeeId ? (focusedEmployee ? <EmployeeDetails key={focusedEmployee.id} employee={focusedEmployee}
         onEdit={() => { setEditingEmployee({ ...focusedEmployee }); setEditPassword(''); setFormError(null); }}
-        onBalance={() => { setAdjustingBalanceEmployee({ employee: focusedEmployee, balances: focusedEmployee.leave_balances }); setSelectedLeaveTypeToAdjust('Vacation Leave'); setNewAllocatedDays(focusedEmployee.leave_balances.find(b=>b.leave_type==='Vacation Leave')?.allocated_days || 0); setFormError(null); }}
+        onBalance={() => { setAdjustingBalanceEmployee({ employee: focusedEmployee, balances: focusedEmployee.leave_balances }); setSelectedLeaveTypeToAdjust('Vacation Leave'); setNewAllocatedDays(String(focusedEmployee.leave_balances.find(b=>b.leave_type==='Vacation Leave')?.allocated_days ?? 0)); setFormError(null); }}
         onDocuments={() => setSelectedDocsEmployee(focusedEmployee)} /> : <div className="go-live-audience"><p>This employee record is no longer available.</p><button type="button" className="go-button" onClick={()=>navigate('administration/employees')}>Back to employees</button></div>) : <>
       <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeading eyebrow="People" title="Employees" description="Manage your people, their details, and leave allowances." />
@@ -573,7 +579,8 @@ export const EmployeeManagement: React.FC = () => {
                           });
                           setSelectedLeaveTypeToAdjust('Vacation Leave');
                           const curBal = emp.leave_balances?.find((b) => b.leave_type === 'Vacation Leave') || emp.leave_balances?.find((b) => (b.leave_type as string) === 'Annual Leave');
-                          setNewAllocatedDays(curBal?.allocated_days ?? policyDefaults.annual);
+                          setNewAllocatedDays(String(curBal?.allocated_days ?? policyDefaults.annual));
+                          setFormError(null);
                         }}
                         className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors"
                         title="Adjust Leave Balance"
@@ -721,7 +728,8 @@ export const EmployeeManagement: React.FC = () => {
                           });
                           setSelectedLeaveTypeToAdjust('Vacation Leave');
                           const curBal = emp.leave_balances?.find((b) => b.leave_type === 'Vacation Leave') || emp.leave_balances?.find((b) => (b.leave_type as string) === 'Annual Leave');
-                          setNewAllocatedDays(curBal?.allocated_days ?? policyDefaults.annual);
+                          setNewAllocatedDays(String(curBal?.allocated_days ?? policyDefaults.annual));
+                          setFormError(null);
                         }}
                         className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
                         title="Adjust Balances"
@@ -1403,6 +1411,7 @@ export const EmployeeManagement: React.FC = () => {
             </div>
 
             <form onSubmit={handleAdjustBalance} className="p-6 space-y-4 text-xs">
+              {formError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">{formError}</p>}
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                 <p className="font-bold text-slate-900">
                   {adjustingBalanceEmployee.employee.full_name} ({adjustingBalanceEmployee.employee.employee_id})
@@ -1411,14 +1420,17 @@ export const EmployeeManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Leave Category</label>
+                <label htmlFor="adjust-leave-category" className="block font-semibold text-slate-700 mb-1">Leave Category</label>
                 <select
+                  id="adjust-leave-category"
+                  disabled={isSubmitting}
                   value={selectedLeaveTypeToAdjust}
                   onChange={(e) => {
                     const type = e.target.value as LeaveType;
                     setSelectedLeaveTypeToAdjust(type);
                     const bal = adjustingBalanceEmployee.balances.find((b) => b.leave_type === type);
-                    setNewAllocatedDays(bal ? bal.allocated_days : (type === 'Vacation Leave' ? policyDefaults.annual : policyDefaults.sick));
+                    setNewAllocatedDays(String(bal ? bal.allocated_days : (type === 'Vacation Leave' ? policyDefaults.annual : policyDefaults.sick)));
+                    setFormError(null);
                   }}
                   className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900"
                 >
@@ -1431,19 +1443,25 @@ export const EmployeeManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label htmlFor="adjust-leave-allowance" className="block font-semibold text-slate-700 mb-1">
                   New Annual Leave Allowance (Days)
                 </label>
                 <input
+                  id="adjust-leave-allowance"
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   max="100"
+                  step="0.5"
+                  required
+                  disabled={isSubmitting}
+                  aria-describedby="adjust-leave-allowance-help"
                   value={newAllocatedDays}
-                  onChange={(e) => setNewAllocatedDays(parseInt(e.target.value) || 0)}
+                  onChange={(e) => { setNewAllocatedDays(e.target.value); setFormError(null); }}
                   className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 font-bold"
                 />
-                <p className="text-[12px] text-slate-500 mt-1">
-                  Remaining balance is automatically calculated as allocated minus approved used.
+                <p id="adjust-leave-allowance-help" className="text-[12px] text-slate-500 mt-1">
+                  Enter the total allowance, including leave already used. Use 0.5 for half a day (for example, 10.5). Remaining balance = allowance minus approved leave used.
                 </p>
               </div>
 

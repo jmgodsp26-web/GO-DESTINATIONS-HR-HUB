@@ -32,7 +32,7 @@ test('dashboard HTTP: role boundaries, own records, current balances, file priva
   const child = spawn(process.execPath, ['build/server.cjs'], { cwd: fileURLToPath(new URL('..', import.meta.url)), env: { ...process.env, NODE_ENV: 'test', HR_TEST_STORE: dir + '/store.json', PORT: String(port) }, stdio: 'ignore' });
   const root = `http://127.0.0.1:${port}`;
   async function call(path, actor, method = 'GET', body) {
-    const res = await fetch(root + '/api' + path, { method, headers: { 'Content-Type': 'application/json', ...(actor === undefined ? {} : { Cookie: '__session=' + tokens[actor] }) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    const res = await originalFetch(root + '/api' + path, { method, headers: { 'Content-Type': 'application/json', ...(actor === undefined ? {} : { Cookie: '__session=' + tokens[actor] }) }, ...(body ? { body: JSON.stringify(body) } : {}) });
     return { status: res.status, headers: res.headers, data: await res.json() };
   }
   const originalFetch = globalThis.fetch;
@@ -119,6 +119,32 @@ test('dashboard HTTP: role boundaries, own records, current balances, file priva
     const listing = await api.getMyDocuments(); assert.equal(listing[0].file_data, undefined); assert.equal(listing[0].file_available, true);
     const binary = await globalThis.fetch(`/api/documents/${doc.id}/file`); assert.equal(await binary.text(), 'hello');
     active = 2; const denied = await globalThis.fetch(`/api/documents/${doc.id}/file`); assert.equal(denied.status, 404);
+
+    // Fractional allowances must survive the real client, HTTP serialization, persistence and leave ledger.
+    const allowancePath = `/employees/${other.id}/leave-balance`;
+    assert.equal((await call(allowancePath, undefined, 'PATCH', { leave_type: 'Vacation Leave', allocated_days: 0.5 })).status, 401);
+    assert.equal((await call(allowancePath, 2, 'PATCH', { leave_type: 'Vacation Leave', allocated_days: 0.5 })).status, 403);
+    active = 0;
+    assert.equal((await api.adjustLeaveBalance(other.id, 'Vacation Leave', 0.5)).allocated_days, 0.5);
+    active = 2;
+    const halfDay = await api.submitLeaveRequest({ leave_type: 'Vacation Leave', start_date: '2027-03-01', end_date: '2027-03-01', reason: 'Synthetic half-day regression', is_half_day: true, half_day_period: 'morning' });
+    assert.equal(halfDay.total_days, 0.5);
+    assert.equal(halfDay.status, 'Pending');
+    let vacation = (await api.getPersonalDashboard()).balances.find(b => b.leave_type === 'Vacation Leave');
+    assert.equal(vacation.allocated_days, 0.5); assert.equal(vacation.used_days, 0);
+    active = 0; await api.reviewLeaveRequest(halfDay.id, 'Approved'); active = 2;
+    vacation = (await api.getPersonalDashboard()).balances.find(b => b.leave_type === 'Vacation Leave');
+    assert.equal(vacation.used_days, 0.5); assert.equal(vacation.allocated_days - vacation.used_days, 0);
+    active = 0;
+    await assert.rejects(() => api.adjustLeaveBalance(other.id, 'Vacation Leave', 0), /already used leave/);
+    active = 2; await api.cancelLeaveRequest(halfDay.id);
+    vacation = (await api.getPersonalDashboard()).balances.find(b => b.leave_type === 'Vacation Leave');
+    assert.equal(vacation.used_days, 0); assert.equal(vacation.allocated_days, 0.5);
+    const halfDayLedger = await api.getLeaveTransactions();
+    assert.ok(halfDayLedger.some(t => t.amount === -0.5)); assert.ok(halfDayLedger.some(t => t.amount === 0.5));
+    active = 0; await api.adjustLeaveBalance(other.id, 'Vacation Leave', 1.5); active = 2;
+    assert.equal((await api.getPersonalDashboard()).balances.find(b => b.leave_type === 'Vacation Leave').allocated_days, 1.5);
+    active = 0; assert.equal((await api.adjustLeaveBalance(other.id, 'Vacation Leave', 0)).allocated_days, 0);
   } finally {
     globalThis.fetch = originalFetch; api.invalidateReadCache();
     if (child.exitCode === null) { const ended = once(child, 'exit'); child.kill(); await ended; }
