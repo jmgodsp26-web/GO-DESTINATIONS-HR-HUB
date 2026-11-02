@@ -1386,9 +1386,11 @@ export class HRDatabase {
     data: {
       holiday_id: string;
       working_hours: string;
+      shift_days?: 0.5 | 1;
       reason?: string;
     }
   ): HolidayShiftRequest {
+    if (data.shift_days !== undefined && data.shift_days !== 0.5 && data.shift_days !== 1) throw new Error('Choose a full-day or half-day holiday shift.');
     const holiday = this.holidays.find((h) => h.id === data.holiday_id);
     if (!holiday) {
       throw new Error('Holiday not found.');
@@ -1416,6 +1418,7 @@ export class HRDatabase {
       holiday_id: holiday.id,
       holiday_name: holiday.name,
       holiday_date: holiday.date,
+      shift_days: data.shift_days ?? 1,
       working_hours: data.working_hours || '9:00 AM – 5:00 PM',
       reason: data.reason || 'Requested holiday working shift.',
       status: 'Pending',
@@ -1527,7 +1530,7 @@ export class HRDatabase {
           };
           this.leaveBalances.push(creditBal);
         }
-        creditBal.allocated_days += this.companySettings.holiday_credit_rate;
+        creditBal.allocated_days += this.holidayShiftCredit(shift);
         creditBal.updated_at = new Date().toISOString();
 
         const remaining = creditBal.allocated_days - creditBal.used_days;
@@ -1537,7 +1540,7 @@ export class HRDatabase {
           employee_id: employee.id,
           employee_name: employee.full_name,
           leave_type: 'Holiday Shift Credit',
-          amount: this.companySettings.holiday_credit_rate,
+          amount: this.holidayShiftCredit(shift),
           balance_after: remaining,
           transaction_type: 'holiday_credit',
           reference_type: 'holiday_shift',
@@ -1568,7 +1571,7 @@ export class HRDatabase {
       id: 'notif-' + Math.random().toString(36).substring(2, 9),
       user_id: employee.id,
       title: 'Holiday Shift Scheduled',
-      message: `You are scheduled to work on ${holiday.name} (${holiday.date}) from ${shift.working_hours}. ${this.companySettings.holiday_credit_rate} Holiday Work Credit awarded.`,
+      message: `You are scheduled to work on ${holiday.name} (${holiday.date}) from ${shift.working_hours}. ${this.holidayShiftCredit(shift)} Holiday Work Credit awarded.`,
       type: 'system',
       read: false,
       created_at: new Date().toISOString(),
@@ -1624,7 +1627,7 @@ export class HRDatabase {
           this.leaveBalances.push(creditBal);
         }
 
-        creditBal.allocated_days += this.companySettings.holiday_credit_rate;
+        creditBal.allocated_days += this.holidayShiftCredit(shift);
         creditBal.updated_at = new Date().toISOString();
 
         const currentRemaining = creditBal.allocated_days - creditBal.used_days;
@@ -1634,7 +1637,7 @@ export class HRDatabase {
           employee_id: shift.employee_id,
           employee_name: employeeName,
           leave_type: 'Holiday Shift Credit',
-          amount: this.companySettings.holiday_credit_rate,
+          amount: this.holidayShiftCredit(shift),
           balance_after: currentRemaining,
           transaction_type: 'holiday_credit',
           reference_type: 'holiday_shift',
@@ -1657,14 +1660,14 @@ export class HRDatabase {
         user_role: adminUser.role,
         target_type: 'leave_request',
         target_id: shift.id,
-        details: `Approved holiday shift for ${shift.employee_name} on ${shift.holiday_name} (${shift.holiday_date}). ${this.companySettings.holiday_credit_rate} Holiday Work Credit awarded.`,
+        details: `Approved holiday shift for ${shift.employee_name} on ${shift.holiday_name} (${shift.holiday_date}). ${this.holidayShiftCredit(shift)} Holiday Work Credit awarded.`,
       });
 
       const approvedNotif: NotificationItem = {
         id: 'notif-' + Math.random().toString(36).substring(2, 9),
         user_id: shift.employee_id,
         title: 'Holiday Shift Approved',
-        message: `Your shift request for ${shift.holiday_name} (${shift.holiday_date}) was approved by ${adminUser.full_name}. ${this.companySettings.holiday_credit_rate} Holiday Work Credit has been added to your ledger.`,
+        message: `Your shift request for ${shift.holiday_name} (${shift.holiday_date}) was approved by ${adminUser.full_name}. ${this.holidayShiftCredit(shift)} Holiday Work Credit has been added to your ledger.`,
         type: 'leave_approved',
         read: false,
         created_at: new Date().toISOString(),
@@ -1893,7 +1896,7 @@ export class HRDatabase {
             };
             this.leaveBalances.push(creditBal);
           }
-          creditBal.allocated_days += this.companySettings.holiday_credit_rate;
+          creditBal.allocated_days += this.holidayShiftCredit(s);
           creditBal.updated_at = new Date().toISOString();
 
           const creditTx: LeaveTransaction = {
@@ -1901,7 +1904,7 @@ export class HRDatabase {
             employee_id: employeeId,
             employee_name: employee.full_name,
             leave_type: 'Holiday Shift Credit',
-            amount: this.companySettings.holiday_credit_rate,
+            amount: this.holidayShiftCredit(s),
             balance_after: creditBal.allocated_days - creditBal.used_days,
             transaction_type: 'holiday_credit',
             reference_type: 'holiday_shift',
@@ -1992,6 +1995,10 @@ export class HRDatabase {
       const balance = this.leaveBalances.find(b => b.employee_id === employee && b.leave_type === 'Holiday Shift Credit');
       if (amount > 0 && (!balance || balance.allocated_days - balance.used_days < amount)) throw new Error('This holiday credit has already been used. Cancel the approved credit leave before reversing the shift.');
     }
+  }
+
+  private holidayShiftCredit(shift: HolidayShiftRequest): number {
+    return this.companySettings.holiday_credit_rate * (shift.shift_days === 0.5 ? 0.5 : 1);
   }
 
   private outstandingHolidayCredit(shiftId: string): number {
