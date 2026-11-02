@@ -146,6 +146,7 @@ export interface HolidayShiftRequest {
   holiday_name: string;
   holiday_date: string;
   working_hours: string; // e.g., '9:00 AM – 5:00 PM'
+  shift_days?: 0.5 | 1; // Legacy requests without a duration count as full days.
   reason?: string;
   status: HolidayShiftStatus;
   admin_note?: string;

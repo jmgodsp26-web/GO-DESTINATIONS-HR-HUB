@@ -24,10 +24,11 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
     initialHolidayId || (holidays[0]?.id ?? '')
   );
   const [workingHours, setWorkingHours] = useState('9:00 AM – 5:00 PM');
+  const [duration, setDuration] = useState<'full' | 'morning' | 'afternoon'>('full');
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const canClose = useUnsavedChanges(Boolean(reason || workingHours !== '9:00 AM – 5:00 PM' || selectedHolidayId !== (initialHolidayId || holidays[0]?.id || '')), isSubmitting);
+  const canClose = useUnsavedChanges(Boolean(duration !== 'full' || reason || workingHours !== '9:00 AM – 5:00 PM' || selectedHolidayId !== (initialHolidayId || holidays[0]?.id || '')), isSubmitting);
   const closeDialog = () => { if (canClose()) onClose(); };
   const [leaveReady, setLeaveReady] = useState(false);
   const [userLeaves, setUserLeaves] = useState<LeaveRequest[]>([]);
@@ -76,7 +77,8 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
       setError(null);
       const shift = await api.submitHolidayShift({
         holiday_id: selectedHolidayId,
-        working_hours: workingHours,
+        working_hours: duration === 'full' ? workingHours : `Half day (${duration}) · ${workingHours}`,
+        shift_days: duration === 'full' ? 1 : 0.5,
         reason,
       });
       showToast({
@@ -163,6 +165,15 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
             )}
           </div>
 
+          <div>
+            <label htmlFor="holiday-shift-duration" className="block text-xs font-bold text-slate-700 mb-1">Shift duration *</label>
+            <select id="holiday-shift-duration" value={duration} disabled={isSubmitting} onChange={e => { const next = e.target.value as typeof duration; setDuration(next); setWorkingHours(next === 'morning' ? '9:00 AM – 1:00 PM' : next === 'afternoon' ? '1:00 PM – 5:00 PM' : '9:00 AM – 5:00 PM'); }} className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+              <option value="full">Full day — 8 hours</option>
+              <option value="morning">Half day — morning (4 hours)</option>
+              <option value="afternoon">Half day — afternoon (4 hours)</option>
+            </select>
+            <p className="text-xs text-slate-500 mt-1">Half-day shifts earn half the configured full-day holiday credit, only after approval.</p>
+          </div>
           {/* Working Hours */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -180,7 +191,7 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
               />
             </div>
             <p className="text-[12px] text-slate-500 mt-1">
-              Standard company holiday shift is 8 hours (e.g. 9:00 AM – 5:00 PM).
+              {duration === 'full' ? 'Full-day shift: 8 hours.' : 'Half-day shift: 4 hours. Adjust the proposed hours to your schedule.'}
             </p>
           </div>
 

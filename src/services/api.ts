@@ -355,6 +355,7 @@ export const api = {
 
   async submitHolidayShift(data: {
     holiday_id: string;
+    shift_days?: 0.5 | 1;
     working_hours: string;
     reason?: string;
   }): Promise<HolidayShiftRequest> {
