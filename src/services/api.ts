@@ -268,11 +268,12 @@ export const api = {
   async adjustLeaveBalance(
     employeeId: string,
     leave_type: LeaveType,
-    allocated_days: number
+    allocated_days: number,
+    historical_usage?: {days: number; reason: string; expected: {allocated_days: number; used_days: number}}
   ): Promise<LeaveBalance> {
     return request<LeaveBalance>(`/api/employees/${employeeId}/leave-balance`, {
       method: 'PATCH',
-      body: JSON.stringify({ leave_type, allocated_days }),
+      body: JSON.stringify({ leave_type, allocated_days, historical_usage }),
     });
   },
 

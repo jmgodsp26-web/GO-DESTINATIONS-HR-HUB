@@ -114,6 +114,10 @@ export const EmployeeManagement: React.FC = () => {
   const [selectedLeaveTypeToAdjust, setSelectedLeaveTypeToAdjust] = useState<LeaveType>('Vacation Leave');
   // Keep the editable value as text so decimals and clearing the field are not rounded to zero.
   const [newAllocatedDays, setNewAllocatedDays] = useState('15');
+  const [historicalUsage, setHistoricalUsage] = useState(false);
+  const [historicalDays, setHistoricalDays] = useState('');
+  const [historicalReason, setHistoricalReason] = useState('');
+  const resetHistoricalUsage = () => { setHistoricalUsage(false); setHistoricalDays(''); setHistoricalReason(''); };
 
   const [formError, setFormError] = useState<string | null>(null);
   const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
@@ -328,18 +332,25 @@ export const EmployeeManagement: React.FC = () => {
       setFormError('Enter an allowance from 0 to 100 days in half-day increments, such as 0.5, 1 or 1.5.');
       return;
     }
+    const current = adjustingBalanceEmployee.balances.find(b => b.leave_type === selectedLeaveTypeToAdjust);
+    const days = Number(historicalDays);
+    if (historicalUsage && (!current || !historicalDays.trim() || !Number.isFinite(days) || days <= 0 || !Number.isInteger(days * 2) || !historicalReason.trim() || current.used_days + days > allocatedDays)) {
+      setFormError('Enter previously used days in half-day increments, a reason, and a total allowance covering all used days.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
       await api.adjustLeaveBalance(
         adjustingBalanceEmployee.employee.id,
         selectedLeaveTypeToAdjust,
-        allocatedDays
+        allocatedDays,
+        historicalUsage && current ? {days, reason: historicalReason.trim(), expected: {allocated_days: current.allocated_days, used_days: current.used_days}} : undefined
       );
       showToast({
         type: 'success',
         title: 'Leave Balance Adjusted',
-        message: `${selectedLeaveTypeToAdjust} for ${adjustingBalanceEmployee.employee.full_name} set to ${newAllocatedDays} days.`,
+        message: `${selectedLeaveTypeToAdjust} balance updated${historicalUsage ? "; historical usage recorded" : ""}.`,
       });
       setAdjustingBalanceEmployee(null);
       await loadEmployees();
@@ -358,7 +369,7 @@ export const EmployeeManagement: React.FC = () => {
       {/* Top Header */}
       {employeeId ? (focusedEmployee ? <EmployeeDetails key={focusedEmployee.id} employee={focusedEmployee}
         onEdit={() => { setEditingEmployee({ ...focusedEmployee }); setEditPassword(''); setFormError(null); }}
-        onBalance={() => { setAdjustingBalanceEmployee({ employee: focusedEmployee, balances: focusedEmployee.leave_balances }); setSelectedLeaveTypeToAdjust('Vacation Leave'); setNewAllocatedDays(String(focusedEmployee.leave_balances.find(b=>b.leave_type==='Vacation Leave')?.allocated_days ?? 0)); setFormError(null); }}
+        onBalance={() => { setAdjustingBalanceEmployee({ employee: focusedEmployee, balances: focusedEmployee.leave_balances }); resetHistoricalUsage(); setSelectedLeaveTypeToAdjust('Vacation Leave'); setNewAllocatedDays(String(focusedEmployee.leave_balances.find(b=>b.leave_type==='Vacation Leave')?.allocated_days ?? 0)); setFormError(null); }}
         onDocuments={() => setSelectedDocsEmployee(focusedEmployee)} /> : <div className="go-live-audience"><p>This employee record is no longer available.</p><button type="button" className="go-button" onClick={()=>navigate('administration/employees')}>Back to employees</button></div>) : <>
       <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeading eyebrow="People" title="Employees" description="Manage your people, their details, and leave allowances." />
@@ -591,7 +602,7 @@ export const EmployeeManagement: React.FC = () => {
                             employee: emp,
                             balances: emp.leave_balances || [],
                           });
-                          setSelectedLeaveTypeToAdjust('Vacation Leave');
+                          resetHistoricalUsage(); setSelectedLeaveTypeToAdjust('Vacation Leave');
                           const curBal = emp.leave_balances?.find((b) => b.leave_type === 'Vacation Leave') || emp.leave_balances?.find((b) => (b.leave_type as string) === 'Annual Leave');
                           setNewAllocatedDays(String(curBal?.allocated_days ?? policyDefaults.annual));
                           setFormError(null);
@@ -740,7 +751,7 @@ export const EmployeeManagement: React.FC = () => {
                             employee: emp,
                             balances: emp.leave_balances || [],
                           });
-                          setSelectedLeaveTypeToAdjust('Vacation Leave');
+                          resetHistoricalUsage(); setSelectedLeaveTypeToAdjust('Vacation Leave');
                           const curBal = emp.leave_balances?.find((b) => b.leave_type === 'Vacation Leave') || emp.leave_balances?.find((b) => (b.leave_type as string) === 'Annual Leave');
                           setNewAllocatedDays(String(curBal?.allocated_days ?? policyDefaults.annual));
                           setFormError(null);
@@ -1411,7 +1422,7 @@ export const EmployeeManagement: React.FC = () => {
       {/* 3. Adjust Leave Balance Modal */}
       {adjustingBalanceEmployee && (
         <div className="go-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md max-h-[90dvh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <h3 className="text-base font-semibold text-slate-900">
                 Adjust Leave Balance
@@ -1442,7 +1453,7 @@ export const EmployeeManagement: React.FC = () => {
                   value={selectedLeaveTypeToAdjust}
                   onChange={(e) => {
                     const type = e.target.value as LeaveType;
-                    setSelectedLeaveTypeToAdjust(type);
+                    resetHistoricalUsage(); setSelectedLeaveTypeToAdjust(type);
                     const bal = adjustingBalanceEmployee.balances.find((b) => b.leave_type === type);
                     setNewAllocatedDays(String(bal ? bal.allocated_days : (type === 'Vacation Leave' ? policyDefaults.annual : policyDefaults.sick)));
                     setFormError(null);
@@ -1479,6 +1490,21 @@ export const EmployeeManagement: React.FC = () => {
                   Enter the total allowance, including leave already used. Use 0.5 for half a day (for example, 10.5). Remaining balance = allowance minus approved leave used.
                 </p>
               </div>
+
+              <fieldset className="space-y-3 rounded-lg border border-slate-200 p-3">
+                <label className="flex items-center gap-2 font-semibold"><input type="checkbox" checked={historicalUsage} disabled={isSubmitting}
+                  onChange={e => setHistoricalUsage(e.target.checked)} />Record previously used leave</label>
+                <p className="text-slate-500">Only for leave taken outside HR Hub and not already recorded as used. Existing requests and other leave categories stay unchanged.</p>
+                {historicalUsage && <>
+                  <label className="block">Previously used days to add
+                    <input aria-label="Previously used days to add" className="mt-1 w-full rounded-lg border p-2" type="number" min="0.5" max="100" step="0.5" required disabled={isSubmitting} value={historicalDays} onChange={e => setHistoricalDays(e.target.value)} />
+                  </label>
+                  <label className="block">Correction reason
+                    <textarea aria-label="Correction reason" className="mt-1 w-full rounded-lg border p-2" required maxLength={1000} disabled={isSubmitting} value={historicalReason} onChange={e => setHistoricalReason(e.target.value)} />
+                  </label>
+                  <p role="status">After correction: {newAllocatedDays || '0'} total · {(adjustingBalanceEmployee.balances.find(b => b.leave_type === selectedLeaveTypeToAdjust)?.used_days || 0) + Number(historicalDays || 0)} used · {Number(newAllocatedDays || 0) - (adjustingBalanceEmployee.balances.find(b => b.leave_type === selectedLeaveTypeToAdjust)?.used_days || 0) - Number(historicalDays || 0)} remaining. Recorded in balance history with your name and reason.</p>
+                </>}
+              </fieldset>
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-3">
                 <button

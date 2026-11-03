@@ -473,7 +473,11 @@ apiRouter.patch('/api/employees/:id/leave-balance', adminOnlyMiddleware, (req: A
       return res.status(400).json({ error: 'Invalid leave type or allocation value.' });
     }
 
-    const balance = db.adjustLeaveBalance(req.params.id, leave_type, allocated_days, req.user!);
+    const correction = req.body.historical_usage;
+    const balance = correction !== undefined
+      ? db.recordHistoricalLeaveUsage(req.params.id, leave_type, allocated_days, correction?.days,
+          correction?.reason, correction?.expected, req.user!)
+      : db.adjustLeaveBalance(req.params.id, leave_type, allocated_days, req.user!);
     res.json(balance);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to adjust balance.' });
