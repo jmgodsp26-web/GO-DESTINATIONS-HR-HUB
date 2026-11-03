@@ -54,6 +54,7 @@ export const EmployeeManagement: React.FC = () => {
   const { showToast } = useToast();
   const [employees, setEmployees] = useState<(UserProfile & { leave_balances: LeaveBalance[] })[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [nameSort, setNameSort] = useViewPreference<'asc' | 'desc'>('admin/EmployeeManagement.tsx:nameSort', 'asc');
   const [departmentFilter, setDepartmentFilter] = useViewPreference<string>('admin/EmployeeManagement.tsx:departmentFilter', 'All');
   const [countryFilter, setCountryFilter] = useViewPreference<string>('admin/EmployeeManagement.tsx:countryFilter', 'All');
   const [statusFilter, setStatusFilter] = useViewPreference<string>('admin/EmployeeManagement.tsx:statusFilter', 'All');
@@ -164,6 +165,9 @@ export const EmployeeManagement: React.FC = () => {
     const matchesStatus = statusFilter === 'All' || emp.status === statusFilter;
 
     return matchesSearch && matchesDept && matchesCountry && matchesStatus;
+  }).sort((a, b) => {
+    const byName = a.full_name.trim().localeCompare(b.full_name.trim(), 'en', { sensitivity: 'base', numeric: true });
+    return (nameSort === 'desc' ? -byName : byName) || a.employee_id.localeCompare(b.employee_id);
   });
 
   // 1. Create Employee Handler
@@ -442,6 +446,16 @@ export const EmployeeManagement: React.FC = () => {
                 {getCountryFlag(c)} {c}
               </option>
             ))}
+          </select>
+
+          <select
+            aria-label="Sort employees by name"
+            value={nameSort}
+            onChange={(e) => setNameSort(e.target.value as 'asc' | 'desc')}
+            className="text-xs rounded-xl border border-slate-200 px-3 py-2.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+          >
+            <option value="asc">Name: A–Z</option>
+            <option value="desc">Name: Z–A</option>
           </select>
 
           {/* Status Filter */}
