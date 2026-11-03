@@ -68,6 +68,15 @@ try{
  const privateLeave=await call('/api/leave-requests','POST',request('2026-10-19',{leave_type:'Medical Leave',end_date:'2026-10-21',reason:'SYNTHETIC_PRIVATE_MEDICAL_REASON',attachment_url:'https://example.test/private-medical'}),other.cookie);
  assert.equal(privateLeave.status,201);assert.equal((await call(`/api/leave-requests/${privateLeave.data.id}/review`,'PATCH',{action:'Approved',admin_note:'SYNTHETIC_PRIVATE_ADMIN_NOTE'},admin)).status,200);
  const holiday=await call('/api/holidays','POST',{name:'Synthetic audit holiday',date:'2026-10-20',country:'Philippines'},admin);assert.equal(holiday.status,201);
+ await check('historical usage endpoint protects correction and rejects replay',async()=>{
+   const path=`/api/employees/${employee.id}/leave-balance`;
+   const payload={leave_type:'Sick Leave',allocated_days:4,historical_usage:{days:1,reason:'Historical opening usage correction',expected:{allocated_days:0,used_days:0}}};
+   assert.equal((await call(path,'PATCH',payload,employee.cookie)).status,403);
+   assert.equal((await call(path,'PATCH',{...payload,historical_usage:null},admin)).status,400);
+   const result=await call(path,'PATCH',payload,admin);assert.equal(result.status,200);assert.equal(result.data.used_days,1);assert.equal(result.data.allocated_days,4);
+   assert.equal((await call(path,'PATCH',payload,admin)).status,400);
+   const saved=await call('/api/leave-balances','GET',undefined,employee.cookie);assert.equal(saved.data.find(b=>b.leave_type==='Sick Leave').used_days,1);
+ });
  await check('calendar redacts others medical reason',async()=>{const r=await call('/api/calendar','GET',undefined,employee.cookie);assert.equal(JSON.stringify(r.data).includes('SYNTHETIC_PRIVATE_MEDICAL_REASON'),false);});
  await check('admin personal calendar and holiday coverage use employee privacy while admin view stays available',async()=>{
    for(const route of ['/api/calendar?view=personal','/api/holiday-coverage?upcoming_only=false&view=personal','/api/holiday-coverage/'+holiday.data.id+'?view=personal']){
@@ -102,5 +111,5 @@ try{
  });
  await check('bodyless logout works and invalidates session',async()=>{assert.equal((await call('/api/auth/logout','POST',undefined,employee.cookie)).status,200);assert.equal((await call('/api/auth/me','GET',undefined,employee.cookie)).status,401);});
 }finally{const exited=new Promise(r=>child.once('exit',r));child.kill();await exited;await rm(dir,{recursive:true,force:true});}
-assert.equal(results.length,24);
+assert.equal(results.length,25);
 });

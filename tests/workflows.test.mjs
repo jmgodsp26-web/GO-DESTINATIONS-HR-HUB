@@ -85,3 +85,28 @@ scenario('a new zero credit allocation can be saved',d=>{assert.equal(d.adjustLe
 scenario('Philippines new accounts receive zero sick emergency medical defaults regardless of holiday calendar',d=>{const ph=d.createEmployee({full_name:'PH defaults',email:'ph-defaults@example.test',country:'Philippines',holiday_calendar:'United States',sick_leave_days:10},a);const rows=d.getLeaveBalances(ph.id);for(const type of ['Sick Leave','Emergency Leave','Medical Leave'])assert.equal(rows.find(b=>b.leave_type===type).allocated_days,0);assert.equal(rows.find(b=>b.leave_type==='Vacation Leave').allocated_days,20);const ca=d.createEmployee({full_name:'CA defaults',email:'ca-defaults@example.test',country:'Canada',holiday_calendar:'Philippines'},a);assert.equal(d.getLeaveBalances(ca.id).find(b=>b.leave_type==='Sick Leave').allocated_days,10);assert.equal(d.getLeaveBalances(ca.id).find(b=>b.leave_type==='Emergency Leave').allocated_days,5);assert.equal(d.getLeaveBalances(ca.id).find(b=>b.leave_type==='Medical Leave').allocated_days,10);});
 
 scenario('half-day holiday credit persists and approval cancellation uses exact historical amount',d=>{const h=holiday(d);d.updateCompanySettings({holiday_credit_rate:2});const s=d.submitHolidayShiftRequest(e,{holiday_id:h.id,working_hours:'Half day morning 9-1',shift_days:0.5});assert.equal(s.shift_days,0.5);assert.equal(d.getLeaveBalances(e.id).some(b=>b.leave_type==='Holiday Shift Credit'),false);const saved=new HRDatabase(d.exportState());saved.reviewHolidayShiftRequest(s.id,'Approved',a);saved.reviewHolidayShiftRequest(s.id,'Approved',a);assert.equal(balance(saved,'Holiday Shift Credit').allocated_days,1);saved.updateCompanySettings({holiday_credit_rate:3});saved.cancelHolidayShiftRequest(s.id,e);assert.equal(balance(saved,'Holiday Shift Credit').allocated_days,0);assert.throws(()=>d.submitHolidayShiftRequest(e,{holiday_id:h.id,working_hours:'invalid',shift_days:0.25}),/full-day or half-day/);});
+
+scenario('historical usage restores total while preserving remaining and other balances',d=>{
+ d.adjustLeaveBalance(e.id,'Sick Leave',3,a);
+ const vacation=structuredClone(balance(d));
+ const result=d.recordHistoricalLeaveUsage(e.id,'Sick Leave',4,1,'Previously taken leave; allowance reduced manually',{allocated_days:3,used_days:0},a);
+ assert.equal(result.allocated_days,4); assert.equal(result.used_days,1); assert.equal(result.allocated_days-result.used_days,3);
+ assert.deepEqual(balance(d),vacation);
+ assert.equal(d.getLeaveTransactions(e.id)[0].amount,0);
+ assert.match(d.getLeaveTransactions(e.id)[0].description,/used 0 → 1/);
+ assert.ok(d.getAuditLogs().some(l=>l.action==='Historical leave usage recorded'));
+ assert.throws(()=>d.recordHistoricalLeaveUsage(e.id,'Sick Leave',4,1,'Repeated save',{allocated_days:3,used_days:0},a),/changed/);
+ const reload=new HRDatabase(d.exportState()); assert.equal(balance(reload,'Sick Leave').used_days,1);
+});
+scenario('historical corrections validate before mutation and require admin',d=>{
+ const before=structuredClone(balance(d)); const expected={allocated_days:before.allocated_days,used_days:before.used_days};
+ for(const [total,days,reason] of [[20,NaN,'test'],[20,0,'test'],[20,-1,'test'],[20,0.2,'test'],[0,1,'test'],[20,1,' ']])
+  assert.throws(()=>d.recordHistoricalLeaveUsage(e.id,'Vacation Leave',total,days,reason,expected,a));
+ assert.throws(()=>d.recordHistoricalLeaveUsage(e.id,'Vacation Leave',20,1,'test',expected,e),/Administrator/);
+ assert.deepEqual(balance(d),before);
+});
+scenario('cancelling approved request preserves separately recorded historical usage',d=>{
+ const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Approved',a);
+ const b=balance(d);d.recordHistoricalLeaveUsage(e.id,'Vacation Leave',b.allocated_days,0.5,'Historical half-day',{allocated_days:b.allocated_days,used_days:b.used_days},a);
+ d.cancelLeaveRequest(r.id,e);assert.equal(balance(d).used_days,0.5);
+});

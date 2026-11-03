@@ -759,6 +759,37 @@ export class HRDatabase {
     return this.manualBalanceAdjustment(employeeId, leaveType, allocatedDays - (balance?.allocated_days || 0), 'Updated leave allocation', adminUser).balance;
   }
 
+  public recordHistoricalLeaveUsage(employeeId: string, leaveType: LeaveType, allocatedDays: number,
+    days: number, reason: string, expected: {allocated_days: number; used_days: number}, adminUser: UserProfile): LeaveBalance {
+    if (adminUser.role !== 'admin') throw new Error('Administrator access required.');
+    const employee = this.getProfile(employeeId);
+    const balance = this.leaveBalances.find(b => b.employee_id === employeeId && b.leave_type === leaveType);
+    if (!employee || !balance || !Object.hasOwn(LEAVE_TYPE_CONFIGS, leaveType)) throw new Error('Employee leave balance not found.');
+    if (![allocatedDays, days].every(n => typeof n === 'number' && Number.isFinite(n) && Number.isInteger(n * 2)) ||
+        allocatedDays < 0 || allocatedDays > 366 || days <= 0 || days > 366) throw new Error('Use valid half-day increments.');
+    if (typeof reason !== 'string' || !reason.trim() || reason.length > 1000) throw new Error('Provide a correction reason (up to 1000 characters).');
+    if (!expected || expected.allocated_days !== balance.allocated_days || expected.used_days !== balance.used_days)
+      throw new Error('This balance has changed. Close this form and reopen it before correcting it.');
+    const before = {allocated_days: balance.allocated_days, used_days: balance.used_days};
+    const used = before.used_days + days;
+    if (used > allocatedDays) throw new Error('Total allowance cannot be less than total used leave.');
+    balance.allocated_days = allocatedDays;
+    balance.used_days = used;
+    balance.updated_at = new Date().toISOString();
+    const remaining = allocatedDays - used;
+    const description = `Historical usage correction: ${reason.trim()}. Total ${before.allocated_days} → ${allocatedDays}; used ${before.used_days} → ${used}; remaining ${remaining}. No leave request or date was created.`;
+    this.leaveTransactions.unshift({id: crypto.randomUUID(), employee_id: employeeId, employee_name: employee.full_name,
+      leave_type: leaveType, amount: remaining - (before.allocated_days - before.used_days), balance_after: remaining,
+      transaction_type: 'admin_adjustment', reference_type: 'admin_adjustment', description,
+      performed_by_id: adminUser.id, performed_by_name: adminUser.full_name, created_at: balance.updated_at});
+    this.logAudit({action: 'Historical leave usage recorded', user_id: adminUser.id, user_name: adminUser.full_name,
+      user_role: adminUser.role, target_type: 'leave_balance', target_id: balance.id, details: description});
+    this.notifications.unshift({id: crypto.randomUUID(), user_id: employeeId, title: 'Leave Balance Corrected',
+      message: `${leaveType}: ${allocatedDays} total, ${used} used, ${remaining} remaining. Reason: ${reason.trim()}`,
+      type: 'system', read: false, created_at: balance.updated_at, link_tab: 'leave'});
+    return balance;
+  }
+
   // --- LEAVE REQUESTS METHODS ---
   public getLeaveRequests(
     user: UserProfile,
