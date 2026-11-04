@@ -1,3 +1,4 @@
+import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
 import { PageHeading } from '../common/WorkspaceUI';
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuditLog } from '../../types';
@@ -106,7 +107,7 @@ export const AuditLogsView: React.FC = () => {
             </div>
           ) : (
             filteredLogs.map((log) => {
-              const dateStr = new Date(log.timestamp).toLocaleString('en-US', {
+              const dateStr = new Date(log.timestamp).toLocaleString('en-US', { timeZone: EASTERN_TIME_ZONE, timeZoneName: 'short',
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',

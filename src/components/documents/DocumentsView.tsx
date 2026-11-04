@@ -1,3 +1,4 @@
+import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
 import { LoadError, RefreshStatus } from '../common/LoadFeedback';
 import { useViewPreference } from '../../hooks/useViewPreference';
 import { DocumentActions } from '../documents/DocumentActions';
@@ -307,7 +308,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                         </td>
                       )}
                       <td className="px-5 py-3.5 text-slate-600 tabular-nums font-medium">
-                        {new Date(doc.uploaded_at).toLocaleDateString('en-US', {
+                        {new Date(doc.uploaded_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE,
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',
@@ -360,7 +361,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
                   <span className="font-mono text-[12px]">{doc.file_size}</span>
                   <span className="flex items-center space-x-1">
                     <Clock className="w-3 h-3 text-slate-400" />
-                    <span>{new Date(doc.uploaded_at).toLocaleDateString()}</span>
+                    <span>{new Date(doc.uploaded_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE })}</span>
                   </span>
                 </div>
 

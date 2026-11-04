@@ -1,3 +1,4 @@
+import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
 import { DocumentActions } from '../documents/DocumentActions';
 import './employee-profile.css';
 import { employeeCalendar } from '../../utils/employeeCalendar';
@@ -177,7 +178,7 @@ export const EmployeeProfile: React.FC = () => {
                         {doc.name}
                       </h4>
                       <p className="text-[12px] text-slate-400 mt-1">
-                        Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
+                        Uploaded {new Date(doc.uploaded_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE })}
                       </p>
                     </div>
                   </div>

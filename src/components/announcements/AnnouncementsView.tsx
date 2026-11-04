@@ -1,3 +1,4 @@
+import { EASTERN_TIME_ZONE, easternDateTimeInput, easternInputToISOString } from '../../utils/easternTime';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dialog } from '../common/Dialog';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
@@ -14,7 +15,7 @@ import { useWorkspace } from '../../context/WorkspaceContext';
 import { PageHeading } from '../common/WorkspaceUI';
 import './announcements.css';
 
-const dateLabel = (value: string | null) => value ? new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Not published';
+const dateLabel = (value: string | null) => value ? new Date(value).toLocaleString('en-US', { timeZone: EASTERN_TIME_ZONE, timeZoneName: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Not published';
 const expired = (item: AnnouncementView) => Boolean(item.expires_at && Date.parse(item.expires_at) <= Date.now());
 const audienceLabel = (item: Pick<AnnouncementInput, 'departments' | 'countries'>) => `${item.departments.join(', ') || 'All departments'} · ${item.countries.join(', ') || 'All countries'}`;
 const blank = (): AnnouncementInput => ({ title: '', message: '', category: 'Company news', departments: [], countries: [], pinned: false, requires_acknowledgment: false, expires_at: null, status: 'draft' });
@@ -83,7 +84,8 @@ function AnnouncementEditor({ existing, onClose, onSaved }: { existing?: Announc
   }, [form.departments, form.countries, incompleteAudience]);
   const patch = (data: Partial<AnnouncementInput>) => setForm(previous => ({ ...previous, ...data }));
   const toggle = (key: 'departments' | 'countries', value: string) => setForm(previous => ({ ...previous, [key]: previous[key].includes(value) ? previous[key].filter(v => v !== value) : [...previous[key], value] }));
-  const localExpiry = form.expires_at ? new Date(Date.parse(form.expires_at) - new Date(form.expires_at).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
+  const [localExpiry, setLocalExpiry] = useState(() => existing?.expires_at ? easternDateTimeInput(new Date(existing.expires_at)) : '');
+  const expiryInput = useRef<HTMLInputElement>(null);
   async function uploadImage(file?: File) {
     if (!file) return;
     setImageBusy(true); setError('');
@@ -125,7 +127,13 @@ function AnnouncementEditor({ existing, onClose, onSaved }: { existing?: Announc
             <AudienceSelection label="Countries" values={EMPLOYEE_COUNTRIES} selected={form.countries} custom={customCountries} onMode={custom => { setCustomCountries(custom); if (!custom) patch({ countries: [] }); }} onToggle={value => toggle('countries', value)} />
           </section>
           <div className="go-ann-options"><label><input type="checkbox" checked={form.pinned} onChange={e => patch({ pinned: e.target.checked })} />Pin at the top</label><label><input type="checkbox" checked={form.requires_acknowledgment} onChange={e => patch({ requires_acknowledgment: e.target.checked })} />Require acknowledgment</label></div>
-          <label>Expiry date and time (optional)<input type="datetime-local" value={localExpiry} onChange={e => patch({ expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })} /><span className="go-ann-hint">Uses your browser’s local time. Expired announcements are hidden from employees.</span></label>
+          <label>Expiry date and time (Eastern Time, optional)<input ref={expiryInput} type="datetime-local" value={localExpiry} onChange={e => {
+            const value = e.target.value;
+            setLocalExpiry(value);
+            const expires_at = value ? easternInputToISOString(value) : null;
+            expiryInput.current?.setCustomValidity(value && !expires_at ? 'Choose a valid Eastern time outside the daylight saving clock change.' : '');
+            if (!value || expires_at) patch({ expires_at });
+          }} /><span className="go-ann-hint">Uses U.S. Eastern Time (EST or EDT). Expired announcements are hidden from employees.</span></label>
         </div>
       </fieldset>
       <div className="go-live-audience" role="status">{audience.error || (audience.count === undefined ? 'Checking audience…' : `${audience.count} active ${audience.count === 1 ? 'employee' : 'employees'} will receive this announcement.`)}{audience.count === 0 && <p>No employees currently match. Change the audience or save a draft.</p>}</div>

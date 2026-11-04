@@ -1,3 +1,4 @@
+import { easternDate } from '../src/utils/easternTime.js';
 import { celebrationsFor, REACTIONS, type CelebrationPreference, type CelebrationReaction } from './celebrations.js';
 import { importErrors, importPreview, type ImportEmployee } from '../src/utils/employeeImport.js';
 import { AnnouncementError, announcementAudience, announcementVisible, validateAnnouncement, decodeAnnouncementImage, type AnnouncementImage } from './announcements.js';
@@ -124,7 +125,7 @@ export class HRDatabase {
       throw new Error('A new database requires INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD (at least 12 characters).');
     }
     const actor = { id: 'setup', full_name, role: 'admin' } as UserProfile;
-    instance.createEmployee({ full_name, email, password, phone: '', department: 'Leadership', job_title: 'HR Administrator', date_joined: new Date().toISOString().slice(0, 10), role: 'admin' }, actor);
+    instance.createEmployee({ full_name, email, password, phone: '', department: 'Leadership', job_title: 'HR Administrator', date_joined: easternDate(), role: 'admin' }, actor);
     return instance;
   }
 
@@ -421,7 +422,7 @@ export class HRDatabase {
     }
     const newId = 'usr-' + Math.random().toString(36).substring(2, 9);
     const employeeId = 'HR-' + this.nextEmployeeNumber++;
-    const joined = data.hire_date || data.date_joined || new Date().toISOString().split('T')[0];
+    const joined = data.hire_date || data.date_joined || easternDate();
 
     const profile: UserProfile = {
       id: newId,
@@ -1157,27 +1158,8 @@ export class HRDatabase {
     return request;
   }
 
-  public getTodayDateString(timeZone?: string): string {
-    try {
-      const tz = timeZone || 'UTC';
-      const formatter = new Intl.DateTimeFormat('en-CA', {
-        timeZone: tz,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      });
-      const formatted = formatter.format(new Date());
-      if (/^\d{4}-\d{2}-\d{2}$/.test(formatted)) {
-        return formatted;
-      }
-    } catch {
-      // fallback
-    }
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+  public getTodayDateString(): string {
+    return easternDate();
   }
 
   // --- HOLIDAYS METHODS ---

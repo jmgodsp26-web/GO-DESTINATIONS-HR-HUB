@@ -1,5 +1,5 @@
+import { easternDate } from '../../utils/easternTime';
 import { reportRange } from '../../utils/reportPeriod';
-import { getTodayDateString } from '../../utils/countryUtils';
 import { LoadError, RefreshStatus } from '../common/LoadFeedback';
 import { useViewPreference } from '../../hooks/useViewPreference';
 import { PageHeading } from '../common/WorkspaceUI';
@@ -84,7 +84,7 @@ export const ReportsView: React.FC = () => {
       if (departmentFilter !== 'All' && r.employee_department !== departmentFilter) {
         return false;
       }
-      const range = reportRange(timeRange, getTodayDateString(user?.timezone));
+      const range = reportRange(timeRange, easternDate());
       return !range || (r.start_date >= range[0] && r.start_date <= range[1]);
     });
   }, [requests, departmentFilter, timeRange, user?.timezone]);
@@ -202,7 +202,7 @@ export const ReportsView: React.FC = () => {
       link.setAttribute('href', url);
       link.setAttribute(
         'download',
-        `HR_Hub_Leave_Report_${timeRange}_${new Date().toISOString().split('T')[0]}.csv`
+        `HR_Hub_Leave_Report_${timeRange}_${easternDate()}.csv`
       );
       document.body.appendChild(link);
       link.click();
@@ -270,7 +270,7 @@ export const ReportsView: React.FC = () => {
               className="rounded-xl border border-slate-200 px-3 py-1.5 bg-white text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
             >
               <option value="ytd">This year to today</option>
-              {[...new Set([getTodayDateString(user?.timezone).slice(0, 4), ...requests.map(r => r.start_date.slice(0, 4))])].sort().reverse().map(year => <React.Fragment key={year}><option value={`year:${year}`}>{year} · Full year</option>{[1,2,3,4].map(q => <option key={q} value={`quarter:${year}:${q}`}>{year} · Quarter {q}</option>)}</React.Fragment>)}
+              {[...new Set([easternDate().slice(0, 4), ...requests.map(r => r.start_date.slice(0, 4))])].sort().reverse().map(year => <React.Fragment key={year}><option value={`year:${year}`}>{year} · Full year</option>{[1,2,3,4].map(q => <option key={q} value={`quarter:${year}:${q}`}>{year} · Quarter {q}</option>)}</React.Fragment>)}
               <option value="all">All dates</option>
             </select>
 

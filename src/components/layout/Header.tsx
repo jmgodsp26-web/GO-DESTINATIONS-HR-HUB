@@ -1,3 +1,4 @@
+import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
 import { notificationDestination } from '../../utils/navigation';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import React, { useState, useRef, useEffect } from 'react';
@@ -42,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, [showNotifications, user?.id, refreshNotifications]);
 
   // Format today's date for contextual display
-  const todayFormatted = new Date().toLocaleDateString('en-US', {
+  const todayFormatted = new Date().toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE,
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -204,7 +205,7 @@ export const Header: React.FC<HeaderProps> = ({
                           </p>
                           <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{notif.message}</p>
                           <p className="text-[12px] text-slate-400 mt-1 tabular-nums">
-                            {new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(notif.created_at).toLocaleTimeString('en-US', { timeZone: EASTERN_TIME_ZONE, timeZoneName: 'short', hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                         {!notif.read && (

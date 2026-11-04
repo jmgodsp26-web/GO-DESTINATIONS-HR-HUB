@@ -1,3 +1,4 @@
+import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { DocumentActions } from '../documents/DocumentActions';
 import { readUpload } from '../../utils/files';
@@ -375,7 +376,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
                           <span>•</span>
                           <span className="flex items-center space-x-1">
                             <Clock className="w-3 h-3" />
-                            <span>{new Date(doc.uploaded_at).toLocaleDateString()}</span>
+                            <span>{new Date(doc.uploaded_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE })}</span>
                           </span>
                           <span>•</span>
                           <span>Uploaded by {doc.uploaded_by_name}</span>

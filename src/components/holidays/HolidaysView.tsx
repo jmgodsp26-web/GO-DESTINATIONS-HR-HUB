@@ -1,3 +1,4 @@
+import { easternDate } from '../../utils/easternTime';
 import { LoadError, RefreshStatus } from '../common/LoadFeedback';
 import { useViewPreference } from '../../hooks/useViewPreference';
 import { PageHeading } from '../common/WorkspaceUI';
@@ -13,7 +14,6 @@ import {
   COMMON_COUNTRIES,
   getCountryFlag,
   DEFAULT_COUNTRY,
-  getTodayDateString,
   formatHolidayDate,
 } from '../../utils/countryUtils';
 import {
@@ -145,7 +145,7 @@ export const HolidaysView: React.FC = () => {
   }, [loadData]);
 
 
-  const todayStr = getTodayDateString(user?.timezone);
+  const todayStr = easternDate();
 
   // Dynamic available countries from current holidays list + common
   const availableCountries = useMemo(() => {
