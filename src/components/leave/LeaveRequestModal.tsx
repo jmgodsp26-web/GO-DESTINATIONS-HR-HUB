@@ -1,3 +1,4 @@
+import { easternDate } from '../../utils/easternTime';
 import { Dialog } from '../common/Dialog';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { useNavigation } from '../../context/NavigationContext';
@@ -83,9 +84,9 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   // Reset form when opened
   useEffect(() => {
     if (isOpen) {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+      const tomorrow = new Date(easternDate() + 'T00:00:00Z');
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().slice(0, 10);
 
       initialDates.current = tomorrowStr; setSubmitted(null); setFieldErrors({});
       setStartDate(tomorrowStr);

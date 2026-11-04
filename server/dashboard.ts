@@ -2,14 +2,14 @@ import type { HRDatabase } from './db.js';
 import type { UserProfile } from '../src/types.js';
 import type { PersonalDashboardData, AdministrationDashboardData } from '../src/types/dashboard.js';
 import { employeeCalendar } from '../src/utils/employeeCalendar.js';
-import { getTodayDateString } from '../src/utils/countryUtils.js';
+import { easternDate } from '../src/utils/easternTime.js';
 
 export function personalDashboard(db: HRDatabase, actor: UserProfile): PersonalDashboardData {
   return {
     balances: db.getLeaveBalances(actor.id),
     // Administrators also use My Workspace: never include colleagues' requests.
     requests: db.getLeaveRequests(actor, { employee: actor.id }),
-    holidays: db.getHolidays({ country: employeeCalendar(actor).country, is_active: true, upcoming_only: true, reference_date: getTodayDateString(actor.timezone) }),
+    holidays: db.getHolidays({ country: employeeCalendar(actor).country, is_active: true, upcoming_only: true, reference_date: easternDate() }),
     shifts: db.getHolidayShifts({ employee_id: actor.id }),
   };
 }

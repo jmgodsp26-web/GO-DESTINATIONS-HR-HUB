@@ -1,3 +1,4 @@
+import { easternDate } from '../../utils/easternTime';
 import { useSections } from '../../hooks/useSections';
 import { DataRegion } from '../common/LoadFeedback';
 import { AnnouncementWidget } from '../announcements/AnnouncementsView';
@@ -9,7 +10,7 @@ import { LeaveRequest, Holiday, UserProfile, LeaveBalance, HolidayStaffingCovera
 import { api } from '../../services/api';
 import { CelebrationsWidget } from './CelebrationsWidget';
 import { HolidayStaffingCoverageWidget } from './HolidayStaffingCoverage';
-import { getTodayDateString, formatHolidayDate } from '../../utils/countryUtils';
+import { formatHolidayDate } from '../../utils/countryUtils';
 import {
   Users,
   ClipboardList,
@@ -54,7 +55,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
     void run('requests', () => dashboard.then(data => data.requests), setRequests);
     void run('holidays', () => dashboard.then(data => data.holidays), setHolidays);
     // Show the useful summary before calculating the larger staffing view.
-    void run('coverage', () => dashboard.then(() => api.getAllHolidayCoverage({ upcoming_only: true, reference_date: getTodayDateString(user?.timezone) })), setHolidayCoverages);
+    void run('coverage', () => dashboard.then(() => api.getAllHolidayCoverage({ upcoming_only: true, reference_date: easternDate() })), setHolidayCoverages);
   }, [run, user?.timezone]);
 
   useEffect(() => {
@@ -64,7 +65,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
   if (!user) return null;
 
   // Use dynamic local calendar date (YYYY-MM-DD)
-  const todayStr = getTodayDateString(user?.timezone);
+  const todayStr = easternDate();
 
   // Calculated metrics
   const totalEmployeesCount = employees.filter(e=>e.status==='active').length;

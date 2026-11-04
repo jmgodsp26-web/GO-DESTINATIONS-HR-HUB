@@ -1,3 +1,4 @@
+import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
 import { Dialog } from '../common/Dialog';
 import { useNavigation } from '../../context/NavigationContext';
 import { LoadError, RefreshStatus } from '../common/LoadFeedback';
@@ -308,7 +309,7 @@ export const LeaveHistory: React.FC = () => {
                             <td className="px-5 py-3.5">
                               <div className="font-bold text-slate-900">{req.leave_type}</div>
                               <div className="text-[12px] text-slate-400 mt-0.5">
-                                Submitted: {new Date(req.submitted_at).toLocaleDateString()}
+                                Submitted: {new Date(req.submitted_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE })}
                               </div>
                             </td>
                             <td className="px-5 py-3.5 text-slate-700 font-medium tabular-nums">
@@ -405,7 +406,7 @@ export const LeaveHistory: React.FC = () => {
                         <div className="flex items-start justify-between">
                           <div>
                             <span className="font-bold text-slate-900 text-sm">{req.leave_type}</span>
-                            <p className="text-[12px] text-slate-400">Submitted: {new Date(req.submitted_at).toLocaleDateString()}</p>
+                            <p className="text-[12px] text-slate-400">Submitted: {new Date(req.submitted_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE })}</p>
                           </div>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-semibold border ${statusClass}`}>
                             {req.status}
@@ -468,9 +469,9 @@ export const LeaveHistory: React.FC = () => {
                         return (
                           <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors">
                             <td className="px-5 py-3.5 text-slate-700 font-medium tabular-nums">
-                              <div>{txDate.toLocaleDateString()}</div>
+                              <div>{txDate.toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE })}</div>
                               <div className="text-[12px] text-slate-400">
-                                {txDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {txDate.toLocaleTimeString('en-US', { timeZone: EASTERN_TIME_ZONE, timeZoneName: 'short', hour: '2-digit', minute: '2-digit' })}
                               </div>
                             </td>
                             <td className="px-5 py-3.5">
@@ -542,7 +543,7 @@ export const LeaveHistory: React.FC = () => {
                         </div>
                         <p className="text-xs text-slate-600">{tx.description}</p>
                         <div className="flex items-center justify-between text-[12px] text-slate-400 pt-1">
-                          <span>{new Date(tx.created_at || tx.timestamp || Date.now()).toLocaleDateString()}</span>
+                          <span>{new Date(tx.created_at || tx.timestamp || Date.now()).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE })}</span>
                           <span>Balance: <strong className="text-slate-700">{tx.balance_after}d</strong></span>
                         </div>
                       </div>
@@ -605,7 +606,7 @@ export const LeaveHistory: React.FC = () => {
               <div className="flex justify-between py-1 border-b border-slate-100">
                 <span className="text-slate-500">Submitted On:</span>
                 <span className="font-semibold text-slate-900 tabular-nums">
-                  {new Date(selectedRequest.submitted_at).toLocaleString()}
+                  {new Date(selectedRequest.submitted_at).toLocaleString('en-US', { timeZone: EASTERN_TIME_ZONE, timeZoneName: 'short' })}
                 </span>
               </div>
 
@@ -633,7 +634,7 @@ export const LeaveHistory: React.FC = () => {
                 <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <p className="text-[12px] font-semibold text-slate-700">
                     Reviewed by {selectedRequest.reviewed_by_name} on{' '}
-                    {selectedRequest.reviewed_at ? new Date(selectedRequest.reviewed_at).toLocaleDateString() : ''}
+                    {selectedRequest.reviewed_at ? new Date(selectedRequest.reviewed_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE }) : ''}
                   </p>
                   {selectedRequest.admin_note && (
                     <p className="text-slate-600 mt-1 italic">

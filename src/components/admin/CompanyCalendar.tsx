@@ -1,3 +1,4 @@
+import { easternDate } from '../../utils/easternTime';
 import { useViewPreference } from '../../hooks/useViewPreference';
 import { PageHeading } from '../common/WorkspaceUI';
 import React, {
@@ -22,7 +23,6 @@ import { useAuth } from "../../context/AuthContext";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import type { CalendarEvent } from "../../types";
 import { api } from "../../services/api";
-import { getTodayDateString } from "../../utils/countryUtils";
 import {
   eventsOnDate,
   filterCalendarEvents,
@@ -72,7 +72,7 @@ const eventKey = (event: CalendarEvent) => `${event.type}:${event.id}`;
 export const CompanyCalendar: React.FC = () => {
   const { user } = useAuth();
   const { isAdministration } = useWorkspace();
-  const today = getTodayDateString(user?.timezone);
+  const today = easternDate();
   const [direction, setDirection] = useState("next");
   const [month, setMonth] = useViewPreference('calendar:month', today.slice(0, 7));
   const [events, setEvents] = useState<CalendarEvent[]>([]);

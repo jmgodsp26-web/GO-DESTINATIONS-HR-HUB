@@ -1,3 +1,4 @@
+import { easternDate } from '../../utils/easternTime';
 import { EmployeeImport } from './EmployeeImport';
 import { EmployeeDetails } from './EmployeeDetails';
 import { Dialog } from '../common/Dialog';
@@ -90,8 +91,8 @@ export const EmployeeManagement: React.FC = () => {
     holiday_region: '',
     region: '',
     avatar_url: '',
-    date_joined: new Date().toISOString().split('T')[0],
-    hire_date: new Date().toISOString().split('T')[0],
+    date_joined: easternDate(),
+    hire_date: easternDate(),
     date_of_birth: '',
     annual_leave_days: policyDefaults.annual,
     sick_leave_days: policyDefaults.sick,
@@ -205,8 +206,8 @@ export const EmployeeManagement: React.FC = () => {
         holiday_region: '',
         region: '',
         avatar_url: '',
-        date_joined: new Date().toISOString().split('T')[0],
-        hire_date: new Date().toISOString().split('T')[0],
+        date_joined: easternDate(),
+        hire_date: easternDate(),
         date_of_birth: '',
         annual_leave_days: policyDefaults.annual,
         sick_leave_days: policyDefaults.sick,
@@ -381,7 +382,7 @@ export const EmployeeManagement: React.FC = () => {
               const url = URL.createObjectURL(blob);
               const link = document.createElement('a');
               link.href = url;
-              link.download = 'employee-list-' + new Date().toISOString().slice(0, 10) + '.csv';
+              link.download = 'employee-list-' + easternDate() + '.csv';
               link.click();
               setTimeout(() => URL.revokeObjectURL(url), 1000);
               showToast({ type: 'success', title: 'Report exported', message: filteredEmployees.length + ' employees exported using the current filters.' });

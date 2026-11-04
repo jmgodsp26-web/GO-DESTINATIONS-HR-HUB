@@ -1,3 +1,4 @@
+import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
 import { notificationDestination } from '../../utils/navigation';
 import { PageHeading } from '../common/WorkspaceUI';
 import React, { useState, useEffect } from 'react';
@@ -205,7 +206,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
                       {notif.message}
                     </p>
                     <p className="text-[12px] text-slate-400 mt-1.5 tabular-nums">
-                      {new Date(notif.created_at).toLocaleDateString('en-US', {
+                      {new Date(notif.created_at).toLocaleString('en-US', { timeZone: EASTERN_TIME_ZONE, timeZoneName: 'short',
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric',
