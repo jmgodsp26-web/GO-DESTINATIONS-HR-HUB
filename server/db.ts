@@ -320,6 +320,12 @@ export class HRDatabase {
     }
   }
 
+  /** A new temporary password from HR should work immediately, even after failed attempts. */
+  private clearSignInLockout(email: string) {
+    const accountKey = crypto.createHash('sha256').update('account:' + email.trim().toLowerCase()).digest('hex');
+    this.loginAttempts = this.loginAttempts.filter(row => row.id !== accountKey);
+  }
+
   public revokeAllSessionsForUser(userId: string) {
     let changed = false;
     for (const [token, session] of this.sessions.entries()) {
@@ -582,7 +588,7 @@ export class HRDatabase {
       user.passwordCustomized = false;
       user.mustChangePassword = true;
       this.revokeAllSessionsForUser(employeeId);
-
+      this.clearSignInLockout(user.email);
     }
 
     const { password: _password, ...profileUpdates } = updates;
@@ -673,6 +679,7 @@ export class HRDatabase {
     user.mustChangePassword = true;
 
     this.revokeAllSessionsForUser(employeeId);
+    this.clearSignInLockout(user.email);
 
     this.logAudit({
       action: 'Admin password reset',
@@ -978,7 +985,9 @@ export class HRDatabase {
     return newRequest;
   }
 
-  public cancelLeaveRequest(requestId: string, user: UserProfile, today = easternDate()): LeaveRequest {
+  public cancelLeaveRequest(requestId: string, user: UserProfile, today = easternDate(), reason?: unknown): LeaveRequest {
+    if (reason !== undefined && reason !== null && (typeof reason !== 'string' || reason.length > 1000)) throw new Error('Cancellation reason must be 1000 characters or fewer.');
+    const cancellationReason = typeof reason === 'string' ? reason.trim() : '';
     const request = this.leaveRequests.find((r) => r.id === requestId);
     if (!request) {
       throw new Error('Leave request not found.');
@@ -1004,6 +1013,11 @@ export class HRDatabase {
     }
     request.status = 'Cancelled';
     request.updated_at = new Date().toISOString();
+    request.cancelled_at = request.updated_at;
+    request.cancelled_by = user.id;
+    request.cancelled_by_name = user.full_name;
+    if (cancellationReason) request.cancellation_reason = cancellationReason;
+    const refundedDays = wasApproved && (isPaidLeaveType(request.leave_type) || request.leave_type === 'Holiday Shift Credit') ? request.total_days : 0;
 
     // If the request was already approved, restore the deducted days to the balance atomically
     if (wasApproved) {
@@ -1047,8 +1061,24 @@ export class HRDatabase {
       user_role: user.role,
       target_type: 'leave_request',
       target_id: request.id,
-      details: `Cancelled leave request for ${request.employee_name} (${request.leave_type}, ${request.total_days} days).${wasApproved ? ' Restored balance in ledger.' : ''}`,
+      details: `Cancelled ${wasApproved ? 'approved' : 'pending'} leave request for ${request.employee_name} (${request.leave_type}, ${request.total_days} days).${wasApproved ? ' Restored balance in ledger.' : ''}${cancellationReason ? ` Reason: "${cancellationReason}"` : ''}`,
     });
+
+    // When HR cancels someone else's leave, tell the employee what changed.
+    if (request.employee_id !== user.id) {
+      const dates = request.start_date + (request.start_date !== request.end_date ? ' to ' + request.end_date : '');
+      this.notifications.unshift({
+        id: 'notif-' + crypto.randomUUID(),
+        user_id: request.employee_id,
+        title: 'Leave Cancelled by HR',
+        message: `Your ${wasApproved ? 'approved' : 'pending'} ${request.leave_type} (${dates}) was cancelled by ${user.full_name}.${refundedDays ? ` ${refundedDays} day(s) were returned to your balance.` : ''}${cancellationReason ? ` Reason: ${cancellationReason}` : ''}`,
+        type: 'system',
+        read: false,
+        created_at: new Date().toISOString(),
+        link_tab: 'leave',
+        request_id: request.id,
+      });
+    }
 
     // HR should know when previously approved time off is withdrawn.
     if (wasApproved) {

@@ -392,7 +392,7 @@ apiRouter.patch('/api/leave-requests/:id/review', adminOnlyMiddleware, (req: Aut
 
 apiRouter.patch('/api/leave-requests/:id/cancel', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
-    const cancelled = db.cancelLeaveRequest(req.params.id, req.user!);
+    const cancelled = db.cancelLeaveRequest(req.params.id, req.user!, undefined, req.body?.reason);
     res.json(cancelled);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to cancel leave request.' });

@@ -111,6 +111,10 @@ export interface LeaveRequest {
   reviewed_at?: string;
   reviewed_by?: string;
   reviewed_by_name?: string;
+  cancelled_at?: string;
+  cancelled_by?: string;
+  cancelled_by_name?: string;
+  cancellation_reason?: string;
 }
 
 export type HolidayType = 'Public Holiday' | 'Company Holiday' | 'Regional Holiday' | 'Observance';

@@ -184,3 +184,27 @@ scenario('deleting an employee removes their notifications and celebration recor
   assert.ok(state.leaveTransactions.some(t=>t.employee_id===e.id),'leave ledger kept as HR history');
  });
 });
+
+// --- Admin powers ---
+scenario('HR cancels approved leave already taken: balance restored, reason recorded, employee notified',d=>{
+ const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Approved',a);
+ const c=d.cancelLeaveRequest(r.id,a,'2026-11-07','Employee worked that day');
+ assert.equal(c.status,'Cancelled');assert.equal(balance(d).used_days,0);
+ assert.equal(c.cancelled_by,a.id);assert.equal(c.cancellation_reason,'Employee worked that day');
+ const notice=d.getNotifications(e.id).find(n=>n.title==='Leave Cancelled by HR');
+ assert.ok(notice);assert.match(notice.message,/1 day\(s\) were returned/);assert.match(notice.message,/Employee worked that day/);
+ assert.ok(d.getAuditLogs().some(l=>l.action==='Leave request cancelled'&&/Employee worked that day/.test(l.details)));
+});
+scenario('cancellation reasons are validated and employees cancelling their own leave get no HR notice',d=>{
+ const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Approved',a);
+ assert.throws(()=>d.cancelLeaveRequest(r.id,a,BEFORE_LEAVE,'x'.repeat(1001)),/1000 characters/);
+ assert.equal(r.status,'Approved');
+ d.cancelLeaveRequest(r.id,e,BEFORE_LEAVE);
+ assert.equal(d.getNotifications(e.id).some(n=>n.title==='Leave Cancelled by HR'),false);
+});
+scenario('HR password reset lifts a sign-in lockout immediately',d=>{
+ for(let i=0;i<20;i++)assert.throws(()=>d.authenticate(e.email,'wrong-password','home'));
+ assert.throws(()=>d.authenticate(e.email,'Isolated-Employee-Temp-938!','home'),e=>e.code==='LOGIN_THROTTLED');
+ d.adminResetPassword(e.id,'Fresh-Temporary-Pass-1',a);
+ assert.equal(d.authenticate(e.email,'Fresh-Temporary-Pass-1','home').user.id,e.id);
+});
