@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createHash } from 'node:crypto';
-import { HRDatabase } from '../server/db.ts';
+import { HRDatabase, hashPassword } from '../server/db.ts';
 import { transactFirestore } from '../server/persistence.ts';
 import { readPlanFor, writeTablesFor } from '../server/read-plan.ts';
 
@@ -207,4 +207,53 @@ test('known document metadata excludes large file contents from list and unrelat
   const query = f.queries.find(q => q.path === 'hr_v2_employeeDocuments');
   assert.ok(!query.fields.includes('file_data')); assert.ok(query.bytes < 5000);
   assert.equal(f.documents.get('hr_v2_employeeDocuments/large-0').file_data, data);
+});
+
+test('a cookie naming no stored session reads only the marker and that session, never HR data', async () => {
+  for (const [method, path] of [['GET', '/new-unreviewed-route'], ['GET', '/leave-balances'], ['POST', '/employees'], ['POST', '/leave-requests']]) {
+    const f = fixture(), token = 'forged-session-cookie';
+    const writeTables = writeTablesFor(method, path);
+    const result = await transactFirestore(f.firestore, async db => ({ result: db.getUserByToken(token), commit: false }), {
+      readPlan: readPlanFor(method, path, token), writeTables, writeSessionId: writeTables ? hash(token) : undefined, authSessionId: hash(token),
+    });
+    assert.equal(result, null);
+    assert.deepEqual([...new Set(f.reads)].sort(), ['hr_v2_meta/state', `hr_v2_sessions/${hash(token)}`].sort(), `${method} ${path}`);
+    assert.deepEqual(f.writes, []);
+  }
+});
+
+test('a valid session keeps the same reads when the session check is enabled', async () => {
+  const f = fixture(), token = 'synthetic-session-0';
+  await transactFirestore(f.firestore, async db => ({ result: db.getLeaveBalances(db.getUserByToken(token).id), commit: true }),
+    { readPlan: readPlanFor('GET', '/leave-balances', token), authSessionId: hash(token) });
+  assert.deepEqual(f.reads.sort(), ['hr_v2_meta/state', 'hr_v2_users', `hr_v2_sessions/${hash(token)}`, 'hr_v2_leaveBalances'].sort());
+  const g = fixture();
+  const result = await transactFirestore(g.firestore, async db => {
+    const actor = { ...db.getUserByToken(token), role: 'admin' };
+    return { result: db.addHoliday({ name: 'Synthetic holiday', date: '2027-01-04', country: 'Philippines' }, actor), commit: true };
+  }, { authSessionId: hash(token) });
+  assert.ok(g.documents.has('hr_v2_holidays/' + result.id)); assert.ok(g.reads.includes('hr_v2_employeeDocuments'));
+});
+
+test('sign-in reads accounts and throttling counters only, and still records the new session', async () => {
+  const f = fixture();
+  const writeTables = writeTablesFor('POST', '/auth/login');
+  const email = f.documents.get('hr_v2_users/employee-0').email;
+  const user = f.documents.get('hr_v2_users/employee-0');
+  user.passwordHash = hashPassword('Synthetic-login-password-1');
+  const login = await transactFirestore(f.firestore, async db => ({ result: db.authenticate(email, 'Synthetic-login-password-1', 'ip'), commit: true }),
+    { writeTables, writeSessionId: hash('') });
+  assert.ok(f.documents.has(`hr_v2_sessions/${hash(login.token)}`));
+  for (const table of ['hr_v2_sessions', 'hr_v2_employeeDocuments', 'hr_v2_leaveRequests', 'hr_v2_notifications', 'hr_v2_auditLogs'])
+    assert.ok(!f.reads.includes(table), table);
+  assert.ok(f.reads.includes('hr_v2_users')); assert.ok(f.reads.includes('hr_v2_loginAttempts'));
+  for (let i = 0; i < 3; i++) assert.ok(f.documents.has(`hr_v2_sessions/${hash('synthetic-session-' + i)}`), 'other sessions untouched');
+  assert.ok([...f.documents.keys()].some(k => k.startsWith('hr_v2_auditLogs/')), 'sign-in audited');
+  const logout = fixture();
+  await transactFirestore(logout.firestore, async db => { db.logout('synthetic-session-1'); return { result: null, commit: true }; },
+    { writeTables: writeTablesFor('POST', '/auth/logout'), writeSessionId: hash('synthetic-session-1') });
+  assert.ok(!logout.documents.has(`hr_v2_sessions/${hash('synthetic-session-1')}`));
+  assert.ok(logout.documents.has(`hr_v2_sessions/${hash('synthetic-session-0')}`));
+  assert.ok(logout.documents.has('hr_v2_users/employee-1') && logout.documents.has('hr_v2_leaveBalances/balance-1'));
+  assert.deepEqual(logout.reads.sort(), ['hr_v2_meta/state', `hr_v2_sessions/${hash('synthetic-session-1')}`].sort());
 });

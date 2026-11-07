@@ -209,7 +209,7 @@ export interface AuditLog {
   user_id: string;
   user_name: string;
   user_role: UserRole;
-  target_type: 'employee' | 'leave_request' | 'holiday' | 'leave_balance' | 'security' | 'announcement' | 'onboarding';
+  target_type: 'employee' | 'leave_request' | 'holiday' | 'leave_balance' | 'security' | 'announcement' | 'onboarding' | 'settings' | 'employee_document';
   target_id: string;
   details: string;
   timestamp: string;

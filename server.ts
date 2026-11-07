@@ -111,7 +111,8 @@ const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV !== 'test',
 // receives a fresh database and router dispatch; failed operations do not persist.
 app.use('/api', async (req: Request, res: Response) => {
   if (req.path === '/health') return res.json({ status: 'ok' });
-  if (!['/auth/login', '/auth/logout', '/auth/reset-password'].includes(req.path) && !sessionToken(req)) {
+  const publicRoute = ['/auth/login', '/auth/logout', '/auth/reset-password'].includes(req.path);
+  if (!publicRoute && !sessionToken(req)) {
     return res.status(401).json({ error: 'Authentication required. Please log in.' });
   }
   const originalUrl = req.url;
@@ -123,6 +124,8 @@ app.use('/api', async (req: Request, res: Response) => {
   const readPlan = readPlanFor(req.method, req.path, sessionToken(req));
   const writeTables = writeTablesFor(req.method, req.path);
   const writeSessionId = writeTables ? sessionIdFor(sessionToken(req)) : undefined;
+  // Protected routes first confirm the cookie names a stored session.
+  const authSessionId = publicRoute ? undefined : sessionIdFor(sessionToken(req));
   const writeLeaveRequestId = writeTables && /^\/leave-requests\/([^/]+)(?:\/(?:review|cancel))?\/?$/.exec(req.path)?.[1];
   const employeeDocumentId = /^\/documents\/([^/]+)\/file\/?$/.exec(req.path)?.[1];
   const leaveAttachmentId = /^\/leave-attachments\/([a-f0-9-]{36})\/?$/.exec(req.path)?.[1];
@@ -146,7 +149,7 @@ app.use('/api', async (req: Request, res: Response) => {
         apiRouter(req, res, (error?: any) => { if (error) reject(error); else { res.statusCode = 404; capture('json', { error: 'API route not found.' }); } });
       }));
       return { result: reply, commit: reply.status < 400 || (req.path === '/api/auth/login' && [401, 403, 429].includes(reply.status)) };
-    }, { onboardingFileId, announcementImageId, employeeDocumentId, leaveAttachmentId, legacyDocuments, readPlan, writeTables, writeSessionId, writeLeaveRequestId: writeLeaveRequestId || undefined });
+    }, { onboardingFileId, announcementImageId, employeeDocumentId, leaveAttachmentId, legacyDocuments, readPlan, writeTables, writeSessionId, authSessionId, writeLeaveRequestId: writeLeaveRequestId || undefined });
     res.send = send; res.json = json; res.end = end as any;
     res.status(outcome.status);
     for (const [header, value] of Object.entries(outcome.headers)) if (value !== undefined) res.setHeader(header, value);
@@ -825,7 +828,7 @@ apiRouter.post('/api/admin/employees/:id/documents', adminOnlyMiddleware, (req: 
       file_size: `${uploaded.bytes.length} Bytes`,
       file_data,
       uploaded_by_name: req.user!.full_name,
-    });
+    }, req.user!);
     res.status(201).json(newDoc);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to upload document.' });
@@ -834,7 +837,7 @@ apiRouter.post('/api/admin/employees/:id/documents', adminOnlyMiddleware, (req: 
 
 apiRouter.delete('/api/admin/employees/:employeeId/documents/:docId', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
-    const success = db.deleteEmployeeDocument(req.params.employeeId, req.params.docId);
+    const success = db.deleteEmployeeDocument(req.params.employeeId, req.params.docId, req.user!);
     if (!success) {
       return res.status(404).json({ error: 'Document not found.' });
     }
@@ -856,7 +859,7 @@ apiRouter.get('/api/settings', authMiddleware, (_req: AuthenticatedRequest, res:
 
 apiRouter.patch('/api/settings', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
-    const updated = db.updateCompanySettings(req.body);
+    const updated = db.updateCompanySettings(req.body, req.user!);
     res.json(updated);
   } catch (error: any) {
     res.status(400).json({ error: error.message });

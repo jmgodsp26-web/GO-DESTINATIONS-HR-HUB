@@ -53,6 +53,8 @@ interface TransactionOptions {
   onboardingFileId?: string; announcementImageId?: string;
   employeeDocumentId?: string; leaveAttachmentId?: string; legacyDocuments?: boolean;
   writeSessionId?: string; writeLeaveRequestId?: string;
+  /** Session digest that must exist before any HR collection is read. */
+  authSessionId?: string;
   readPlan?: ReadPlan; writeTables?: readonly typeof TABLES[number][];
 }
 export async function transact<T>(operation: Operation<T>, options: TransactionOptions = {}): Promise<T> {
@@ -85,23 +87,31 @@ export async function transact<T>(operation: Operation<T>, options: TransactionO
 // Export the real Firestore adapter so regression tests can verify reads and
 // writes without touching production or using cloud credentials.
 export async function transactFirestore<T>(firestore: Firestore, operation: Operation<T>, options: TransactionOptions = {}): Promise<T> {
-  const tables = options.readPlan?.tables || options.writeTables || TABLES;
   return firestore.runTransaction(async tx => {
     const metaRef = firestore.doc(PREFIX + 'meta/state');
-    const [meta, writeSession, writeRequest] = await Promise.all([
+    const sessionRef = (id: string) => firestore.collection(PREFIX + 'sessions').doc(id);
+    const authSessionId = options.authSessionId;
+    const separateAuthRead = authSessionId && authSessionId !== options.writeSessionId;
+    const [meta, writeSession, writeRequest, authSessionRead] = await Promise.all([
       tx.get(metaRef),
-      options.writeSessionId ? tx.get(firestore.collection(PREFIX + 'sessions').doc(options.writeSessionId)) : undefined,
+      options.writeSessionId ? tx.get(sessionRef(options.writeSessionId)) : undefined,
       options.writeLeaveRequestId ? tx.get(firestore.collection(PREFIX + 'leaveRequests').doc(options.writeLeaveRequestId)) : undefined,
+      separateAuthRead ? tx.get(sessionRef(authSessionId)) : undefined,
     ]);
+    const authSession = separateAuthRead ? authSessionRead : authSessionId ? writeSession : undefined;
+    // A cookie that names no stored session can only receive 401. Do not load
+    // the HR dataset for it: unauthenticated traffic must stay cheap.
+    const unknownSession = Boolean(authSessionId) && !authSession?.exists;
+    const tables = unknownSession ? [] : options.readPlan?.tables || options.writeTables || TABLES;
     const leaveEmployeeId = writeRequest?.data()?.employee_id || writeSession?.data()?.userId;
-    if ((options.readPlan || options.writeTables) && !meta.exists) throw new Error('Database initialization marker missing.');
+    if ((options.readPlan || options.writeTables || unknownSession) && !meta.exists) throw new Error('Database initialization marker missing.');
     const documentBackfills: { id: string; file_available: boolean; mime_type?: string }[] = [];
     // Onboarding blobs are fetched only for an explicit file request. Ordinary
     // HR transactions read metadata, keeping file bytes out of every page load.
     const snapshots = await Promise.all(tables.map(async table => {
       if (table === 'sessions' && options.writeSessionId) return { docs: writeSession?.exists ? [writeSession] : [], empty: !writeSession?.exists };
       if (table === 'sessions' && options.readPlan) {
-        const session = await tx.get(firestore.collection(PREFIX + table).doc(options.readPlan.sessionId));
+        const session = authSession && authSessionId === options.readPlan.sessionId ? authSession : await tx.get(sessionRef(options.readPlan.sessionId));
         return { docs: session.exists ? [session] : [], empty: !session.exists };
       }
       if (options.writeTables) {

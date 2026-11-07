@@ -1,4 +1,4 @@
-import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
+import { EASTERN_TIME_ZONE, easternDate } from '../../utils/easternTime';
 import { Dialog } from '../common/Dialog';
 import { useNavigation } from '../../context/NavigationContext';
 import { LoadError, RefreshStatus } from '../common/LoadFeedback';
@@ -701,7 +701,9 @@ export const LeaveHistory: React.FC = () => {
             </div>
 
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-              {['Pending', 'Approved'].includes(selectedRequest.status) ? (
+              {selectedRequest.status === 'Approved' && user?.role !== 'admin' && selectedRequest.start_date <= easternDate() ? (
+                <p className="text-xs text-slate-600">This leave has started. Contact HR if it needs to change.</p>
+              ) : ['Pending', 'Approved'].includes(selectedRequest.status) ? (
                 <button
                   type="button"
                   onClick={() => setCancellingRequest(selectedRequest)}

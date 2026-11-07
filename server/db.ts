@@ -36,6 +36,14 @@ import { PersistentData } from './persistence.js';
 import { currentDatabase } from './request-context.js';
 
 const BCRYPT_SALT_ROUNDS = 12;
+const FAILED_SIGNIN_AUDIT_PER_NETWORK = 25;
+const MAX_LEAVE_REASON_LENGTH = 5000;
+// Profile fields an administrator may edit. Unknown keys are ignored so older
+// clients keep working, but they are never stored on the employee record.
+const EDITABLE_PROFILE_FIELDS = ['full_name', 'email', 'phone', 'department', 'job_title', 'country', 'holiday_calendar',
+  'holiday_region', 'region', 'timezone', 'date_joined', 'hire_date', 'date_of_birth', 'birthday', 'avatar_url', 'role', 'status', 'is_pc'];
+const isIsoDate = (value: unknown): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+  && Number.isFinite(Date.parse(value + 'T00:00:00Z')) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value;
 
 export function hashPassword(plain: string): string {
   return bcrypt.hashSync(plain.trim(), BCRYPT_SALT_ROUNDS);
@@ -259,7 +267,15 @@ export class HRDatabase {
     }
     const user = this.users.find(u => u.email.toLowerCase() === cleanId);
     if (!user || user.profile.status !== 'active' || !['admin', 'employee'].includes(user.profile.role) || !verifyPassword(password || '', user.passwordHash)) {
-      this.logAudit({ action: 'Sign-in failed', user_id: 'anonymous', user_name: 'Unauthenticated', user_role: 'employee', target_type: 'security', target_id: accountKey, details: 'A sign-in attempt failed. Account fingerprint: ' + accountKey.slice(0, 12) });
+      // Bound audit growth from unauthenticated traffic: record the first failure
+      // per account and network in each 15-minute window, and when an account
+      // reaches its lockout limit, rather than one row for every attempt.
+      const accountCount = this.loginAttempts.find(row => row.id === accountKey)?.count || 0;
+      const networkCount = this.loginAttempts.find(row => row.id === limits[1].id)?.count || 0;
+      const audit = (details: string) => this.logAudit({ action: 'Sign-in failed', user_id: 'anonymous', user_name: 'Unauthenticated', user_role: 'employee', target_type: 'security', target_id: accountKey, details });
+      if (accountCount === limits[0].max) audit(`Sign-in attempts reached the limit (${limits[0].max} in 15 minutes); this account is temporarily locked. Account fingerprint: ${accountKey.slice(0, 12)}`);
+      else if (accountCount === 1 && networkCount <= FAILED_SIGNIN_AUDIT_PER_NETWORK) audit('A sign-in attempt failed. Account fingerprint: ' + accountKey.slice(0, 12));
+      else if (networkCount === FAILED_SIGNIN_AUDIT_PER_NETWORK + 1) audit(`More than ${FAILED_SIGNIN_AUDIT_PER_NETWORK} failed sign-in attempts from one network address within 15 minutes; further failures from it in this window are not logged individually.`);
       throw new Error('Wrong password or account not found. Please try again or contact HR.');
     }
     // Successful sign-in clears the account failure budget, not the IP budget.
@@ -526,6 +542,8 @@ export class HRDatabase {
     for (const key of ['id', 'user_id', 'employee_id', 'passwordHash', 'passwordCustomized', 'mustChangePassword', 'created_at']) {
       if (key in updates) throw new Error('This account field cannot be changed.');
     }
+    updates = Object.fromEntries(Object.entries(updates || {}).filter(([key]) => key === 'password' || EDITABLE_PROFILE_FIELDS.includes(key))) as typeof updates;
+    if (updates.is_pc !== undefined && typeof updates.is_pc !== 'boolean') throw new Error('Invalid program coordinator setting.');
     for (const field of ['holiday_calendar', 'holiday_region'] as const) {
       if (updates[field] !== undefined && (typeof updates[field] !== 'string' || updates[field].length > 100)) throw new Error('Invalid holiday calendar setting.');
     }
@@ -715,7 +733,12 @@ export class HRDatabase {
     this.onboardingState.plans = this.onboardingState.plans.filter(p => !onboardingIds.has(p.id));
     this.onboardingState.files = this.onboardingState.files.filter(f => !onboardingIds.has(f.plan_id));
     this.onboardingState.messages = this.onboardingState.messages.filter(m => !onboardingIds.has(m.plan_id));
-    this.notifications = this.notifications.filter(n => !n.onboarding_id || !onboardingIds.has(n.onboarding_id));
+    this.notifications = this.notifications.filter(n => n.user_id !== employeeId && (!n.onboarding_id || !onboardingIds.has(n.onboarding_id)));
+    // Personal records with no remaining purpose once the account is deleted.
+    // The leave ledger and audit log are retained as HR history.
+    this.celebrationPreferences = this.celebrationPreferences.filter(p => p.id !== employeeId);
+    this.celebrationReactions = this.celebrationReactions.filter(r => r.user_id !== employeeId && !r.celebration_id.startsWith(employeeId + ':'));
+    this.announcementReceipts = this.announcementReceipts.filter(r => r.user_id !== employeeId);
 
     // 6. Terminate all active sessions immediately
     this.revokeAllSessionsForUser(employeeId);
@@ -849,9 +872,12 @@ export class HRDatabase {
       attachment_data?: string;
     }
   ): LeaveRequest {
-    if (!data.leave_type || !data.start_date || !data.reason?.trim()) {
+    if (!data.leave_type || !data.start_date || typeof data.reason !== 'string' || !data.reason.trim()) {
       throw new Error('Please fill in all required fields.');
     }
+    if (data.reason.length > MAX_LEAVE_REASON_LENGTH) throw new Error(`Please keep the reason under ${MAX_LEAVE_REASON_LENGTH} characters.`);
+    if (data.attachment_name !== undefined && typeof data.attachment_name !== 'string') throw new Error('Invalid attachment file name.');
+    const attachmentName = data.attachment_name?.slice(0, 200);
 
     if (!Object.hasOwn(LEAVE_TYPE_CONFIGS, data.leave_type)) throw new Error('Select a valid leave type.');
     if (data.is_half_day !== undefined && typeof data.is_half_day !== 'boolean') throw new Error('Invalid half-day selection.');
@@ -907,7 +933,7 @@ export class HRDatabase {
     }
 
     const attachmentId = data.attachment_data ? crypto.randomUUID() : undefined;
-    if (attachmentId) this.leaveAttachments.push({id: attachmentId, employee_id: user.id, name: (data.attachment_name || 'attachment').slice(0, 200), data: data.attachment_data!});
+    if (attachmentId) this.leaveAttachments.push({id: attachmentId, employee_id: user.id, name: attachmentName || 'attachment', data: data.attachment_data!});
     const newRequest: LeaveRequest = {
       id: 'req-' + Math.random().toString(36).substring(2, 9),
       employee_id: user.id,
@@ -922,7 +948,7 @@ export class HRDatabase {
       is_half_day: isHalfDay,
       half_day_period: halfDayPeriod,
       reason: data.reason.trim(),
-      attachment_name: data.attachment_name,
+      attachment_name: attachmentName,
       attachment_url: attachmentId ? '/api/leave-attachments/' + attachmentId : undefined,
       status: 'Pending',
       submitted_at: new Date().toISOString(),
@@ -952,7 +978,7 @@ export class HRDatabase {
     return newRequest;
   }
 
-  public cancelLeaveRequest(requestId: string, user: UserProfile): LeaveRequest {
+  public cancelLeaveRequest(requestId: string, user: UserProfile, today = easternDate()): LeaveRequest {
     const request = this.leaveRequests.find((r) => r.id === requestId);
     if (!request) {
       throw new Error('Leave request not found.');
@@ -971,6 +997,11 @@ export class HRDatabase {
     }
 
     const wasApproved = request.status === 'Approved';
+    // Approved leave that has started (or already been taken) cannot be refunded
+    // by the employee. HR can still cancel or correct it from Administration.
+    if (wasApproved && user.role !== 'admin' && request.start_date <= today) {
+      throw new Error('This approved leave has already started, so it can no longer be cancelled here. Please contact HR if it needs to be changed.');
+    }
     request.status = 'Cancelled';
     request.updated_at = new Date().toISOString();
 
@@ -1018,6 +1049,23 @@ export class HRDatabase {
       target_id: request.id,
       details: `Cancelled leave request for ${request.employee_name} (${request.leave_type}, ${request.total_days} days).${wasApproved ? ' Restored balance in ledger.' : ''}`,
     });
+
+    // HR should know when previously approved time off is withdrawn.
+    if (wasApproved) {
+      for (const admin of this.users.filter(u => u.profile.role === 'admin' && u.profile.status === 'active' && u.id !== user.id)) {
+        this.notifications.unshift({
+          id: 'notif-' + crypto.randomUUID(),
+          user_id: admin.id,
+          title: 'Approved Leave Cancelled',
+          message: `${user.full_name} cancelled ${request.employee_id === user.id ? 'their' : request.employee_name + "'s"} approved ${request.leave_type} (${request.start_date}${request.start_date !== request.end_date ? ' to ' + request.end_date : ''}, ${request.total_days} day(s)).`,
+          type: 'system',
+          read: false,
+          created_at: new Date().toISOString(),
+          link_tab: 'leave-requests',
+          request_id: request.id,
+        });
+      }
+    }
 
     return request;
   }
@@ -1234,9 +1282,10 @@ export class HRDatabase {
     },
     adminUser: UserProfile
   ): Holiday {
-    if (!data.name?.trim() || !data.date) {
+    if (typeof data.name !== 'string' || !data.name.trim() || !data.date) {
       throw new Error('Please provide both holiday name and date.');
     }
+    this.validateHolidayInput(data);
 
     const country = (data.country || 'United States').trim();
     const scope: HolidayScope =
@@ -1284,6 +1333,9 @@ export class HRDatabase {
   ): Holiday {
     const holiday = this.holidays.find((h) => h.id === id);
     if (!holiday) throw new Error('Holiday not found');
+    if (data.name !== undefined && (typeof data.name !== 'string' || !data.name.trim())) throw new Error('Please provide a holiday name.');
+    // Existing records keep working when re-saved unchanged; only new values are checked.
+    this.validateHolidayInput({ ...data, date: data.date !== holiday.date ? data.date : undefined });
 
     if (data.name !== undefined) holiday.name = data.name.trim();
     if (data.date !== undefined) holiday.date = data.date;
@@ -1335,6 +1387,14 @@ export class HRDatabase {
     });
 
     return holiday;
+  }
+
+  private validateHolidayInput(data: Partial<Record<'name' | 'date' | 'country' | 'region' | 'holiday_type' | 'scope' | 'description', unknown>> & { is_active?: unknown }) {
+    if (data.date !== undefined && !isIsoDate(data.date)) throw new Error('Please enter a valid holiday date (YYYY-MM-DD).');
+    if (data.is_active !== undefined && typeof data.is_active !== 'boolean') throw new Error('Invalid holiday status.');
+    for (const [field, max] of [['name', 200], ['country', 100], ['region', 100], ['holiday_type', 100], ['scope', 100], ['description', 2000]] as const) {
+      if (data[field] !== undefined && (typeof data[field] !== 'string' || (data[field] as string).length > max)) throw new Error(`Holiday ${field} must be text of ${max} characters or fewer.`);
+    }
   }
 
   public async deleteHoliday(id: string, adminUser: UserProfile): Promise<boolean> {
@@ -2587,7 +2647,7 @@ export class HRDatabase {
     file_size: string;
     file_data?: string;
     uploaded_by_name: string;
-  }): EmployeeDocument {
+  }, adminUser?: UserProfile): EmployeeDocument {
     const newDoc: EmployeeDocument = {
       id: 'doc_' + Math.random().toString(36).substring(2, 11),
       employee_id: doc.employee_id,
@@ -2601,16 +2661,27 @@ export class HRDatabase {
       uploaded_by_name: doc.uploaded_by_name,
     };
     this.employeeDocuments.unshift(newDoc);
+    if (adminUser) {
+      const employee = this.getProfile(doc.employee_id);
+      this.logAudit({ action: 'Employee document uploaded', user_id: adminUser.id, user_name: adminUser.full_name, user_role: adminUser.role,
+        target_type: 'employee_document', target_id: newDoc.id, details: `Uploaded ${newDoc.category} document "${newDoc.name}" (${newDoc.file_size}) for ${employee?.full_name || doc.employee_id}.` });
+    }
 
     return newDoc;
   }
 
-  public deleteEmployeeDocument(employeeId: string, docId: string): boolean {
+  public deleteEmployeeDocument(employeeId: string, docId: string, adminUser?: UserProfile): boolean {
     const prevLen = this.employeeDocuments.length;
+    const removed = this.employeeDocuments.find(d => d.id === docId && d.employee_id === employeeId);
     this.employeeDocuments = this.employeeDocuments.filter(
       (d) => !(d.id === docId && d.employee_id === employeeId)
     );
     if (this.employeeDocuments.length < prevLen) {
+      if (adminUser && removed) {
+        const employee = this.getProfile(employeeId);
+        this.logAudit({ action: 'Employee document deleted', user_id: adminUser.id, user_name: adminUser.full_name, user_role: adminUser.role,
+          target_type: 'employee_document', target_id: docId, details: `Deleted ${removed.category} document "${removed.name}" for ${employee?.full_name || employeeId}.` });
+      }
 
       return true;
     }
@@ -2638,8 +2709,18 @@ export class HRDatabase {
     return { ...this.companySettings, email_notifications_enabled: false };
   }
 
-  public updateCompanySettings(updates: Record<string, any>): Record<string, any> {
+  public updateCompanySettings(updates: Record<string, any>, adminUser?: UserProfile): Record<string, any> {
+    if (!updates || typeof updates !== 'object' || Array.isArray(updates)) throw new Error('Invalid settings.');
+    // Only existing settings can be changed; unknown keys are ignored rather than
+    // stored in the shared metadata document. Values keep their existing types.
+    updates = Object.fromEntries(Object.entries(updates).filter(([key]) => key !== 'updated_at' && Object.hasOwn(this.companySettings, key)));
+    for (const [key, value] of Object.entries(updates)) {
+      const current = this.companySettings[key];
+      if (['string', 'number', 'boolean'].includes(typeof current) && typeof value !== typeof current) throw new Error(`Invalid value for setting: ${key}.`);
+      if (typeof value === 'string' && value.length > 500) throw new Error(`Setting ${key} must be 500 characters or fewer.`);
+    }
     if ('workweek' in updates) workingDays('2026-01-01', '2026-01-01', [], undefined, undefined, updates.workweek);
+    const previous = { ...this.companySettings };
     for (const key of ['annual_leave_default', 'sick_leave_default', 'casual_leave_default', 'holiday_credit_rate', 'require_medical_cert_days']) {
       if (key in updates && (typeof updates[key] !== 'number' || !Number.isFinite(updates[key]) || updates[key] < 0 || updates[key] > 366)) throw new Error('Enter a valid policy value between 0 and 366.');
     }
@@ -2649,6 +2730,11 @@ export class HRDatabase {
       email_notifications_enabled: false,
       updated_at: new Date().toISOString(),
     };
+    const changed = Object.keys(updates).filter(key => JSON.stringify(previous[key]) !== JSON.stringify(this.companySettings[key]));
+    if (adminUser && changed.length) {
+      this.logAudit({ action: 'Company settings updated', user_id: adminUser.id, user_name: adminUser.full_name, user_role: adminUser.role,
+        target_type: 'settings', target_id: 'company', details: 'Changed ' + changed.map(key => `${key}: ${JSON.stringify(previous[key])} → ${JSON.stringify(this.companySettings[key])}`).join('; ') + '.' });
+    }
 
     return { ...this.companySettings, email_notifications_enabled: false };
   }

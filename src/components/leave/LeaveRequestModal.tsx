@@ -514,6 +514,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               <textarea
                 id="leave-reason-input" aria-invalid={Boolean(fieldErrors['leave-reason-input'])} aria-describedby={fieldErrors['leave-reason-input'] ? 'leave-reason-input-error' : undefined}
                 rows={3}
+                maxLength={5000}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Please describe the purpose of your leave..."

@@ -53,7 +53,7 @@ try{
  await check('anonymous employee directory denied',async()=>assert.equal((await call('/api/employees')).status,401));
  await check('employee administration denied',async()=>assert.equal((await call('/api/settings','PATCH',{company_name:'Unauthorized'},employee.cookie)).status,403));
  let created;
- await check('HTTP leave submission persists Pending',async()=>{created=await call('/api/leave-requests','POST',request(),employee.cookie);assert.equal(created.status,201);assert.equal(created.data.status,'Pending');assert.equal((await call('/api/leave-requests','GET',undefined,employee.cookie)).data.length,1);});
+ await check('HTTP leave submission persists Pending',async()=>{created=await call('/api/leave-requests','POST',request('2030-10-14'),employee.cookie);assert.equal(created.status,201);assert.equal(created.data.status,'Pending');assert.equal((await call('/api/leave-requests','GET',undefined,employee.cookie)).data.length,1);});
  await check('HTTP approval deducts one day',async()=>{assert.equal((await call(`/api/leave-requests/${created.data.id}/review`,'PATCH',{action:'Approved'},admin)).status,200);assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,1);});
  await check('HTTP cancellation refunds one day',async()=>{assert.equal((await cancelFromClient(created.data.id,employee.cookie)).status,'Cancelled');assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,0);});
  await check('HTTP invalid review action denied',async()=>assert.equal((await call(`/api/leave-requests/${created.data.id}/review`,'PATCH',{action:'Invalid'},admin)).status,400));
