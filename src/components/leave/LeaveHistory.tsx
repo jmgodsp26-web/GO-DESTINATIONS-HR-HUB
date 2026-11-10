@@ -629,6 +629,10 @@ export const LeaveHistory: React.FC = () => {
                 </div>
               )}
 
+              {selectedRequest.schedule_changed && selectedRequest.status === 'Pending' && (
+                <p className="go-live-audience text-amber-900" role="alert">Your working days or holiday calendar changed. Cancel this request and submit it again to use the updated dates.</p>
+              )}
+
               {/* Admin Review info */}
               {selectedRequest.reviewed_by_name && (
                 <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200">

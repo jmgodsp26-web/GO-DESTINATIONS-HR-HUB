@@ -136,7 +136,7 @@ export function getGoogleCalendarUrl(event: CalendarEventData): string {
 import type { CalendarEvent } from '../types';
 
 export function eventsOnDate(events: CalendarEvent[], date: string) {
-  return events.filter(event => date >= event.date && date <= (event.end_date || event.date));
+  return events.filter(event => event.working_dates ? event.working_dates.includes(date) : date >= event.date && date <= (event.end_date || event.date));
 }
 export function filterCalendarEvents(events: CalendarEvent[], types: CalendarEvent['type'][], department: string) {
   return events.filter(event => types.includes(event.type) && (department === 'all' || event.type === 'holiday' || (event.employee_department || event.department) === department));
