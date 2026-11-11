@@ -64,7 +64,12 @@ export function writeTablesFor(method: string, pathname: string) {
   if (method === 'POST' && route === '/holidays') return ['users', 'sessions', 'holidays', 'auditLogs'] as const;
   if (method === 'PATCH' && /^\/holidays\/[^/]+(?:\/toggle-active)?$/.test(route)) return ['users', 'sessions', 'holidays', 'holidayShifts', 'auditLogs'] as const;
   if ((method === 'POST' && /^\/admin\/employees\/[^/]+\/documents$/.test(route)) ||
-      (method === 'DELETE' && /^\/admin\/employees\/[^/]+\/documents\/[^/]+$/.test(route))) return ['users', 'sessions', 'employeeDocuments'] as const;
-  if (method === 'PATCH' && route === '/settings') return ['users', 'sessions'] as const;
+      (method === 'DELETE' && /^\/admin\/employees\/[^/]+\/documents\/[^/]+$/.test(route))) return ['users', 'sessions', 'employeeDocuments', 'auditLogs'] as const;
+  if (method === 'PATCH' && route === '/settings') return ['users', 'sessions', 'auditLogs'] as const;
+  // Sign-in needs accounts, throttling counters and the append-only audit log,
+  // never the whole HR dataset. Only the caller's existing session is loaded.
+  if (method === 'POST' && route === '/auth/login') return ['users', 'sessions', 'loginAttempts', 'auditLogs'] as const;
+  if (method === 'POST' && route === '/auth/logout') return ['sessions'] as const;
+  if (method === 'POST' && route === '/auth/reset-password') return [] as const;
   return undefined;
 }

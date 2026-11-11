@@ -1,4 +1,4 @@
-import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
+import { EASTERN_TIME_ZONE, easternDate } from '../../utils/easternTime';
 import { Dialog } from '../common/Dialog';
 import { useNavigation } from '../../context/NavigationContext';
 import { LoadError, RefreshStatus } from '../common/LoadFeedback';
@@ -648,6 +648,18 @@ export const LeaveHistory: React.FC = () => {
                 </div>
               )}
 
+              {selectedRequest.status === 'Cancelled' && selectedRequest.cancelled_by_name && selectedRequest.cancelled_by !== user?.id && (
+                <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <p className="text-[12px] font-semibold text-slate-700">
+                    Cancelled by {selectedRequest.cancelled_by_name}
+                    {selectedRequest.cancelled_at ? ` on ${new Date(selectedRequest.cancelled_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE })}` : ''}
+                  </p>
+                  {selectedRequest.cancellation_reason && (
+                    <p className="text-slate-600 mt-1 italic">Reason: &ldquo;{selectedRequest.cancellation_reason}&rdquo;</p>
+                  )}
+                </div>
+              )}
+
               {/* Calendar Sync & Export Box (for Approved leaves) */}
               {selectedRequest.status === 'Approved' && (
                 <div className="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
@@ -705,7 +717,9 @@ export const LeaveHistory: React.FC = () => {
             </div>
 
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-              {['Pending', 'Approved'].includes(selectedRequest.status) ? (
+              {selectedRequest.status === 'Approved' && user?.role !== 'admin' && selectedRequest.start_date <= easternDate() ? (
+                <p className="text-xs text-slate-600">This leave has started. Contact HR if it needs to change.</p>
+              ) : ['Pending', 'Approved'].includes(selectedRequest.status) ? (
                 <button
                   type="button"
                   onClick={() => setCancellingRequest(selectedRequest)}

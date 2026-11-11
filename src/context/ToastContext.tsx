@@ -106,7 +106,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {/* Floating Toast Container */}
       <div
         aria-live="polite" aria-relevant="additions"
-        className="go-toast-stack fixed z-50 flex flex-col space-y-2.5 pointer-events-none"
+        className="go-toast-stack fixed z-[60] flex flex-col pointer-events-none"
       >
         <AnimatePresence initial={false}>
         {toasts.map((toast) => {
@@ -114,35 +114,25 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const isError = toast.type === 'error';
 
           return (
-            <motion.div layout="position" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            <motion.div layout="position" initial={{ opacity: 0, y: 24, scale: 0.94 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, x: 48 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 30 }}
               key={toast.id}
-              className={`pointer-events-auto flex items-start space-x-3 p-3.5 rounded-xl border shadow-lg backdrop-blur-md transition-all duration-200 animate-in slide-in-from-bottom-2 fade-in ${
-                isSuccess
-                  ? 'bg-white/95 border-emerald-200 text-slate-800 shadow-emerald-500/5'
-                  : isError
-                  ? 'bg-white/95 border-rose-200 text-slate-800 shadow-rose-500/5'
-                  : 'bg-white/95 border-slate-200 text-slate-800 shadow-slate-500/5'
-              }`}
+              className={`go-toast pointer-events-auto is-${toast.type}`}
+              style={{ '--toast-duration': `${toast.duration ?? 4000}ms` } as React.CSSProperties}
             >
-              <div className="shrink-0 mt-0.5">
-                {isSuccess && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
-                {isError && <AlertCircle className="w-4 h-4 text-rose-600" />}
-                {!isSuccess && !isError && <Info className="w-4 h-4 text-indigo-600" />}
+              <span className="go-toast-icon" aria-hidden="true">
+                {isSuccess && <CheckCircle2 className="w-4 h-4" />}
+                {isError && <AlertCircle className="w-4 h-4" />}
+                {!isSuccess && !isError && <Info className="w-4 h-4" />}
+              </span>
+              <div className="go-toast-copy">
+                <p className="go-toast-title">{toast.title}</p>
+                {toast.message && <p className="go-toast-message">{toast.message}</p>}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 leading-tight">{toast.title}</p>
-                {toast.message && (
-                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{toast.message}</p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => removeToast(toast.id)}
-                className="shrink-0 p-1 text-slate-400 hover:text-slate-600 rounded-md transition-colors"
-                aria-label="Close notification"
-              >
+              <button type="button" onClick={() => removeToast(toast.id)} className="go-toast-close" aria-label="Close notification">
                 <X className="w-3.5 h-3.5" />
               </button>
+              {(toast.duration ?? 4000) > 0 && <span className="go-toast-timer" aria-hidden="true" />}
             </motion.div>
           );
         })}

@@ -87,7 +87,8 @@ try{
    assert.equal((await call(`/api/leave-requests/${corrected.data.id}/review`,'PATCH',{action:'Approved'},admin)).status,200);
    assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,2);
    assert.match((await call(schedulePath,'PATCH',schedule(revision,[]),admin)).data.error,/affects approved leave/);
-   await cancelFromClient(corrected.data.id,employee.cookie);
+   // Approved leave that may already have started is cancelled by HR; employees cannot refund started leave.
+   assert.equal((await call(`/api/leave-requests/${corrected.data.id}/cancel`,'PATCH',{},admin)).status,200);
    assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,0);
    const holiday = await call('/api/holidays','POST',{name:'Synthetic Saturday holiday',date:sat,country:'Philippines'},admin);
    assert.equal(holiday.status,201);
@@ -100,7 +101,7 @@ try{
    assert.equal((await call(schedulePath,'PATCH',schedule(custom.data.schedule.revision,[]),admin)).status,200);
    assert.ok((await call('/api/audit-logs','GET',undefined,admin)).data.some(log=>log.action==='Work schedule updated'));
  });
- await check('HTTP leave submission persists Pending',async()=>{created=await call('/api/leave-requests','POST',request(),employee.cookie);assert.equal(created.status,201);assert.equal(created.data.status,'Pending');assert.deepEqual((await call('/api/leave-requests?status=Pending','GET',undefined,employee.cookie)).data.map(r=>r.id),[created.data.id]);});
+ await check('HTTP leave submission persists Pending',async()=>{created=await call('/api/leave-requests','POST',request('2030-10-14'),employee.cookie);assert.equal(created.status,201);assert.equal(created.data.status,'Pending');assert.deepEqual((await call('/api/leave-requests?status=Pending','GET',undefined,employee.cookie)).data.map(r=>r.id),[created.data.id]);});
  await check('HTTP approval deducts one day',async()=>{assert.equal((await call(`/api/leave-requests/${created.data.id}/review`,'PATCH',{action:'Approved'},admin)).status,200);assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,1);});
  await check('HTTP cancellation refunds one day',async()=>{assert.equal((await cancelFromClient(created.data.id,employee.cookie)).status,'Cancelled');assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,0);});
  await check('HTTP invalid review action denied',async()=>assert.equal((await call(`/api/leave-requests/${created.data.id}/review`,'PATCH',{action:'Invalid'},admin)).status,400));

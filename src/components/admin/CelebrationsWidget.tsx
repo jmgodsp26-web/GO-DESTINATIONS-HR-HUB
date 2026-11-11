@@ -210,20 +210,20 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
   return (
     <div
       id="admin-celebrations-widget"
-      className={`bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden ${className}`}
+      className={`go-surface go-milestones bg-white ${className}`}
     >
       {/* 1. Header Bar */}
-      <div className="px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-50 via-white to-indigo-50/30">
+      <div className="px-6 py-5 border-b border-dashed border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="p-1 bg-amber-100 text-amber-800 rounded-md">
-              <PartyPopper className="w-4 h-4" />
+            <span className="go-card-bubble">
+              <PartyPopper className="w-5 h-5" />
             </span>
             <h2 className="text-sm font-bold text-slate-900">
               Upcoming Birthdays & Work Anniversaries
             </h2>
             {todayCelebrations.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[12px] font-bold bg-rose-100 text-rose-700 border border-rose-200 animate-pulse">
+              <span className="go-chip is-pending">
                 {todayCelebrations.length} Today! 🎉
               </span>
             )}
@@ -248,7 +248,7 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
 
       {/* 2. Today's Highlight Spotlight Banner (if any celebration is today) */}
       {todayCelebrations.length > 0 && (
-        <div className="bg-gradient-to-r from-amber-500/10 via-pink-500/10 to-indigo-500/10 border-b border-amber-200/60 p-4">
+        <div className="bg-amber-50 border-b border-amber-200/60 p-4">
           <div className="flex items-center space-x-2 text-amber-900 font-bold text-xs uppercase tracking-wider mb-2">
             <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-spin" style={{ animationDuration: '3s' }} />
             <span>Today's Milestone Spotlight</span>
@@ -302,7 +302,7 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-colors shadow-2xs flex items-center space-x-1.5 ${
                     wishedEmployees[item.id]
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : 'bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-700 hover:to-indigo-700 text-white'
+                      : 'bg-[#182E3F] hover:bg-[#23384B] text-white'
                   }`}
                 >
                   {wishedEmployees[item.id] ? (

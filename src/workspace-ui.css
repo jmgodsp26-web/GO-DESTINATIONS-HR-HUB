@@ -30,29 +30,6 @@
 .go-skip-link:focus { transform: none; }
 
 /* A lighter header and a compact, stable navigation rail. */
-.go-polished .go-header { background: #ffffffed; border-bottom: 1px solid var(--workspace-line); }
-.go-polished .go-header > div { height: 72px; max-width: 1800px; padding-inline: 22px; gap: 24px; }
-.go-polished .go-header .go-logo img { width: 42px; max-height: 52px; }
-.go-polished .go-header-company { font-size: 9px; letter-spacing: .16em; }
-.go-polished .go-header-product strong { font-size: 21px; }
-.go-polished .go-header-context { font-size: 11px; }
-.go-polished .go-command-trigger { min-height: 40px; background: #f5f7fa; border-color: #e4eaf0; border-radius: 10px; }
-.go-polished .go-command-trigger kbd { padding: 2px 5px; font-size: 10px; white-space: nowrap; }
-.go-polished .go-sidebar { width: 236px; background: #182e3f; box-shadow: none; }
-.go-polished .go-sidebar > div:first-child { padding: 16px 12px; min-height: 0; scrollbar-width: thin; scrollbar-color: #7087a3 transparent; }
-.go-sidebar-caption { align-items: center; gap: 9px; padding: 0 12px 18px; color: #b9c9d8; font-size: 11px; }
-.go-sidebar-caption-mark { width: 6px; height: 6px; border-radius: 50%; background: #ed9027; flex-shrink: 0; }
-.go-polished .go-sidebar nav > :not(:last-child) { margin-bottom: 16px; }
-.go-polished .go-sidebar nav > div > div:first-child span { color: #9eafc1; font-size: 10px; letter-spacing: .09em; }
-.go-polished .go-sidebar .sidebar-menu-item { min-height: 40px; font-size: 12px; padding: 9px 12px; border-radius: 9px; }
-.go-polished .go-sidebar .sidebar-menu-item:hover { background: #ffffff0a; }
-.go-polished .go-sidebar .sidebar-menu-item[aria-current="page"] { color: #fff; background: transparent; }
-.go-polished .go-nav-selection { border-radius: 9px; background: #375674; border-left-width: 3px; }
-.go-polished .go-workspace-switch { padding: 3px; border-radius: 11px; background: #102635; border-color: #ffffff20; }
-.go-polished .go-workspace-switch > button { min-height: 42px; font-size: 11px; }
-.go-polished .go-workspace-selection { border-radius: 8px; box-shadow: 0 2px 4px #0002; }
-.go-polished .go-sidebar > div:last-child { padding: 12px; }
-.go-polished .go-sidebar > div:last-child > div { border-radius: 12px; background: #233c50; }
 
 /* One page-heading pattern for every workspace. */
 .go-polished .go-page-header { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 24px; padding: 0 0 4px; }
@@ -141,11 +118,8 @@
 
 /* Responsive layout and touch targets. Page actions wrap instead of squeezing text. */
 @media (min-width: 768px) {
-  .go-polished .go-sidebar { top: 72px; height: calc(100dvh - 72px); }
 }
 @media (max-width: 1199px) {
-  .go-polished .go-header-context { display: none; }
-  .go-polished .go-header > div { gap: 16px; }
   .go-polished .go-main { padding-inline: 24px; }
   .go-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .go-directory-summary > div { padding-inline: 18px; }
@@ -155,12 +129,7 @@
   .go-directory-filters select { min-width: 0; width: 100%; }
 }
 @media (max-width: 767px) {
-  .go-polished .go-header > div { height: 64px; padding-inline: 12px; gap: 8px; }
-  .go-polished .go-header-product strong { font-size: 19px; }
-  .go-polished .go-header-company { font-size: 8px; }
   .go-polished .go-notification-popover { position: fixed; top: 66px; left: 12px; right: 12px; width: auto; margin-top: 0; }
-  .go-polished .go-sidebar { width: min(290px, 88vw); height: 100dvh; }
-  .go-polished .go-sidebar .sidebar-menu-item { min-height: 44px; font-size: 13px; }
   .go-polished .go-main { padding: 24px 16px 40px; }
   .go-polished .go-page-header { gap: 16px; }
   .go-page-heading { flex-basis: 100%; }

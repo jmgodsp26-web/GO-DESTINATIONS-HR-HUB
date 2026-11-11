@@ -9,3 +9,7 @@ coverage/
 
 data/*.json
 data/*.tmp
+
+# Temporary render output from tests/celebrations-ui.test.mjs
+.celebrations-render-*/
+.brand-render-*/

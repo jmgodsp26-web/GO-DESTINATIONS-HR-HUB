@@ -13,6 +13,7 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { CommandPalette } from './components/common/CommandPalette';
+import { GoBuddyArt } from './components/common/GoBuddy';
 import { LoginPage } from './components/auth/LoginPage';
 import { FirstTimePasswordModal } from './components/auth/FirstTimePasswordModal';
 const EmployeeDashboard = lazy(() => import('./components/dashboard/EmployeeDashboard').then(module => ({ default: module.EmployeeDashboard })));
@@ -68,11 +69,9 @@ const MainApp: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-xs font-semibold text-slate-500">Loading HR Portal...</p>
-        </div>
+      <div className="go-boot" role="status">
+        <GoBuddyArt className="go-boot-buddy" />
+        <p>Opening your HR Hub…</p>
       </div>
     );
   }
@@ -95,21 +94,13 @@ const MainApp: React.FC = () => {
 
   return (
     <NavigationContext.Provider value={{ query: route.query, navigate: handleTabChange }}><WorkspaceProvider mode={mode}>
-    <div className="go-app go-polished min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans antialiased">
+    <div className="go-app go-polished min-h-screen text-slate-900 flex flex-col font-sans antialiased">
       <a className="go-skip-link" href="#workspace-content" onClick={e => { e.preventDefault(); document.getElementById("workspace-content")?.focus(); }}>Skip to content</a>
       {/* First-Time Password Setup Modal for Initial Onboarding Sign-In */}
       <FirstTimePasswordModal />
 
-      {/* Top Navigation Header */}
-      <Header
-        onMenuToggle={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-        currentTab={currentTab}
-        onTabChange={handleTabChange}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-      />
-
-      <div className="go-workspace flex-1 flex w-full mx-auto">
-        {/* Navigation Sidebar */}
+      <div className="go-shell go-workspace">
+        {/* Navigation Sidebar: a full-height floating panel on desktop, a drawer on phones */}
         <Sidebar
           currentTab={currentTab}
           onTabChange={handleTabChange}
@@ -117,9 +108,18 @@ const MainApp: React.FC = () => {
           onClose={() => setIsMobileSidebarOpen(false)}
         />
 
+        <div className="go-stage">
+        {/* Top Navigation Header */}
+        <Header
+          onMenuToggle={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          currentTab={currentTab}
+          onTabChange={handleTabChange}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        />
+
         {/* Main Content Viewport */}
         <main id="workspace-content" tabIndex={-1} key={`${mode}:${currentTab}`} className="go-main flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
-<Suspense fallback={<p className="go-refresh-status" role="status">Opening workspace…</p>}>
+<Suspense fallback={<p className="go-refresh-status go-page-loading" role="status">Opening workspace…</p>}>
           {currentTab === 'onboarding' && <OnboardingView />}
           {/* Employee Views */}
           {!isAdministration && (
@@ -205,6 +205,7 @@ const MainApp: React.FC = () => {
           )}
           </Suspense>
         </main>
+        </div>
       </div>
 
       {/* Global 2026 SaaS Command Palette */}

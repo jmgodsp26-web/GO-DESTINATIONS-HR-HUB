@@ -115,6 +115,10 @@ export interface LeaveRequest {
   reviewed_at?: string;
   reviewed_by?: string;
   reviewed_by_name?: string;
+  cancelled_at?: string;
+  cancelled_by?: string;
+  cancelled_by_name?: string;
+  cancellation_reason?: string;
 }
 
 export type HolidayType = 'Public Holiday' | 'Company Holiday' | 'Regional Holiday' | 'Observance';
@@ -213,7 +217,7 @@ export interface AuditLog {
   user_id: string;
   user_name: string;
   user_role: UserRole;
-  target_type: 'employee' | 'leave_request' | 'holiday' | 'leave_balance' | 'security' | 'announcement' | 'onboarding';
+  target_type: 'employee' | 'leave_request' | 'holiday' | 'leave_balance' | 'security' | 'announcement' | 'onboarding' | 'settings' | 'employee_document';
   target_id: string;
   details: string;
   timestamp: string;

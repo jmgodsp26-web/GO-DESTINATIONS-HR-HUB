@@ -411,9 +411,10 @@ export const api = {
     });
   },
 
-  async cancelLeaveRequest(requestId: string): Promise<LeaveRequest> {
+  async cancelLeaveRequest(requestId: string, reason?: string): Promise<LeaveRequest> {
     return request<LeaveRequest>(`/api/leave-requests/${encodeURIComponent(requestId)}/cancel`, {
       method: 'PATCH',
+      ...(reason ? { body: JSON.stringify({ reason }) } : {}),
     });
   },
 

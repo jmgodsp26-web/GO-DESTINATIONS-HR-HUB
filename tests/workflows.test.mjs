@@ -13,6 +13,8 @@ const e=seed.createEmployee({full_name:'Isolated Audit Employee',email:'audit-em
 const other=seed.createEmployee({full_name:'Other Isolated Employee',email:'other@example.test',password:'Isolated-Other-Temp-938!',phone:'',department:'Technology',job_title:'Employee',country:'Philippines',region:'Cebu',date_joined:'2026-01-01'},a);
 const baseline=seed.exportState();
 function scenario(name,fn){test(name,()=>fn(new HRDatabase(baseline)));}
+// Fixed date before the synthetic leave, so refund rules do not depend on the real calendar.
+const BEFORE_LEAVE='2026-10-01';
 const leave=(overrides={})=>({leave_type:'Vacation Leave',start_date:'2026-10-12',end_date:'2026-10-12',reason:'Synthetic audit only',...overrides});
 const balance=(d,type='Vacation Leave')=>d.getLeaveBalances(e.id).find(b=>b.leave_type===type);
 const holiday=(d,overrides={})=>d.addHoliday({name:'Synthetic audit holiday',date:'2026-10-12',country:'Philippines',...overrides},a);
@@ -37,7 +39,7 @@ scenario('approval spends exact working days and records ledger',d=>{const r=d.s
 scenario('repeated approval cannot deduct twice',d=>{const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Approved',a);assert.throws(()=>d.reviewLeaveRequest(r.id,'Approved',a));assert.equal(balance(d).used_days,1);});
 scenario('approval rechecks balance after another approval',d=>{d.adjustLeaveBalance(e.id,'Vacation Leave',1,a);const r=d.submitLeaveRequest(e,leave());const r2=d.submitLeaveRequest(e,leave({start_date:'2026-10-13',end_date:'2026-10-13'}));d.reviewLeaveRequest(r.id,'Approved',a);assert.throws(()=>d.reviewLeaveRequest(r2.id,'Approved',a));assert.equal(r2.status,'Pending');});
 scenario('rejection leaves balance untouched',d=>{const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Rejected',a,'Audit');assert.equal(balance(d).used_days,0);});
-scenario('approved cancellation restores balance once',d=>{const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Approved',a);d.cancelLeaveRequest(r.id,e);assert.equal(balance(d).used_days,0);assert.throws(()=>d.cancelLeaveRequest(r.id,e));assert.equal(balance(d).used_days,0);});
+scenario('approved cancellation restores balance once',d=>{const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Approved',a);d.cancelLeaveRequest(r.id,e,BEFORE_LEAVE);assert.equal(balance(d).used_days,0);assert.throws(()=>d.cancelLeaveRequest(r.id,e,BEFORE_LEAVE));assert.equal(balance(d).used_days,0);});
 scenario('other employee cannot cancel request',d=>{const r=d.submitLeaveRequest(e,leave());assert.throws(()=>d.cancelLeaveRequest(r.id,other));});
 scenario('employee sees only own requests',d=>{d.submitLeaveRequest(e,leave());d.submitLeaveRequest(other,leave());assert.equal(d.getLeaveRequests(e).length,1);});
 scenario('admin cannot approve own leave',d=>{const r=d.submitLeaveRequest(a,leave());assert.throws(()=>d.reviewLeaveRequest(r.id,'Approved',a));});
@@ -68,7 +70,7 @@ scenario('unsupported leave type rejected',d=>assert.throws(()=>d.submitLeaveReq
 scenario('unbounded dates rejected',d=>assert.throws(()=>d.calculateWorkingDays('2026-01-01','2099-01-01')));
 scenario('employee ID sequence persists across restarts',d=>{d.deleteEmployee(other.id,a);const reloaded=new HRDatabase(d.exportState());const n=reloaded.createEmployee({full_name:'Sequence',email:'sequence@example.test'},a);assert.equal(n.employee_id,'HR-103');});
 scenario('holiday reversal uses historical rate, not updated policy',d=>{d.updateCompanySettings({holiday_credit_rate:2});const h=holiday(d);const s=d.submitHolidayShiftRequest(e,{holiday_id:h.id,working_hours:'9-5'});d.reviewHolidayShiftRequest(s.id,'Approved',a);d.updateCompanySettings({holiday_credit_rate:3});d.cancelHolidayShiftRequest(s.id,e);assert.equal(balance(d,'Holiday Shift Credit').allocated_days,0);assert.equal(d.getLeaveTransactions(e.id)[0].amount,-2);});
-scenario('earned credit leave can be redeemed and refunded',d=>{const h=holiday(d);const s=d.submitHolidayShiftRequest(e,{holiday_id:h.id,working_hours:'9-5'});d.reviewHolidayShiftRequest(s.id,'Approved',a);const r=d.submitLeaveRequest(e,leave({leave_type:'Holiday Shift Credit',start_date:'2026-10-13',end_date:'2026-10-13'}));d.reviewLeaveRequest(r.id,'Approved',a);assert.equal(balance(d,'Holiday Shift Credit').used_days,1);assert.throws(()=>d.cancelHolidayShiftRequest(s.id,e));assert.equal(s.status,'Approved');d.cancelLeaveRequest(r.id,e);d.cancelHolidayShiftRequest(s.id,e);assert.equal(balance(d,'Holiday Shift Credit').allocated_days,0);});
+scenario('earned credit leave can be redeemed and refunded',d=>{const h=holiday(d);const s=d.submitHolidayShiftRequest(e,{holiday_id:h.id,working_hours:'9-5'});d.reviewHolidayShiftRequest(s.id,'Approved',a);const r=d.submitLeaveRequest(e,leave({leave_type:'Holiday Shift Credit',start_date:'2026-10-13',end_date:'2026-10-13'}));d.reviewLeaveRequest(r.id,'Approved',a);assert.equal(balance(d,'Holiday Shift Credit').used_days,1);assert.throws(()=>d.cancelHolidayShiftRequest(s.id,e));assert.equal(s.status,'Approved');d.cancelLeaveRequest(r.id,e,BEFORE_LEAVE);d.cancelHolidayShiftRequest(s.id,e);assert.equal(balance(d,'Holiday Shift Credit').allocated_days,0);});
 scenario('assignment downgrade reverses credit and retains pending shift',d=>{const h=holiday(d);const s=d.assignHolidayShift(a,{employee_id:e.id,holiday_id:h.id,working_hours:'9-5'});d.assignHolidayShift(a,{employee_id:e.id,holiday_id:h.id,working_hours:'9-5',status:'Pending'});assert.equal(d.getHolidayShifts({holiday_id:h.id})[0].status,'Pending');assert.equal(balance(d,'Holiday Shift Credit').allocated_days,0);d.reviewHolidayShiftRequest(s.id,'Approved',a);assert.equal(balance(d,'Holiday Shift Credit').allocated_days,1);});
 scenario('deleted holiday reverses outstanding credit',async d=>{const h=holiday(d);d.assignHolidayShift(a,{employee_id:e.id,holiday_id:h.id,working_hours:'9-5'});await d.deleteHoliday(h.id,a);assert.equal(balance(d,'Holiday Shift Credit').allocated_days,0);assert.equal(d.getHolidayShifts({holiday_id:h.id}).length,0);});
 scenario('private attachment persists and has owner/admin authorization',d=>{const r=d.submitLeaveRequest(e,leave({attachment_name:'note.txt',attachment_data:'data:text/plain;base64,aGVsbG8='}));const id=r.attachment_url.split('/').pop();const reloaded=new HRDatabase(d.exportState());assert.equal(reloaded.getLeaveAttachment(id,e).bytes.toString(),'hello');assert.equal(reloaded.getLeaveAttachment(id,a).bytes.toString(),'hello');assert.throws(()=>reloaded.getLeaveAttachment(id,other));assert.equal(JSON.stringify(reloaded.getLeaveRequests(e)).includes('aGVsbG8='),false);});
@@ -108,5 +110,101 @@ scenario('historical corrections validate before mutation and require admin',d=>
 scenario('cancelling approved request preserves separately recorded historical usage',d=>{
  const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Approved',a);
  const b=balance(d);d.recordHistoricalLeaveUsage(e.id,'Vacation Leave',b.allocated_days,0.5,'Historical half-day',{allocated_days:b.allocated_days,used_days:b.used_days},a);
- d.cancelLeaveRequest(r.id,e);assert.equal(balance(d).used_days,0.5);
+ d.cancelLeaveRequest(r.id,e,BEFORE_LEAVE);assert.equal(balance(d).used_days,0.5);
+});
+
+// --- Audit fixes ---
+scenario('employee cannot refund approved leave that has started; HR still can',d=>{
+ const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Approved',a);
+ assert.throws(()=>d.cancelLeaveRequest(r.id,e,'2026-10-12'),/already started/);
+ assert.throws(()=>d.cancelLeaveRequest(r.id,e,'2026-11-07'),/already started/);
+ assert.equal(balance(d).used_days,1);assert.equal(r.status,'Approved');
+ d.cancelLeaveRequest(r.id,a,'2026-11-07');assert.equal(r.status,'Cancelled');assert.equal(balance(d).used_days,0);
+});
+scenario('pending leave in the past can still be withdrawn by the employee',d=>{
+ const r=d.submitLeaveRequest(e,leave());d.cancelLeaveRequest(r.id,e,'2026-11-07');assert.equal(r.status,'Cancelled');
+});
+scenario('admins are notified when an employee cancels approved future leave',d=>{
+ const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Approved',a);d.cancelLeaveRequest(r.id,e,BEFORE_LEAVE);
+ const notice=d.getNotifications(a.id).find(n=>n.title==='Approved Leave Cancelled');
+ assert.ok(notice);assert.equal(notice.request_id,r.id);assert.equal(notice.link_tab,'leave-requests');
+ assert.equal(d.getNotifications(e.id).some(n=>n.title==='Approved Leave Cancelled'),false);
+});
+scenario('overlong leave reasons are rejected before saving',d=>{
+ assert.throws(()=>d.submitLeaveRequest(e,leave({reason:'x'.repeat(5001)})),/under 5000/);
+ assert.equal(d.submitLeaveRequest(e,leave({reason:'x'.repeat(5000)})).status,'Pending');
+});
+scenario('failed sign-ins are audited once per account window, plus lockout',d=>{
+ const before=d.getAuditLogs().length;
+ for(let i=0;i<25;i++)assert.throws(()=>d.authenticate('typo@example.test','wrong','office'));
+ const rows=d.getAuditLogs().slice(0,d.getAuditLogs().length-before);
+ assert.equal(rows.length,2);assert.ok(rows.every(r=>r.action==='Sign-in failed'));assert.ok(rows.some(r=>/temporarily locked/.test(r.details)));
+});
+scenario('failed sign-ins with many invented emails cannot flood the audit log',d=>{
+ const before=d.getAuditLogs().length;
+ for(let i=0;i<200;i++)assert.throws(()=>d.authenticate(`random-${i}@example.test`,'wrong','attacker'));
+ assert.equal(d.getAuditLogs().length-before,26);
+ assert.ok(d.getAuditLogs().some(r=>/not logged individually/.test(r.details)));
+});
+scenario('employee edits ignore unknown fields but keep supported ones',d=>{
+ const u=d.updateEmployee(e.id,{job_title:'Senior Agent',is_pc:true,unexpected:'value',leave_balances:[]},a);
+ assert.equal(u.job_title,'Senior Agent');assert.equal(u.is_pc,true);assert.equal('unexpected' in u,false);assert.equal('leave_balances' in u,false);
+ assert.throws(()=>d.updateEmployee(e.id,{passwordHash:'x'},a),/cannot be changed/);
+});
+scenario('company settings ignore unknown keys, keep types and are audited',d=>{
+ const saved=d.updateCompanySettings({...d.getCompanySettings(),company_name:'GO Test',injected:'x'},a);
+ assert.equal(saved.company_name,'GO Test');assert.equal('injected' in saved,false);
+ assert.throws(()=>d.updateCompanySettings({browser_notifications_enabled:'yes'},a),/Invalid value/);
+ assert.ok(d.getAuditLogs().some(l=>l.action==='Company settings updated'&&/company_name/.test(l.details)));
+});
+scenario('holidays require valid dates; unchanged legacy values can still be re-saved',d=>{
+ assert.throws(()=>holiday(d,{date:'not-a-date'}),/valid holiday date/);
+ assert.throws(()=>holiday(d,{date:'2026-02-30'}),/valid holiday date/);
+ const h=holiday(d);(d.holidays.find(x=>x.id===h.id)).date='legacy';
+ assert.equal(d.updateHoliday(h.id,{name:'Renamed',date:'legacy'},a).name,'Renamed');
+ assert.throws(()=>d.updateHoliday(h.id,{date:'13/10/2026'},a),/valid holiday date/);
+});
+scenario('employee document upload and deletion are audited',d=>{
+ const doc=d.addEmployeeDocument({employee_id:e.id,name:'Contract',category:'Contract',file_size:'5 Bytes',file_data:'data:text/plain;base64,aGVsbG8=',uploaded_by_name:a.full_name},a);
+ assert.ok(d.getAuditLogs().some(l=>l.action==='Employee document uploaded'&&l.target_id===doc.id));
+ assert.equal(d.deleteEmployeeDocument(e.id,doc.id,a),true);
+ assert.ok(d.getAuditLogs().some(l=>l.action==='Employee document deleted'&&l.target_id===doc.id));
+});
+scenario('deleting an employee removes their notifications and celebration records',d=>{
+ const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Approved',a);
+ d.setBirthdayVisibility(e,e.id,false);
+ d.celebrationReactions.push({id:'x:'+e.id,celebration_id:'x',user_id:e.id,emoji:'🎉'},{id:e.id+':birthday:2026-10-12:'+other.id,celebration_id:e.id+':birthday:2026-10-12',user_id:other.id,emoji:'🎉'});
+ d.announcementReceipts.push({id:'receipt',announcement_id:'a',user_id:e.id,revision:1,read_at:'2026-01-01',acknowledged_at:null});
+ return d.deleteEmployee(e.id,a).then(()=>{
+  const state=d.exportState();
+  assert.equal(state.notifications.some(n=>n.user_id===e.id),false);
+  assert.equal(state.celebrationPreferences.some(p=>p.id===e.id),false);
+  assert.equal(state.celebrationReactions.length,0);
+  assert.equal(state.announcementReceipts.length,0);
+  assert.ok(state.leaveTransactions.some(t=>t.employee_id===e.id),'leave ledger kept as HR history');
+ });
+});
+
+// --- Admin powers ---
+scenario('HR cancels approved leave already taken: balance restored, reason recorded, employee notified',d=>{
+ const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Approved',a);
+ const c=d.cancelLeaveRequest(r.id,a,'2026-11-07','Employee worked that day');
+ assert.equal(c.status,'Cancelled');assert.equal(balance(d).used_days,0);
+ assert.equal(c.cancelled_by,a.id);assert.equal(c.cancellation_reason,'Employee worked that day');
+ const notice=d.getNotifications(e.id).find(n=>n.title==='Leave Cancelled by HR');
+ assert.ok(notice);assert.match(notice.message,/1 day\(s\) were returned/);assert.match(notice.message,/Employee worked that day/);
+ assert.ok(d.getAuditLogs().some(l=>l.action==='Leave request cancelled'&&/Employee worked that day/.test(l.details)));
+});
+scenario('cancellation reasons are validated and employees cancelling their own leave get no HR notice',d=>{
+ const r=d.submitLeaveRequest(e,leave());d.reviewLeaveRequest(r.id,'Approved',a);
+ assert.throws(()=>d.cancelLeaveRequest(r.id,a,BEFORE_LEAVE,'x'.repeat(1001)),/1000 characters/);
+ assert.equal(r.status,'Approved');
+ d.cancelLeaveRequest(r.id,e,BEFORE_LEAVE);
+ assert.equal(d.getNotifications(e.id).some(n=>n.title==='Leave Cancelled by HR'),false);
+});
+scenario('HR password reset lifts a sign-in lockout immediately',d=>{
+ for(let i=0;i<20;i++)assert.throws(()=>d.authenticate(e.email,'wrong-password','home'));
+ assert.throws(()=>d.authenticate(e.email,'Isolated-Employee-Temp-938!','home'),e=>e.code==='LOGIN_THROTTLED');
+ d.adminResetPassword(e.id,'Fresh-Temporary-Pass-1',a);
+ assert.equal(d.authenticate(e.email,'Fresh-Temporary-Pass-1','home').user.id,e.id);
 });
