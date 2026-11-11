@@ -52,7 +52,7 @@ type Operation<T> = (database: HRDatabase) => Promise<{ result: T; commit: boole
 interface TransactionOptions {
   onboardingFileId?: string; announcementImageId?: string;
   employeeDocumentId?: string; leaveAttachmentId?: string; legacyDocuments?: boolean;
-  writeSessionId?: string; writeLeaveRequestId?: string;
+  writeSessionId?: string; writeLeaveRequestId?: string; writeEmployeeId?: string;
   /** Session digest that must exist before any HR collection is read. */
   authSessionId?: string;
   readPlan?: ReadPlan; writeTables?: readonly typeof TABLES[number][];
@@ -103,7 +103,7 @@ export async function transactFirestore<T>(firestore: Firestore, operation: Oper
     // the HR dataset for it: unauthenticated traffic must stay cheap.
     const unknownSession = Boolean(authSessionId) && !authSession?.exists;
     const tables = unknownSession ? [] : options.readPlan?.tables || options.writeTables || TABLES;
-    const leaveEmployeeId = writeRequest?.data()?.employee_id || writeSession?.data()?.userId;
+    const leaveEmployeeId = options.writeEmployeeId || writeRequest?.data()?.employee_id || writeSession?.data()?.userId;
     if ((options.readPlan || options.writeTables || unknownSession) && !meta.exists) throw new Error('Database initialization marker missing.');
     const documentBackfills: { id: string; file_available: boolean; mime_type?: string }[] = [];
     // Onboarding blobs are fetched only for an explicit file request. Ordinary

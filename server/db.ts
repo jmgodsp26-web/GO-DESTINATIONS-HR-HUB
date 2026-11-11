@@ -6,7 +6,9 @@ import { OnboardingService, type OnboardingState } from './onboarding.js';
 import type { Announcement, AnnouncementView, AnnouncementReceipt, AnnouncementReport } from '../src/types.js';
 import { validateProfileStorage } from './profile-validation.js';
 import { employeeCalendar } from '../src/utils/employeeCalendar.js';
-import { workingDays, holidayApplies } from '../src/utils/workingDays.js';
+import type { WorkScheduleRules, WorkScheduleUpdate, WorkScheduleView } from '../src/types/workSchedule.js';
+import { validateWorkSchedule } from '../src/utils/workSchedule.js';
+import { workingDates, workingDays, holidayApplies } from '../src/utils/workingDays.js';
 import { decodeUpload } from './files.js';
 import {
   UserProfile,
@@ -545,7 +547,7 @@ export class HRDatabase {
 
     if (updates.role !== undefined && !['admin', 'employee'].includes(updates.role)) throw new Error('Role must be admin or employee.');
     if (updates.status !== undefined && !['active', 'disabled'].includes(updates.status)) throw new Error('Status must be active or disabled.');
-    for (const key of ['id', 'user_id', 'employee_id', 'passwordHash', 'passwordCustomized', 'mustChangePassword', 'created_at']) {
+    for (const key of ['work_schedule', 'id', 'user_id', 'employee_id', 'passwordHash', 'passwordCustomized', 'mustChangePassword', 'created_at']) {
       if (key in updates) throw new Error('This account field cannot be changed.');
     }
     updates = Object.fromEntries(Object.entries(updates || {}).filter(([key]) => key === 'password' || EDITABLE_PROFILE_FIELDS.includes(key))) as typeof updates;
@@ -821,6 +823,61 @@ export class HRDatabase {
     return balance;
   }
 
+  public getWorkSchedule(employeeId: string, viewer: UserProfile): WorkScheduleView {
+    if (viewer.role !== 'admin' && viewer.id !== employeeId) throw new Error('Access denied. You can only view your own work schedule.');
+    const employee = this.getProfile(employeeId);
+    if (!employee) throw new Error('Employee not found.');
+    return { schedule: employee.work_schedule || null, company_workweek: this.companySettings.workweek,
+      holiday_calendar: employeeCalendar(employee) };
+  }
+
+  private employeeWorkingDates(employee: UserProfile, start: string, end: string, schedule = employee.work_schedule as WorkScheduleRules | undefined): string[] {
+    const calendar = employeeCalendar(employee);
+    return workingDates(start, end, this.holidays, calendar.country, calendar.region, this.companySettings.workweek, schedule);
+  }
+
+  private leaveScheduleChanged(request: LeaveRequest): boolean {
+    const employee = this.getProfile(request.employee_id);
+    if (!employee) return true;
+    try {
+      const dates = this.employeeWorkingDates(employee, request.start_date, request.end_date);
+      const duration = request.is_half_day && dates.length ? 0.5 : dates.length;
+      return duration !== request.total_days || (Array.isArray(request.working_dates) && JSON.stringify(dates) !== JSON.stringify(request.working_dates));
+    } catch { return true; }
+  }
+
+  public updateWorkSchedule(employeeId: string, input: WorkScheduleUpdate, admin: UserProfile): WorkScheduleView & { pending_requests_affected: number } {
+    if (admin.role !== 'admin') throw new Error('Administrator access is required to change work schedules.');
+    const user = this.users.find(u => u.id === employeeId);
+    if (!user) throw new Error('Employee not found.');
+    const rules = validateWorkSchedule(input);
+    if (input.expected_revision !== (user.profile.work_schedule?.revision || null) || input.expected_workweek !== this.companySettings.workweek) {
+      throw new Error('The schedule changed while you were editing. Close and reopen Work schedule before saving again.');
+    }
+    if (typeof input.reason !== 'string' || !input.reason.trim() || input.reason.length > 500) throw new Error('Add a short reason for the schedule change (up to 500 characters).');
+    const previous = user.profile.work_schedule || null;
+    // Existing approved requests retain their original days and deductions.
+    for (const request of this.leaveRequests.filter(r => r.employee_id === employeeId && r.status === 'Approved')) {
+      const before = this.employeeWorkingDates(user.profile, request.start_date, request.end_date);
+      const after = this.employeeWorkingDates(user.profile, request.start_date, request.end_date, rules);
+      if (JSON.stringify(before) !== JSON.stringify(after)) {
+        throw new Error(`This change affects approved leave on ${request.start_date} to ${request.end_date}. Keep those dates unchanged, or cancel that leave before changing the schedule and submit it again.`);
+      }
+    }
+    const now = new Date().toISOString();
+    const schedule = { ...rules, revision: crypto.randomUUID(), updated_at: now, updated_by: admin.full_name };
+    validateProfileStorage({ ...user.profile, work_schedule: schedule });
+    user.profile = { ...user.profile, work_schedule: schedule, updated_at: now };
+    const pending = this.leaveRequests.filter(r => r.employee_id === employeeId && r.status === 'Pending' && this.leaveScheduleChanged(r));
+    this.logAudit({ action: 'Work schedule updated', user_id: admin.id, user_name: admin.full_name, user_role: admin.role,
+      target_type: 'employee', target_id: employeeId,
+      details: `Updated work schedule for ${user.profile.full_name}. Reason: ${input.reason.trim()}. Before: ${JSON.stringify(previous ? { regular_days: previous.regular_days, exceptions: previous.exceptions } : { regular_days: null, exceptions: [] })}. After: ${JSON.stringify(rules)}. Pending requests needing resubmission: ${pending.length}.` });
+    this.notifications.unshift({ id: 'notif-' + crypto.randomUUID(), user_id: employeeId, title: 'Work schedule updated',
+      message: `HR updated your work schedule. Open a new leave request to see the latest working days.${pending.length ? ' Your schedule changed for a pending request. Cancel and resubmit the affected request so its days can be checked again.' : ''}`,
+      type: 'system', read: false, created_at: now, link_tab: 'leave' });
+    return { ...this.getWorkSchedule(employeeId, admin), pending_requests_affected: pending.length };
+  }
+
   // --- LEAVE REQUESTS METHODS ---
   public getLeaveRequests(
     user: UserProfile,
@@ -849,7 +906,8 @@ export class HRDatabase {
       );
     }
 
-    return requests.sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime());
+    return requests.map(r => r.status === 'Pending' ? { ...r, schedule_changed: this.leaveScheduleChanged(r) } : r)
+      .sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime());
   }
 
   public calculateWorkingDays(
@@ -877,6 +935,8 @@ export class HRDatabase {
       attachment_name?: string;
       attachment_url?: string;
       attachment_data?: string;
+      expected_schedule_revision?: string | null;
+      expected_workweek?: string;
     }
   ): LeaveRequest {
     if (!data.leave_type || !data.start_date || typeof data.reason !== 'string' || !data.reason.trim()) {
@@ -896,11 +956,18 @@ export class HRDatabase {
     const startDate = data.start_date;
     const endDate = isHalfDay ? data.start_date : (data.end_date || data.start_date);
 
-    const eligibleDays = this.calculateWorkingDays(startDate, endDate, employeeCalendar(user).country, employeeCalendar(user).region);
+    const employee = this.getProfile(user.id);
+    if (!employee) throw new Error('Employee not found.');
+    if (('expected_schedule_revision' in data && data.expected_schedule_revision !== (employee.work_schedule?.revision || null)) ||
+        ('expected_workweek' in data && data.expected_workweek !== this.companySettings.workweek)) {
+      throw new Error('Your work schedule changed. Close and reopen this form to review your updated leave days.');
+    }
+    const chargedDates = this.employeeWorkingDates(employee, startDate, endDate);
+    const eligibleDays = chargedDates.length;
     const calculatedWorkingDays = isHalfDay && eligibleDays > 0 ? 0.5 : eligibleDays;
 
     if (calculatedWorkingDays === 0) {
-      throw new Error('The selected date range does not contain any working days (weekends or public holidays).');
+      throw new Error('The selected dates contain no scheduled working days. Days off and applicable public holidays are excluded.');
     }
     const totalDays = calculatedWorkingDays;
 
@@ -909,7 +976,7 @@ export class HRDatabase {
       (r) =>
         r.employee_id === user.id &&
         (r.status === 'Approved' || r.status === 'Pending') &&
-        !(endDate < r.start_date || startDate > r.end_date)
+        (Array.isArray(r.working_dates) ? chargedDates.some(date => r.working_dates!.includes(date)) : !(endDate < r.start_date || startDate > r.end_date))
     );
 
     if (existingConflicts.length > 0) {
@@ -952,6 +1019,7 @@ export class HRDatabase {
       start_date: startDate,
       end_date: endDate,
       total_days: totalDays,
+      working_dates: chargedDates,
       is_half_day: isHalfDay,
       half_day_period: halfDayPeriod,
       reason: data.reason.trim(),
@@ -1124,6 +1192,7 @@ export class HRDatabase {
     const employeeName = employee ? employee.full_name : request.employee_name;
 
     if (action === 'Approved') {
+      if (this.leaveScheduleChanged(request)) throw new Error('The work schedule or holiday calendar changed for this request. Cancel and resubmit it to review the correct days before approval.');
       const isPaid = isPaidLeaveType(request.leave_type) || request.leave_type === 'Holiday Shift Credit';
       let balance = this.leaveBalances.find(
         (b) =>
@@ -2422,6 +2491,7 @@ export class HRDatabase {
           date: r.start_date,
           end_date: r.end_date,
           total_days: r.total_days,
+          working_dates: r.working_dates,
           is_half_day: r.is_half_day,
           half_day_period: r.half_day_period,
           type: r.status === 'Approved' ? 'approved_leave' : 'pending_leave',

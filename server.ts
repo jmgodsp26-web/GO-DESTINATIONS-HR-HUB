@@ -127,6 +127,7 @@ app.use('/api', async (req: Request, res: Response) => {
   // Protected routes first confirm the cookie names a stored session.
   const authSessionId = publicRoute ? undefined : sessionIdFor(sessionToken(req));
   const writeLeaveRequestId = writeTables && /^\/leave-requests\/([^/]+)(?:\/(?:review|cancel))?\/?$/.exec(req.path)?.[1];
+  const writeEmployeeId = writeTables && /^\/employees\/([a-z0-9_-]+)\/work-schedule\/?$/i.exec(req.path)?.[1];
   const employeeDocumentId = /^\/documents\/([^/]+)\/file\/?$/.exec(req.path)?.[1];
   const leaveAttachmentId = /^\/leave-attachments\/([a-f0-9-]{36})\/?$/.exec(req.path)?.[1];
   const legacyDocuments = /^\/(?:my-documents|admin\/employees\/[^/]+\/documents)\/?$/.test(req.path) && ['GET', 'HEAD'].includes(req.method);
@@ -149,7 +150,7 @@ app.use('/api', async (req: Request, res: Response) => {
         apiRouter(req, res, (error?: any) => { if (error) reject(error); else { res.statusCode = 404; capture('json', { error: 'API route not found.' }); } });
       }));
       return { result: reply, commit: reply.status < 400 || (req.path === '/api/auth/login' && [401, 403, 429].includes(reply.status)) };
-    }, { onboardingFileId, announcementImageId, employeeDocumentId, leaveAttachmentId, legacyDocuments, readPlan, writeTables, writeSessionId, authSessionId, writeLeaveRequestId: writeLeaveRequestId || undefined });
+    }, { onboardingFileId, announcementImageId, employeeDocumentId, leaveAttachmentId, legacyDocuments, readPlan, writeTables, writeSessionId, authSessionId, writeLeaveRequestId: writeLeaveRequestId || undefined, writeEmployeeId: writeEmployeeId || undefined });
     res.send = send; res.json = json; res.end = end as any;
     res.status(outcome.status);
     for (const [header, value] of Object.entries(outcome.headers)) if (value !== undefined) res.setHeader(header, value);
@@ -449,6 +450,18 @@ apiRouter.post('/api/employees/import', adminOnlyMiddleware, (req: Authenticated
   try {
     res.json({ results: db.importEmployees(req.body.employees, req.body.password, req.user!) });
   } catch (error: any) { res.status(400).json({ error: error.message || 'Employee import failed.' }); }
+});
+
+apiRouter.get(['/api/work-schedule', '/api/employees/:id/work-schedule'], authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  const employeeId = req.params.id || req.user!.id;
+  if (req.user!.role !== 'admin' && employeeId !== req.user!.id) return res.status(403).json({ error: 'You can only view your own work schedule.' });
+  try { res.json(db.getWorkSchedule(employeeId, req.user!)); }
+  catch (error: any) { res.status(400).json({ error: error.message }); }
+});
+
+apiRouter.patch('/api/employees/:id/work-schedule', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  try { res.json(db.updateWorkSchedule(req.params.id, req.body, req.user!)); }
+  catch (error: any) { res.status(400).json({ error: error.message }); }
 });
 
 apiRouter.patch('/api/employees/:id', adminOnlyMiddleware, (req: AuthenticatedRequest, res: Response) => {

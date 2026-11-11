@@ -51,6 +51,7 @@ export interface LeaveTransaction {
 }
 
 export interface UserProfile {
+  work_schedule?: import('./types/workSchedule').WorkSchedule;
   id: string;
   user_id: string;
   employee_id: string;
@@ -89,6 +90,9 @@ export interface LeaveBalance {
 export type HalfDayPeriod = 'morning' | 'afternoon';
 
 export interface LeaveRequest {
+  /** Charged dates frozen at submission; used to detect later schedule changes. */
+  working_dates?: string[];
+  schedule_changed?: boolean;
   id: string;
   employee_id: string;
   employee_name: string;
@@ -278,6 +282,7 @@ export interface AnnouncementReport {
 }
 
 export interface CalendarEvent {
+  working_dates?: string[];
   id: string;
   title: string;
   date: string;

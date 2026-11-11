@@ -1,3 +1,5 @@
+import type { WorkScheduleView } from '../../types/workSchedule';
+import { scheduleLabel } from '../../utils/workSchedule';
 import { easternDate } from '../../utils/easternTime';
 import { Dialog } from '../common/Dialog';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
@@ -54,7 +56,10 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   const [endDate, setEndDate] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
-  const [workweek, setWorkweek] = useState('Monday to Friday');
+  const [scheduleView, setScheduleView] = useState<WorkScheduleView | null>(null);
+  const workweek = scheduleView?.company_workweek || 'Monday to Friday';
+  const workSchedule = scheduleView?.schedule;
+  const leaveCalendar = scheduleView?.holiday_calendar || (user ? employeeCalendar(user) : { country: '', region: '' });
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [holidaysReady, setHolidaysReady] = useState(false);
   const [reload, setReload] = useState(0);
@@ -64,7 +69,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     let active = true;
     setHolidaysReady(false);
     setHolidayError(null);
-    Promise.all([api.getHolidays({is_active: true}), api.getSettings()]).then(([data, settings]) => { if (active) { setHolidays(data); setWorkweek(settings.workweek); setHolidaysReady(true); } }).catch(err => {if (active) setHolidayError(err.message || 'Could not load holidays. Close and reopen to try again.');});
+    Promise.all([api.getHolidays({is_active: true}), api.getWorkSchedule()]).then(([data, settings]) => { if (active) { setHolidays(data); setScheduleView(settings); setHolidaysReady(true); } }).catch(err => {if (active) setHolidayError(err.message || 'Could not load your schedule and holidays. Close and reopen to try again.');});
     return () => {active = false;};
   }, [isOpen, reload]);
   const [attachmentName, setAttachmentName] = useState<string>('');
@@ -108,9 +113,9 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   let dateError: string | null = holidayError;
   if (holidaysReady) {
     try {
-      const eligible = workingDays(startDate, isHalfDay ? startDate : endDate, holidays, employeeCalendar(user).country, employeeCalendar(user).region, workweek);
+      const eligible = workingDays(startDate, isHalfDay ? startDate : endDate, holidays, leaveCalendar.country, leaveCalendar.region, workweek, workSchedule);
       calculatedDays = isHalfDay && eligible > 0 ? 0.5 : eligible;
-      if (!calculatedDays) dateError = 'Choose a working day; weekends and applicable holidays are excluded.';
+      if (!calculatedDays) dateError = 'Choose a scheduled working day. Your days off and applicable holidays are excluded. Contact HR if a shift is missing.';
     } catch (err: any) { dateError = err.message; }
   }
 
@@ -164,6 +169,8 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     try {
       const attachmentData = attachmentFile ? await readUpload(attachmentFile) : undefined;
       const saved = await api.submitLeaveRequest({
+        expected_schedule_revision: workSchedule?.revision || null,
+        expected_workweek: workweek,
         leave_type: leaveType,
         start_date: startDate,
         end_date: isHalfDay ? startDate : endDate,
@@ -370,7 +377,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               )}
             </div>
 
-            <div className="go-live-audience" aria-live="polite"><p><strong>{employeeCalendar(user).country} holiday calendar</strong> · {workweek}</p>{holidaysReady && !dateError && (() => { const days = leaveDayBreakdown(startDate, isHalfDay ? startDate : endDate, holidays, employeeCalendar(user).country, employeeCalendar(user).region, workweek); return <p>{days.selected} calendar day(s) · {days.nonWorking} non-working day(s) · {days.holidays} holiday(s) excluded → <strong>{calculatedDays} day(s) requested</strong>{isHalfDay ? ' (half day)' : ''}</p>; })()}{holidayError && <button type="button" className="go-button" onClick={() => setReload(n=>n+1)}>Retry calendar</button>}</div>
+            <div className="go-live-audience" aria-live="polite"><p><strong>{leaveCalendar.country} holiday calendar</strong> · {scheduleLabel(workSchedule, workweek)}{Boolean(workSchedule?.exceptions.length) && ' · Date changes applied'}</p>{holidaysReady && !dateError && (() => { const days = leaveDayBreakdown(startDate, isHalfDay ? startDate : endDate, holidays, leaveCalendar.country, leaveCalendar.region, workweek, workSchedule); return <p>{days.selected} calendar day(s) · {days.nonWorking} non-working day(s) · {days.holidays} holiday(s) excluded → <strong>{calculatedDays} day(s) requested</strong>{isHalfDay ? ' (half day)' : ''}</p>; })()}{holidayError && <button type="button" className="go-button" onClick={() => setReload(n=>n+1)}>Retry calendar</button>}</div>
             {/* Auto-calculated duration & Real-Time Balance Exhaustion Indicator */}
             {calculatedDays > 0 && (
               <div

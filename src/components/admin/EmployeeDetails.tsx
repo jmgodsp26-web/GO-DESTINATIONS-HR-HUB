@@ -1,3 +1,4 @@
+import { WorkScheduleEditor } from './WorkScheduleEditor';
 import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Pencil, FolderOpen, Sliders } from 'lucide-react';
@@ -11,8 +12,9 @@ import { employeeCalendar } from '../../utils/employeeCalendar';
 import { api } from '../../services/api';
 import type { UserProfile, LeaveBalance, LeaveRequest, EmployeeDocument } from '../../types';
 type Employee = UserProfile & { leave_balances: LeaveBalance[] };
-export function EmployeeDetails({ employee, onEdit, onBalance, onDocuments }: { employee: Employee; onEdit: () => void; onBalance: () => void; onDocuments: () => void }) {
+export function EmployeeDetails({ employee, onEdit, onBalance, onDocuments, onScheduleSaved }: { employee: Employee; onEdit: () => void; onBalance: () => void; onDocuments: () => void; onScheduleSaved?: () => void }) {
   const { navigate } = useNavigation();
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [tab,setTab]=useViewPreference(`employee:${employee.id}:tab`,'Overview');
   const { sections,run }=useSections();
   const [documents,setDocuments]=useState<EmployeeDocument[]>([]),[requests,setRequests]=useState<LeaveRequest[]>([]);
@@ -21,6 +23,8 @@ export function EmployeeDetails({ employee, onEdit, onBalance, onDocuments }: { 
   useEffect(()=>{if(tab==='Documents')loadDocs();if(tab==='Leave')loadLeave();},[tab,employee.id]);
   function facts(values:[string,string|undefined][]) {return <dl className="go-detail-grid">{values.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value||'Not provided'}</dd></div>)}</dl>;}
   return <section className="space-y-5"><button type="button" className="go-button go-button-secondary" onClick={()=>navigate('administration/employees')}><ArrowLeft size={16}/>Back to employees</button><div className="go-page-header"><PageHeading eyebrow={employee.employee_id} title={employee.full_name} description={[employee.job_title,employee.department].filter(Boolean).join(' · ')}/><button type="button" className="go-button go-button-primary" onClick={onEdit}><Pencil size={16}/>Edit employee</button></div><div className="go-surface p-5 sm:p-7"><div className="flex gap-4 items-center">{employee.avatar_url&&<img src={employee.avatar_url} alt="" className="w-16 h-16 object-cover rounded-xl"/>}<div><p className="font-bold">{employee.email}</p><p className="text-sm text-slate-500">{employee.status==='active'?'Active account':'Disabled account'} · {employee.role==='admin'?'Administrator':'Employee'}</p></div></div><nav className="go-detail-tabs" aria-label="Employee record sections">{['Overview','Employment','Leave','Documents','Account'].map(name=><button key={name} type="button" aria-pressed={tab===name} onClick={()=>setTab(name)}>{name}</button>)}</nav>
+    <button type="button" className="go-button go-button-secondary mb-5 mr-3" onClick={() => setScheduleOpen(true)}>Work schedule</button>
+    {scheduleOpen && <WorkScheduleEditor employee={employee} onClose={() => setScheduleOpen(false)} onSaved={onScheduleSaved} />}
     <button type="button" className="go-button go-button-secondary mb-5" onClick={()=>navigate(`administration/onboarding?employee=${employee.id}`)}>View onboarding</button>
     {tab==='Overview'&&facts([['Full name',employee.full_name],['Email',employee.email],['Phone',employee.phone],['Country',employee.country],['Birthday',employee.date_of_birth||employee.birthday],['Employee ID',employee.employee_id]])}
     {tab==='Employment'&&<>{facts([['Department',employee.department],['Job title',employee.job_title],['Hire date',employee.hire_date||employee.date_joined],['Country of residence',employee.country],['Holiday calendar',employeeCalendar(employee).country],['Time zone',employee.timezone]])}<p className="go-live-audience mt-6">Country describes the employee’s location. Holiday calendar determines which holidays apply to their leave.</p></>}

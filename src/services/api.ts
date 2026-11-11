@@ -1,3 +1,4 @@
+import type { WorkScheduleView, WorkScheduleUpdate } from '../types/workSchedule';
 import type { AnnouncementInput, AnnouncementView, AnnouncementReport } from '../types';
 import type { PersonalDashboardData, AdministrationDashboardData } from '../types/dashboard';
 import { createReadCache } from './readCache';
@@ -72,6 +73,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const api = {
+  getWorkSchedule(employeeId?: string): Promise<WorkScheduleView> {
+    return request(employeeId ? `/api/employees/${encodeURIComponent(employeeId)}/work-schedule` : '/api/work-schedule');
+  },
+  updateWorkSchedule(employeeId: string, input: WorkScheduleUpdate): Promise<WorkScheduleView & { pending_requests_affected: number }> {
+    return request(`/api/employees/${encodeURIComponent(employeeId)}/work-schedule`, { method: 'PATCH', body: JSON.stringify(input) });
+  },
   invalidateReadCache() { reads.clear(); },
   getPersonalDashboard(): Promise<PersonalDashboardData> { return request('/api/dashboard/personal'); },
   getAdministrationDashboard(): Promise<AdministrationDashboardData> { return request('/api/dashboard/administration'); },
@@ -186,6 +193,8 @@ export const api = {
   },
 
   async submitLeaveRequest(data: {
+    expected_schedule_revision?: string | null;
+    expected_workweek?: string;
     leave_type: LeaveType;
     start_date: string;
     end_date: string;

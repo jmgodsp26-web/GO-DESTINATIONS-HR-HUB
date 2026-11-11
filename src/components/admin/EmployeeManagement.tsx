@@ -371,7 +371,7 @@ export const EmployeeManagement: React.FC = () => {
       {employeeId ? (focusedEmployee ? <EmployeeDetails key={focusedEmployee.id} employee={focusedEmployee}
         onEdit={() => { setEditingEmployee({ ...focusedEmployee }); setEditPassword(''); setFormError(null); }}
         onBalance={() => { setAdjustingBalanceEmployee({ employee: focusedEmployee, balances: focusedEmployee.leave_balances }); resetHistoricalUsage(); setSelectedLeaveTypeToAdjust('Vacation Leave'); setNewAllocatedDays(String(focusedEmployee.leave_balances.find(b=>b.leave_type==='Vacation Leave')?.allocated_days ?? 0)); setFormError(null); }}
-        onDocuments={() => setSelectedDocsEmployee(focusedEmployee)} /> : <div className="go-live-audience"><p>This employee record is no longer available.</p><button type="button" className="go-button" onClick={()=>navigate('administration/employees')}>Back to employees</button></div>) : <>
+        onScheduleSaved={() => { void loadEmployees(); }} onDocuments={() => setSelectedDocsEmployee(focusedEmployee)} /> : <div className="go-live-audience"><p>This employee record is no longer available.</p><button type="button" className="go-button" onClick={()=>navigate('administration/employees')}>Back to employees</button></div>) : <>
       <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeading eyebrow="People" title="Employees" description="Manage your people, their details, and leave allowances." />
 
