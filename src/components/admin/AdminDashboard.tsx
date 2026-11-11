@@ -11,6 +11,10 @@ import { api } from '../../services/api';
 import { CelebrationsWidget } from './CelebrationsWidget';
 import { HolidayStaffingCoverageWidget } from './HolidayStaffingCoverage';
 import { formatHolidayDate } from '../../utils/countryUtils';
+import { AnimatePresence } from 'motion/react';
+import { QuickReviewItem } from './QuickReview';
+import { canReviewRequest } from '../../utils/reviewQueue';
+import { ticketParts, formatLongDate } from '../../utils/brandDisplay';
 import {
   Users,
   ClipboardList,
@@ -24,6 +28,7 @@ import {
   X,
   Shield,
   Building2,
+  Plane,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -148,7 +153,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
 
   return (
-    <div className="go-dashboard go-admin-workspace space-y-6 animate-in fade-in duration-200">
+    <div className="go-dashboard go-admin-workspace space-y-6">
       <div className="go-page-header">
         <PageHeading eyebrow="Administration" title="Team overview"
           description={`Welcome back, ${user.full_name.split(' ')[0]}. Here’s what’s happening across your team.`} />
@@ -181,104 +186,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
       <DataRegion state={sections.requests} label="pending requests" onRetry={()=>{api.invalidateReadCache();loadData();}}>
 {/* 4. Quick Approval Queue */}
-      <div className="go-review-queue go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200/70 flex items-center justify-between bg-slate-50/50">
+      <section className="go-review-queue go-surface" aria-label="Needs your review">
+        <header className="go-review-head">
           <div>
-            <div className="flex items-center space-x-2">
-              <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                Needs your review
-              </h2>
-              {pendingRequests.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
-                  {pendingRequests.length} pending
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Review leave requests and check available balances.
-            </p>
+            <h2>Needs your review {pendingRequests.length > 0 && <span className="go-chip is-pending">{pendingRequests.length} pending</span>}</h2>
+            <p>Review leave requests and check available balances.</p>
           </div>
-
-          <button
-            type="button"
-            onClick={() => onNavigateTab('administration/leave-requests')}
-            className="text-xs font-semibold text-[#3A5D83] hover:text-[#182E3F] transition-colors flex items-center space-x-1"
-          >
-            <span>All Requests</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+          <button type="button" onClick={() => onNavigateTab('administration/leave-requests')} className="go-button go-button-quiet">
+            All requests <ArrowRight size={15} aria-hidden="true" />
           </button>
-        </div>
-
-        <div className="divide-y divide-slate-100">
-          {pendingRequests.length === 0 ? (
-            <div className="p-10 text-center text-xs text-slate-500">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
-              <p className="font-semibold text-slate-800">No requests waiting for review</p>
-              <p className="text-slate-400 text-[12px] mt-0.5">There are no pending leave requests awaiting approval.</p>
-            </div>
-          ) : (
-            pendingRequests.map((req) => (
-              <div
-                key={req.id}
-                className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors"
-              >
-                <div className="flex items-start space-x-3.5">
-                  {req.employee_avatar && req.employee_avatar.trim() ? (
-                    <img
-                      src={req.employee_avatar}
-                      alt={req.employee_name}
-                      className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs border border-indigo-200 shrink-0">
-                      {req.employee_name?.split(' ').map((n) => n[0]).join('').slice(0, 2) || 'HR'}
-                    </div>
-                  )}
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-bold text-slate-900 text-sm">{req.employee_name}</span>
-                      <span className="text-xs text-slate-400">({req.employee_department})</span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-2 text-xs mt-1">
-                      <span className="font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md text-[12px]">
-                        {req.leave_type}
-                      </span>
-                      <span className="text-slate-600 font-medium tabular-nums">
-                        {req.start_date === req.end_date ? req.start_date : `${req.start_date} → ${req.end_date}`}
-                      </span>
-                      <span className="font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded-md text-[12px] tabular-nums">
-                        {req.is_half_day ? '0.5 day' : `${req.total_days} ${req.total_days === 1 ? 'day' : 'days'}`}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 mt-1 italic">
-                      &ldquo;{req.reason}&rdquo;
-                    </p>
-                    {req.attachment_name && (
-                      <div className="flex items-center space-x-1 text-[12px] text-indigo-600 mt-1">
-                        <Paperclip className="w-3 h-3" />
-                        <span>Attached: {req.attachment_name}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Approve / Reject Actions */}
-                <div className="flex items-center space-x-2 self-end sm:self-center shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => openReviewModal(req, 'Approved')}
-                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs flex items-center space-x-1.5 min-h-[36px]"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Review request</span>
-                  </button>
-
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+        </header>
+        {pendingRequests.length === 0 ? (
+          <div className="go-review-empty">
+            <CheckCircle2 aria-hidden="true" />
+            <p><strong>All caught up</strong><span>There are no pending leave requests awaiting approval.</span></p>
+          </div>
+        ) : (
+          <ul className="go-review-list">
+            <AnimatePresence initial={false}>
+              {pendingRequests.map((req) => (
+                <QuickReviewItem key={req.id} request={req} approved={approvedRequests} canReview={canReviewRequest(req, user.id)}
+                  balance={employees.find(e => e.id === req.employee_id)?.leave_balances.find(b => b.leave_type === req.leave_type || (req.leave_type === 'Vacation Leave' && (b.leave_type as string) === 'Annual Leave'))}
+                  onOpenFull={() => openReviewModal(req, 'Approved')}
+                  onReviewed={() => { api.invalidateReadCache(); loadData(); }} />
+              ))}
+            </AnimatePresence>
+          </ul>
+        )}
+      </section>
 
       </DataRegion>
       <DataRegion state={sections.coverage} label="holiday coverage" onRetry={()=>{api.invalidateReadCache();loadData();}}>
@@ -418,34 +353,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
             </button>
           </div>
 
-          <div className="space-y-2.5">
+          {upcomingHolidays.length ? <ul className="go-ticket-list">
             {upcomingHolidays.map((holiday) => {
-              const { monthShort, day } = formatHolidayDate(holiday.date);
-
+              const stub = ticketParts(holiday.date);
               return (
-                <div
-                  key={holiday.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-white border border-slate-200 rounded-lg p-1.5 text-center w-11 shadow-2xs">
-                      <span className="block text-[12px] font-bold text-indigo-600 uppercase leading-none">
-                        {monthShort}
-                      </span>
-                      <span className="block text-xs font-bold text-slate-900 leading-tight mt-0.5 tabular-nums">
-                        {day}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900">{holiday.name}</p>
-                      <p className="text-[12px] text-slate-500 line-clamp-1">{holiday.description || 'Company wide closure'}</p>
-                    </div>
+                <li key={holiday.id} className="go-ticket">
+                  <div className="go-ticket-stub" aria-hidden="true"><small>{stub.month}</small><b>{stub.day}</b><span>{stub.weekday}</span></div>
+                  <div className="go-ticket-body">
+                    <strong>{holiday.name}</strong>
+                    <small>{formatLongDate(holiday.date)}, {holiday.date.slice(0, 4)}</small>
+                    <span className="go-ticket-tag">{holiday.scope === 'Company-wide' || ['company-wide', 'global', 'all'].includes((holiday.country || '').toLowerCase()) ? 'Company-wide' : holiday.country}{holiday.holiday_type ? ` · ${holiday.holiday_type}` : ''}</span>
                   </div>
-                  <span className="text-[12px] text-slate-400 font-medium tabular-nums">{holiday.date}</span>
-                </div>
+                  <Plane className="go-ticket-plane" aria-hidden="true" />
+                </li>
               );
             })}
-          </div>
+          </ul> : <p className="text-sm text-slate-600 py-4">No upcoming holidays are scheduled.</p>}
         </div>
 </DataRegion>
       </div>

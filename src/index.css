@@ -2,20 +2,123 @@
 @import "./onboarding.css";
 @import "tailwindcss";
 
-/* GO Branding Guidelines v2 (January 2024): exact web colors and Open Sans. */
+/* GO brand theme. Tailwind's neutral, blue and amber scales are re-pointed at the
+   GO palette, so every screen that uses them inherits the brand without
+   per-page rewrites. Semantic success (emerald) and error (rose) stay as-is. */
 @theme {
-  --font-sans: 'Open Sans', Arial, sans-serif;
-  --color-indigo-50: #f4f6f9;
-  --color-indigo-100: #CFD7E1;
+  --font-sans: 'Nunito', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+  --font-display: 'Fredoka', 'Nunito', 'Segoe UI', system-ui, sans-serif;
+
+  /* Neutrals tinted from GO navy (#182E3F) and mist (#CFD7E1). */
+  --color-slate-50: #F7F9FB;
+  --color-slate-100: #EEF2F6;
+  --color-slate-200: #DFE5EC;
+  --color-slate-300: #CFD7E1;
+  --color-slate-400: #8496AB;
+  --color-slate-500: #586B80;
+  --color-slate-600: #4D6074;
+  --color-slate-700: #34495E;
+  --color-slate-800: #23384B;
+  --color-slate-900: #182E3F;
+  --color-slate-950: #112535;
+
+  /* GO steel blue (#3A5D83) scale. */
+  --color-indigo-50: #EEF3F8;
+  --color-indigo-100: #E3EBF4;
   --color-indigo-200: #CFD7E1;
   --color-indigo-300: #9EAFC1;
   --color-indigo-400: #7087A3;
-  --color-indigo-500: #3A5D83;
+  --color-indigo-500: #4A6C92;
   --color-indigo-600: #3A5D83;
-  --color-indigo-700: #3A5D83;
-  --color-indigo-800: #182E3F;
+  --color-indigo-700: #2E4C6D;
+  --color-indigo-800: #23384B;
   --color-indigo-900: #182E3F;
-  --color-indigo-950: #182E3F;
+  --color-indigo-950: #112535;
+  --color-blue-50: #EEF3F8;
+  --color-blue-100: #E3EBF4;
+  --color-blue-200: #CFD7E1;
+  --color-blue-300: #9EAFC1;
+  --color-blue-400: #7087A3;
+  --color-blue-500: #4A6C92;
+  --color-blue-600: #3A5D83;
+  --color-blue-700: #2E4C6D;
+  --color-blue-800: #23384B;
+  --color-blue-900: #182E3F;
+  --color-blue-950: #112535;
+
+  /* GO orange (#ED9027) scale: "pending" and highlights use the brand accent. */
+  --color-amber-50: #FEF6EC;
+  --color-amber-100: #FDEBD3;
+  --color-amber-200: #F8DEC1;
+  --color-amber-300: #F1C48E;
+  --color-amber-400: #F2A548;
+  --color-amber-500: #ED9027;
+  --color-amber-600: #C9721A;
+  --color-amber-700: #9A5206;
+  --color-amber-800: #7A4108;
+  --color-amber-900: #5F340B;
+  --color-amber-950: #3A1F06;
+  --color-orange-50: #FEF6EC;
+  --color-orange-100: #FDEBD3;
+  --color-orange-200: #F8DEC1;
+  --color-orange-300: #F1C48E;
+  --color-orange-400: #F2A548;
+  --color-orange-500: #ED9027;
+  --color-orange-600: #C9721A;
+  --color-orange-700: #9A5206;
+  --color-orange-800: #7A4108;
+  --color-orange-900: #5F340B;
+  --color-orange-950: #3A1F06;
+
+  /* Category hues stay distinct but come from the GO palette: slate (teal),
+     GO grey #636466 (purple) and apricot (pink). Errors (rose) and success
+     (emerald) keep their usual meaning. */
+  --color-teal-50: #EEF2F6;
+  --color-teal-100: #E1E7EE;
+  --color-teal-200: #C3CEDA;
+  --color-teal-300: #9EAFC1;
+  --color-teal-400: #7087A3;
+  --color-teal-500: #5C7490;
+  --color-teal-600: #4B6079;
+  --color-teal-700: #3D4F64;
+  --color-teal-800: #2F3E50;
+  --color-teal-900: #22303F;
+  --color-teal-950: #172230;
+  --color-purple-50: #F4F4F5;
+  --color-purple-100: #E9E9EA;
+  --color-purple-200: #D4D5D6;
+  --color-purple-300: #B5B6B8;
+  --color-purple-400: #949598;
+  --color-purple-500: #77787A;
+  --color-purple-600: #636466;
+  --color-purple-700: #4F5052;
+  --color-purple-800: #3C3D3F;
+  --color-purple-900: #2A2B2C;
+  --color-purple-950: #1A1A1B;
+  --color-pink-50: #FFF8F1;
+  --color-pink-100: #FDEEDD;
+  --color-pink-200: #F8DEC1;
+  --color-pink-300: #F1C48E;
+  --color-pink-400: #EBAA66;
+  --color-pink-500: #E39446;
+  --color-pink-600: #C9721A;
+  --color-pink-700: #9A5206;
+  --color-pink-800: #7A4108;
+  --color-pink-900: #5F340B;
+  --color-pink-950: #3A1F06;
+
+  /* Softer, friendlier corners and navy-tinted depth. */
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.375rem;
+  --radius-3xl: 1.75rem;
+  --shadow-2xs: 0 1px 1px #182E3F0A;
+  --shadow-xs: 0 1px 3px #182E3F0F;
+  --shadow-sm: 0 2px 6px #182E3F12;
+  --shadow-md: 0 8px 18px -8px #182E3F33;
+  --shadow-lg: 0 14px 28px -12px #182E3F40;
+  --shadow-xl: 0 22px 44px -18px #182E3F55;
+  --shadow-2xl: 0 30px 70px -24px #112535A0;
 }
 @layer base {
   :root {
@@ -55,30 +158,10 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .go-main td { padding-top: 16px; padding-bottom: 16px; }
 .go-main input:not([type="checkbox"]):not([type="radio"]), .go-main select, .go-main textarea { border-color: #CFD7E1; border-radius: 12px; }
 .go-main input:focus, .go-main select:focus, .go-main textarea:focus { border-color: #3A5D83; }
-.go-header { background: #ffffffed; border-bottom-color: #CFD7E1; box-shadow: 0 3px 18px #182e3f05; }
-.go-header > div { height: 88px; }
-.go-header button { min-height: 38px; }
-.go-header .go-logo { min-width: 58px; }
 .go-logo img { width: 58px; height: auto; max-height: 76px; object-fit: contain; }
 
 /* Sidebar colors use the official deep ocean and denim blue, never black. */
-.go-sidebar { width: 252px; background: #182E3F; border: 0; }
-.go-sidebar-brand { padding: 18px 12px 22px; margin-bottom: 10px; }
 .go-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .18em; }
-.go-sidebar-brand .go-eyebrow { color: #9EAFC1; }
-.go-sidebar-brand p { color: white; font-weight: 700; font-size: 19px; line-height: 1.45; letter-spacing: -.02em; margin-top: 12px; }
-.go-sidebar-brand em { color: #F1C48E; font-style: normal; }
-.go-sidebar-rule { display: block; width: 30px; height: 3px; border-radius: 99px; background: #ED9027; margin-top: 18px; }
-.go-sidebar nav { gap: 22px; }
-.go-sidebar nav > div > div:first-child span { color: #9EAFC1; font-size: 10px; letter-spacing: .14em; }
-.go-sidebar .sidebar-menu-item { min-height: 42px; font-size: 12px; padding: 11px 12px; border-radius: 12px; }
-.go-sidebar .sidebar-menu-item:not(.bg-\[\#3A5D83\]) { color: #CFD7E1; }
-.go-sidebar .sidebar-menu-item svg { color: #9EAFC1; }
-.go-sidebar .sidebar-menu-item.bg-\[\#3A5D83\] { background: #3A5D83; color: white; box-shadow: inset 3px 0 #ED9027; }
-.go-sidebar .sidebar-menu-item.bg-\[\#3A5D83\] svg { color: white; }
-.go-sidebar .sidebar-menu-item:hover { background: #3a5d8366; }
-.go-sidebar > div:last-child { background: #182E3F; border-top-color: #3a5d8380; }
-.go-sidebar > div:last-child > div { background: #3a5d834d; border-color: #7087a350; }
 
 /* Welcome panel is a recognizable GO composition, not a generic white card. */
 .go-main .go-welcome { background: #3A5D83; border: 0; padding: 32px; position: relative; box-shadow: 0 16px 32px #3a5d831c; }
@@ -122,14 +205,10 @@ button:active:not(:disabled) { transform: translateY(1px); }
 @keyframes shimmer { to { transform: translateX(100%); } }
 .animate-shimmer { position: relative; overflow: hidden; }
 .animate-shimmer::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg,transparent,#ffffff80,transparent); animation: shimmer 2s infinite; }
-@media (min-width: 768px) { .go-sidebar { top: 88px; height: calc(100vh - 88px); } }
 @media (max-width: 1100px) { .go-main { padding: 24px; } .go-login-story { padding: 32px; } .go-login { gap: 4%; } }
 @media (max-width: 767px) {
   .go-main { padding: 20px 14px; }
   .go-main .go-welcome { padding: 24px 20px; border-radius: 20px; }
-  .go-header > div { padding-left: 14px; padding-right: 14px; }
-  .go-header .go-logo { display: none; }
-  .go-header .text-sm { font-size: 13px; }
   .go-login { display: block; padding: 24px 16px; }
   .go-login-story { min-height: auto; padding: 26px; border-radius: 24px; margin-bottom: 26px; }
   .go-story-top { display: none; }
@@ -148,12 +227,8 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .go-main .text-xs { font-size: 13px; line-height: 1.6; }
 .go-main .text-slate-400 { color: #636466; }
 .go-main .go-welcome .text-slate-400 { color: #CFD7E1; }
-.go-sidebar .sidebar-menu-item { font-size: 13px; }
 .go-login-form .text-xs { font-size: 13px; line-height: 1.6; }
 @media (max-width: 767px) {
-  .go-header > div { gap: 8px; }
-  .go-header > div > div:last-child > .border-l { display: none; }
-  .go-sidebar .go-logo img { background: white; border-radius: 10px; padding: 6px; width: 70px; max-height: none; }
 }
 
 /* Employee experience: useful information first, clear status, comfortable controls. */

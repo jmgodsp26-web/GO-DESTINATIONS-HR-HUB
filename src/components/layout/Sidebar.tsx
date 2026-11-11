@@ -17,13 +17,16 @@ import {
   X,
   HelpCircle,
   LifeBuoy,
-  ChevronRight,
   BarChart3,
   Settings as SettingsIcon,
   Bell,
   Megaphone,
 } from 'lucide-react';
 import { GoDestinationsLogo } from '../common/GoDestinationsLogo';
+import { GoBuddy } from '../common/GoBuddy';
+import { buddyMessages } from '../../utils/brandDisplay';
+
+const PILL_SPRING = { type: 'spring', stiffness: 520, damping: 38, mass: 0.9 } as const;
 
 interface SidebarProps {
   currentTab: string;
@@ -45,6 +48,7 @@ interface NavGroup {
 export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpen, onClose }) => {
   const { user, logout, notifications } = useAuth();
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [hovered, setHovered] = useState<string | null>(null);
 
   const { isAdministration: isAdmin } = useWorkspace();
   const { summary: onboarding } = useOnboarding();
@@ -125,6 +129,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
   ];
 
   const navGroups = isAdmin ? adminGroups : employeeGroups;
+  const firstName = user.full_name.split(' ').filter(Boolean)[0] || 'there';
+  const initials = user.full_name ? user.full_name.split(' ').filter(Boolean).map((n) => n[0]).join('').substring(0, 2).toUpperCase() : 'GD';
+  const now = new Date();
+  const newRequests = notifications.filter((n) => !n.read && n.type === 'new_request').length;
+  const buddyLines = buddyMessages({ firstName, hour: now.getHours(), weekday: now.getDay(), unread: unreadNotifCount,
+    newRequests: isAdmin ? newRequests : undefined, onboarding: !isAdmin && Boolean(onboarding?.available) });
 
   return (
     <>
@@ -138,52 +148,38 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
 
       {/* Sidebar Container */}
       <aside
-        className={`go-sidebar fixed md:sticky top-0 md:top-16 z-40 h-screen md:h-[calc(100vh-4rem)] w-64 bg-[#182E3F] text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800/80 transition-transform duration-200 ease-out select-none shadow-sm ${
+        className={`go-sidebar fixed md:sticky top-0 z-40 flex flex-col shrink-0 transition-transform duration-300 ease-out select-none ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
-        <div className="p-4 flex-1 overflow-y-auto flex flex-col">
-          {/* Mobile close button header */}
-          <div className="flex items-center justify-between pb-3.5 mb-3 border-b border-slate-800/80 md:hidden">
-            <GoDestinationsLogo variant="horizontal" size="sm" darkBackground={true} />
-            <button
-              type="button"
-              aria-label="Close navigation"
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+        <div className="go-sidebar-top">
+          <button type="button" className="go-sidebar-brand" aria-label={`HR Hub home — ${isAdmin ? 'Administration' : 'My Workspace'}`}
+            onClick={() => { onTabChange(isAdmin ? 'admin-dashboard' : 'dashboard'); onClose(); }}>
+            <span className="go-sidebar-logo"><GoDestinationsLogo size="sm" variant="icon-only" /></span>
+            <span className="go-sidebar-brand-copy"><strong>HR Hub</strong><small>GO Destinations</small></span>
+          </button>
+          <button type="button" aria-label="Close navigation" onClick={onClose} className="go-sidebar-close md:hidden">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-          {/* Grouped Navigation Links */}
-          <div className="go-sidebar-caption hidden md:flex">
-            <span className="go-sidebar-caption-mark" aria-hidden="true" />
-            <span>{isAdmin ? 'Your team, connected' : 'Your everyday workspace'}</span>
-          </div>
-          <nav className="space-y-5 flex-1" aria-label="Main navigation">
-            {user.role === 'admin' && (
-              <div className="go-workspace-switch" role="group" aria-label="Choose workspace">
-                {[{ id: 'personal', label: 'My Workspace', tab: 'my-workspace', active: !isAdmin }, { id: 'administration', label: 'Administration', tab: 'admin-dashboard', active: isAdmin }].map(option => (
-                  <button key={option.id} type="button" id={`workspace-${option.id}`} aria-pressed={option.active}
-                    onClick={() => { onTabChange(option.tab); onClose(); }}>
-                    {option.active && <motion.span layoutId="workspace-selection" className="go-workspace-selection" aria-hidden="true" />}
-                    <span className="relative z-10">{option.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+        <div className="go-sidebar-scroll">
+          {user.role === 'admin' && (
+            <div className="go-workspace-switch" role="group" aria-label="Choose workspace">
+              {[{ id: 'personal', label: 'My Workspace', tab: 'my-workspace', active: !isAdmin }, { id: 'administration', label: 'Administration', tab: 'admin-dashboard', active: isAdmin }].map(option => (
+                <button key={option.id} type="button" id={`workspace-${option.id}`} aria-pressed={option.active}
+                  onClick={() => { onTabChange(option.tab); onClose(); }}>
+                  {option.active && <motion.span layoutId="workspace-selection" className="go-workspace-selection" aria-hidden="true" transition={PILL_SPRING} />}
+                  <span className="relative z-10">{option.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <nav className="go-nav" aria-label="Main navigation" onPointerLeave={() => setHovered(null)}>
             {navGroups.map((group, groupIdx) => (
-              <div key={group.groupTitle || groupIdx} className="space-y-1">
-                {/* Group Title */}
-                <div className="px-3 py-1">
-                  <span className="text-[12px] font-semibold tracking-wider text-slate-500 uppercase">
-                    {group.groupTitle}
-                  </span>
-                </div>
-
-                {/* Items in Group */}
-                <div className="space-y-0.5">
+              <div key={group.groupTitle || groupIdx} className="go-nav-group">
+                <span className="go-nav-group-title">{group.groupTitle}</span>
+                <div className="go-nav-items">
                   {group.items.map((item) => {
                     const Icon = item.icon;
                     const isActive = currentTab === item.id;
@@ -191,35 +187,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
                       <button
                         key={item.id}
                         id={`nav-${item.id}`}
-                        aria-current={isActive ? "page" : undefined}
+                        aria-current={isActive ? 'page' : undefined}
                         type="button"
+                        onPointerEnter={() => setHovered(item.id)}
                         onClick={() => {
                           onTabChange(item.id);
                           onClose();
                         }}
-                        className={`sidebar-menu-item w-full group relative flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium tracking-normal transition-all duration-150 ${
-                          isActive
-                            ? 'bg-[#3A5D83] text-white font-semibold shadow-xs'
-                            : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/40 border border-transparent'
-                        }`}
+                        className={`sidebar-menu-item go-nav-item${isActive ? ' is-active' : ''}`}
                       >
-                        {isActive && <motion.span layoutId="navigation-selection" className="go-nav-selection" aria-hidden="true" />}
-                        <div className="relative z-10 flex items-center space-x-2.5 min-w-0">
-                          <Icon
-                            className={`w-4 h-4 shrink-0 transition-colors duration-150 ${
-                              isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
-                            }`}
-                          />
+                        {isActive && <motion.span layoutId="navigation-selection" className="go-nav-selection" aria-hidden="true" transition={PILL_SPRING} />}
+                        {hovered === item.id && !isActive && <motion.span layoutId="navigation-hover" className="go-nav-hover" aria-hidden="true" transition={PILL_SPRING} />}
+                        <span className="go-nav-item-label">
+                          <Icon className="go-nav-icon" />
                           <span className="truncate">{item.label}</span>
-                        </div>
-
-                        {item.badge ? (
-                          <span className="relative z-10 px-1.5 py-0.5 text-[12px] font-semibold rounded bg-[#ED9027] text-[#182E3F] shadow-2xs">
-                            {item.badge}
-                          </span>
-                        ) : isActive ? (
-                          <ChevronRight className="w-3.5 h-3.5 text-white/80 shrink-0 relative z-10" />
-                        ) : null}
+                        </span>
+                        {item.badge && <span className="go-nav-badge">{item.badge}</span>}
                       </button>
                     );
                   })}
@@ -227,68 +210,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
               </div>
             ))}
           </nav>
-
-          {/* Secondary Support & Help Link */}
-          <div className="pt-3 border-t border-slate-800/80 mt-2 space-y-0.5">
-            <button
-              type="button"
-              onClick={() => setShowHelpModal(true)}
-              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/40 hover:text-slate-200 transition-colors"
-            >
-              <HelpCircle className="w-4 h-4 shrink-0 text-slate-500" />
-              <span>HR Policies &amp; Help</span>
-            </button>
-          </div>
+          <button type="button" onClick={() => setShowHelpModal(true)} className="go-nav-help">
+            <HelpCircle className="w-4 h-4 shrink-0" />
+            <span>HR Policies &amp; Help</span>
+          </button>
+          <GoBuddy messages={buddyLines} />
         </div>
 
-        {/* User profile capsule & Logout bottom action */}
-        <div className="p-3 border-t border-slate-800/80 bg-[#182E3F]/80">
-          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/90 mb-2">
-            <div className="flex items-center space-x-2.5 min-w-0">
-              <div className="relative shrink-0">
-                {user.avatar_url && user.avatar_url.trim() ? (
-                  <img
-                    src={user.avatar_url}
-                    alt={user.full_name}
-                    className="w-7 h-7 rounded-full object-cover border border-slate-700/80 ring-1 ring-slate-800"
-                  />
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-[#3A5D83] text-white flex items-center justify-center text-[12px] font-bold border border-slate-700/80 ring-1 ring-slate-800">
-                    {user.full_name
-                      ? user.full_name
-                          .split(' ')
-                          .filter(Boolean)
-                          .map((n) => n[0])
-                          .join('')
-                          .substring(0, 2)
-                      : 'GD'}
-                  </div>
-                )}
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#182E3F]" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-slate-200 truncate leading-snug">{user.full_name}</p>
-                <p className="text-[12px] text-slate-400 truncate">{user.job_title}</p>
-              </div>
-            </div>
-            {user.role === 'admin' && (
-              <span
-                className="shrink-0 px-1.5 py-0.5 rounded text-[12px] font-semibold bg-[#3A5D83]/30 text-slate-200 border border-[#3A5D83]/50"
-                title="Admin Access"
-              >
-                Admin
-              </span>
-            )}
+        <div className="go-sidebar-foot">
+          <div className="go-sidebar-user">
+            <span className="go-sidebar-avatar">
+              {user.avatar_url && user.avatar_url.trim() ? <img src={user.avatar_url} alt="" /> : <span aria-hidden="true">{initials}</span>}
+              <span className="go-sidebar-presence" aria-hidden="true" />
+            </span>
+            <span className="go-sidebar-user-copy"><strong>{user.full_name}</strong><small>{user.job_title}</small></span>
+            {user.role === 'admin' && <span className="go-sidebar-role" title="Admin Access">Admin</span>}
           </div>
-
-          <button
-            type="button"
-            id="sidebar-logout-btn"
-            onClick={logout}
-            className="w-full flex items-center justify-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-medium text-rose-400/90 hover:bg-rose-950/40 hover:text-rose-300 transition-colors border border-rose-900/30"
-          >
+          <button type="button" id="sidebar-logout-btn" onClick={logout} className="go-sidebar-signout">
             <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
+            <span>Sign out</span>
           </button>
         </div>
       </aside>

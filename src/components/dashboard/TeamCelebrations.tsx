@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Award, Cake, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Heart, PartyPopper, Pause, Play, Sparkles } from 'lucide-react';
 import { api } from '../../services/api';
 import { goAnniversaryLabel } from '../../utils/celebrations';
+import { launchConfetti } from '../../utils/confetti';
 import './team-celebrations.css';
 
 export interface CelebrationItem {
@@ -144,9 +145,12 @@ export function TeamCelebrations() {
     if (!item || mutationPending.current) return;
     mutationPending.current = true; setBusy(true);
     const version = ++requestVersion.current;
+    const adding = item.my_reaction !== emoji;
+    const origin = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     try {
-      const next = await api.reactToCelebration(item.id, item.my_reaction === emoji ? null : emoji);
+      const next = await api.reactToCelebration(item.id, adding ? emoji : null);
       if (version === requestVersion.current) { setData(next); setError(''); }
+      if (adding && !motionPaused) launchConfetti(origin, 30);
     } catch (e) {
       if (version === requestVersion.current) setError(e instanceof Error ? e.message : 'Your reaction could not be saved. Please try again.');
     } finally { mutationPending.current = false; setBusy(false); }

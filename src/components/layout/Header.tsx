@@ -10,7 +10,7 @@ import {
   Clock,
   LogOut,
   Search,
-  Command,
+  Sun,
 } from 'lucide-react';
 import { GoDestinationsLogo } from '../common/GoDestinationsLogo';
 
@@ -64,15 +64,15 @@ export const Header: React.FC<HeaderProps> = ({
   if (!user) return null;
 
   return (
-    <header className="go-header bg-white/95 backdrop-blur-md border-b border-slate-200/70 sticky top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-colors">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+    <header className="go-header sticky top-0 z-30">
+      <div className="go-header-bar">
         {/* Left Branding & Mobile Menu Toggle */}
-        <div className="flex items-center space-x-3 shrink-0">
+        <div className="go-header-start">
           <button
             type="button"
             id="mobile-menu-btn"
             onClick={onMenuToggle}
-            className="md:hidden p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            className="go-header-icon-button md:hidden"
             aria-label="Toggle navigation"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
             </svg>
           </button>
 
-          <button type="button" className="go-header-brand" aria-label={`HR Hub home — ${isAdmin ? 'Administration' : 'My Workspace'}`}
+          <button type="button" className="go-header-brand md:hidden" aria-label={`HR Hub home — ${isAdmin ? 'Administration' : 'My Workspace'}`}
             onClick={() => onTabChange(isAdmin ? 'admin-dashboard' : 'dashboard')}>
             <GoDestinationsLogo size="md" variant="icon-only" />
             <span className="go-header-brand-copy">
@@ -91,31 +91,21 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Center: Modern 2026 SaaS Command Bar Search Trigger */}
-        <div className="flex-1 max-w-md hidden md:block">
-          <button
-            type="button"
-            onClick={onOpenCommandPalette}
-            className="go-command-trigger w-full flex items-center justify-between px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-slate-300 text-slate-400 text-xs transition-all duration-150 shadow-2xs group"
-          >
-            <div className="flex items-center space-x-2">
-              <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
-              <span className="text-slate-500 font-normal">Find a page or action</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <kbd className="px-1.5 py-0.5 text-[12px] font-mono text-slate-400 bg-white border border-slate-200/90 rounded shadow-2xs">
-                ⌘ / Ctrl K
-              </kbd>
-            </div>
+        <div className="go-header-search hidden md:block">
+          <button type="button" onClick={onOpenCommandPalette} className="go-command-trigger">
+            <Search className="w-4 h-4" aria-hidden="true" />
+            <span>Find a page or action</span>
+            <kbd>⌘ / Ctrl K</kbd>
           </button>
         </div>
 
         {/* Right Side Controls */}
-        <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+        <div className="go-header-end">
           {/* Mobile search button */}
           <button
             type="button"
             onClick={onOpenCommandPalette}
-            className="md:hidden p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+            className="go-header-icon-button md:hidden"
             title="Find a page or action (⌘ / Ctrl K)"
             aria-label="Find a page or action"
           >
@@ -123,8 +113,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Today's Context Date Pill */}
-          <div className="hidden lg:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200/70">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+          <div className="go-date-pill hidden lg:flex">
+            <Sun className="go-date-sun" aria-hidden="true" />
             <span className="tabular-nums">{todayFormatted}</span>
           </div>
 
@@ -134,13 +124,13 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               id="notifications-btn"
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
+              className={`go-bell${unreadCount > 0 ? ' has-unread' : ''}`}
               aria-label={`Notifications (${unreadCount} unread)`}
               aria-expanded={showNotifications}
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="go-bell-icon" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#ED9027] text-white text-[12px] font-bold rounded-full flex items-center justify-center ring-2 ring-white shadow-xs tabular-nums leading-none">
+                <span className="go-bell-count tabular-nums" key={unreadCount}>
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
@@ -233,15 +223,15 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* User Profile Capsule & Sign Out */}
-          <div className="flex items-center space-x-2.5 pl-2 sm:pl-3 border-l border-slate-200">
+          <div className="go-header-user">
             {user.avatar_url && user.avatar_url.trim() ? (
               <img
                 src={user.avatar_url}
                 alt={user.full_name}
-                className="w-8 h-8 rounded-full object-cover border border-slate-200/90 shadow-2xs ring-1 ring-slate-100"
+                className="go-header-avatar object-cover"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-[#3A5D83] text-white flex items-center justify-center text-xs font-bold shrink-0 border border-slate-200/90 shadow-2xs ring-1 ring-slate-100">
+              <div className="go-header-avatar">
                 {user.full_name
                   ? user.full_name
                       .split(' ')
@@ -254,8 +244,8 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
             <div className="hidden lg:block text-left">
-              <p className="text-xs font-semibold text-slate-900 leading-tight truncate max-w-[130px]">{user.full_name}</p>
-              <p className="text-[12px] text-slate-400 truncate max-w-[130px]">
+              <p className="go-header-user-name">{user.full_name}</p>
+              <p className="go-header-user-role">
                 {user.job_title || (user.role === 'admin' ? 'Administrator' : 'Employee')}
               </p>
             </div>
@@ -263,7 +253,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               id="header-logout-btn"
               onClick={logout}
-              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+              className="go-header-icon-button go-header-signout"
               title="Sign Out"
               aria-label="Sign Out"
             >

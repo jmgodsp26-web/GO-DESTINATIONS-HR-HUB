@@ -21,7 +21,7 @@
 .go-ann-error { background:#fff2f1; color:#963c38; border:1px solid #edccca; border-radius:10px; padding:12px 14px; font-size:13px; }
 .go-ann-note { background:#f4f7fa; border:1px solid #dfe6ed; border-radius:10px; padding:12px 14px; color:#52687c; font-size:12px; line-height:1.65; margin-bottom:18px; }
 .go-ann-overlay { position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; padding:24px; }
-.go-overlay > .go-ann-dialog { width:100%; max-width:780px; max-height:calc(100dvh - 48px); overflow:auto; background:white; color:#182e3f; border-radius:18px; font-family:'Open Sans',Arial,sans-serif; }
+.go-overlay > .go-ann-dialog { width:100%; max-width:780px; max-height:calc(100dvh - 48px); overflow:auto; background:white; color:#182e3f; border-radius:18px; font-family:'Nunito','Segoe UI',Arial,sans-serif; }
 .go-ann-dialog > header { position:sticky; top:0; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 24px; background:white; border-bottom:1px solid #e5ebf0; }
 .go-ann-dialog > header h2 { font-size:18px; font-weight:700; }
 .go-ann-icon-button { display:grid; place-items:center; width:40px; height:40px; border-radius:8px; color:#607184; }
