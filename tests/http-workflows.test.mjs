@@ -53,7 +53,54 @@ try{
  await check('anonymous employee directory denied',async()=>assert.equal((await call('/api/employees')).status,401));
  await check('employee administration denied',async()=>assert.equal((await call('/api/settings','PATCH',{company_name:'Unauthorized'},employee.cookie)).status,403));
  let created;
- await check('HTTP leave submission persists Pending',async()=>{created=await call('/api/leave-requests','POST',request(),employee.cookie);assert.equal(created.status,201);assert.equal(created.data.status,'Pending');assert.equal((await call('/api/leave-requests','GET',undefined,employee.cookie)).data.length,1);});
+ await check('individual work schedule persists and protects leave deductions',async()=>{
+   const schedulePath = `/api/employees/${employee.id}/work-schedule`;
+   const schedule = (revision, exceptions, regular_days = null) => ({
+     expected_revision: revision, expected_workweek:'Monday to Friday', reason:'Synthetic weekend rotation', regular_days, exceptions,
+   });
+   const fri = '2026-11-13', sat = '2026-11-14', mon = '2026-11-16';
+   const exceptions = [{date:sat,working:true},{date:mon,working:false}];
+   assert.equal((await call(schedulePath,'GET',undefined,other.cookie)).status,403);
+   assert.equal((await call(schedulePath,'PATCH',schedule(null,exceptions),employee.cookie)).status,403);
+   assert.equal((await call(schedulePath,'PATCH',schedule(null,[{date:'2026-02-30',working:true}]),admin)).status,400);
+   const original = await call('/api/leave-requests','POST',request(fri,{end_date:sat}),employee.cookie);
+   assert.equal(original.status,201);assert.equal(original.data.total_days,1);
+   const saved = await call(schedulePath,'PATCH',schedule(null,exceptions),admin);
+   assert.equal(saved.status,200);assert.equal(saved.data.pending_requests_affected,1);
+   const revision = saved.data.schedule.revision;
+   assert.deepEqual((await call('/api/work-schedule','GET',undefined,employee.cookie)).data.schedule.exceptions,exceptions);
+   assert.equal((await call('/api/work-schedule','GET',undefined,other.cookie)).data.schedule,null);
+   assert.equal((await call(schedulePath,'PATCH',schedule(null,[]),admin)).status,400);
+   const listed = (await call('/api/leave-requests','GET',undefined,employee.cookie)).data.find(r=>r.id===original.data.id);
+   assert.equal(listed.schedule_changed,true);assert.equal(listed.total_days,1);
+   assert.equal((await call(`/api/leave-requests/${original.data.id}/review`,'PATCH',{action:'Approved'},admin)).status,400);
+   await cancelFromClient(original.data.id,employee.cookie);
+   assert.equal((await call('/api/leave-requests','POST',request(sat),other.cookie)).status,400);
+   assert.equal((await call('/api/leave-requests','POST',request(mon),employee.cookie)).status,400);
+   assert.equal((await call('/api/leave-requests','POST',request(sat,{expected_schedule_revision:null}),employee.cookie)).status,400);
+   const weekendHalf = await call('/api/leave-requests','POST',request(sat,{is_half_day:true,half_day_period:'morning'}),employee.cookie);
+   assert.equal(weekendHalf.status,201);assert.equal(weekendHalf.data.total_days,0.5);
+   await cancelFromClient(weekendHalf.data.id,employee.cookie);
+   const corrected = await call('/api/leave-requests','POST',request(fri,{end_date:mon,expected_schedule_revision:revision,expected_workweek:'Monday to Friday'}),employee.cookie);
+   assert.equal(corrected.status,201);assert.equal(corrected.data.total_days,2);
+   assert.deepEqual(corrected.data.working_dates,[fri,sat]);
+   assert.equal((await call(`/api/leave-requests/${corrected.data.id}/review`,'PATCH',{action:'Approved'},admin)).status,200);
+   assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,2);
+   assert.match((await call(schedulePath,'PATCH',schedule(revision,[]),admin)).data.error,/affects approved leave/);
+   await cancelFromClient(corrected.data.id,employee.cookie);
+   assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,0);
+   const holiday = await call('/api/holidays','POST',{name:'Synthetic Saturday holiday',date:sat,country:'Philippines'},admin);
+   assert.equal(holiday.status,201);
+   assert.equal((await call('/api/leave-requests','POST',request(sat),employee.cookie)).status,400);
+   assert.equal((await call(schedulePath,'PATCH',schedule(revision,[],[0,2,4,6]),admin)).status,200);
+   const sunday = await call('/api/leave-requests','POST',request('2026-11-22'),employee.cookie);
+   assert.equal(sunday.status,201); await cancelFromClient(sunday.data.id,employee.cookie);
+   assert.equal((await call('/api/settings','GET',undefined,admin)).data.workweek,'Monday to Friday');
+   const custom = await call('/api/work-schedule','GET',undefined,employee.cookie);
+   assert.equal((await call(schedulePath,'PATCH',schedule(custom.data.schedule.revision,[]),admin)).status,200);
+   assert.ok((await call('/api/audit-logs','GET',undefined,admin)).data.some(log=>log.action==='Work schedule updated'));
+ });
+ await check('HTTP leave submission persists Pending',async()=>{created=await call('/api/leave-requests','POST',request(),employee.cookie);assert.equal(created.status,201);assert.equal(created.data.status,'Pending');assert.deepEqual((await call('/api/leave-requests?status=Pending','GET',undefined,employee.cookie)).data.map(r=>r.id),[created.data.id]);});
  await check('HTTP approval deducts one day',async()=>{assert.equal((await call(`/api/leave-requests/${created.data.id}/review`,'PATCH',{action:'Approved'},admin)).status,200);assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,1);});
  await check('HTTP cancellation refunds one day',async()=>{assert.equal((await cancelFromClient(created.data.id,employee.cookie)).status,'Cancelled');assert.equal((await call('/api/leave-balances','GET',undefined,employee.cookie)).data.find(b=>b.leave_type==='Vacation Leave').used_days,0);});
  await check('HTTP invalid review action denied',async()=>assert.equal((await call(`/api/leave-requests/${created.data.id}/review`,'PATCH',{action:'Invalid'},admin)).status,400));
@@ -111,5 +158,5 @@ try{
  });
  await check('bodyless logout works and invalidates session',async()=>{assert.equal((await call('/api/auth/logout','POST',undefined,employee.cookie)).status,200);assert.equal((await call('/api/auth/me','GET',undefined,employee.cookie)).status,401);});
 }finally{const exited=new Promise(r=>child.once('exit',r));child.kill();await exited;await rm(dir,{recursive:true,force:true});}
-assert.equal(results.length,25);
+assert.equal(results.length,26);
 });

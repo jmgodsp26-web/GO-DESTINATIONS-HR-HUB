@@ -9,6 +9,16 @@ This release preserves HR policy calculations, authentication, role checks and a
 - Country and holiday calendar remain separate. Physical country continues to determine announcement targeting; holiday calendar continues to determine leave calculations.
 - Announcements can be filtered by unread or needs acknowledgment. Updated versions explain when acknowledgment is required again. Administrators get an active-recipient count before publication and filters in readership reports.
 
+## Employees with weekend shifts
+
+1. In **Administration → Employees**, open the employee's record and select **Work schedule**.
+2. Leave **Use company schedule** on for occasional shifts, or turn it off to choose recurring workdays.
+3. Under **Date changes**, select the weekend date, choose **Working day**, and click **Add date**. Add the replacement weekday as **Day off** if applicable.
+4. Enter a reason, then click **Save work schedule**. HR Hub records the change and notifies the employee.
+5. The employee opens a fresh leave form and verifies the day count. Applicable public holidays remain excluded. If a pending request is affected, cancel it and submit it again. Changes that affect approved leave are blocked to protect the original deduction.
+
+Employees without a custom schedule follow the company workweek. Changes apply only to the employee whose record was edited.
+
 ## Administration
 
 - Leave approvals initially show pending requests, oldest first. The focused review includes the reason, attachment, current balance and overlapping approved absences in the department. Own requests are visible but cannot be selected for review. The existing server prohibition remains enforced.

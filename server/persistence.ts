@@ -52,7 +52,7 @@ type Operation<T> = (database: HRDatabase) => Promise<{ result: T; commit: boole
 interface TransactionOptions {
   onboardingFileId?: string; announcementImageId?: string;
   employeeDocumentId?: string; leaveAttachmentId?: string; legacyDocuments?: boolean;
-  writeSessionId?: string; writeLeaveRequestId?: string;
+  writeSessionId?: string; writeLeaveRequestId?: string; writeEmployeeId?: string;
   readPlan?: ReadPlan; writeTables?: readonly typeof TABLES[number][];
 }
 export async function transact<T>(operation: Operation<T>, options: TransactionOptions = {}): Promise<T> {
@@ -93,7 +93,7 @@ export async function transactFirestore<T>(firestore: Firestore, operation: Oper
       options.writeSessionId ? tx.get(firestore.collection(PREFIX + 'sessions').doc(options.writeSessionId)) : undefined,
       options.writeLeaveRequestId ? tx.get(firestore.collection(PREFIX + 'leaveRequests').doc(options.writeLeaveRequestId)) : undefined,
     ]);
-    const leaveEmployeeId = writeRequest?.data()?.employee_id || writeSession?.data()?.userId;
+    const leaveEmployeeId = options.writeEmployeeId || writeRequest?.data()?.employee_id || writeSession?.data()?.userId;
     if ((options.readPlan || options.writeTables) && !meta.exists) throw new Error('Database initialization marker missing.');
     const documentBackfills: { id: string; file_available: boolean; mime_type?: string }[] = [];
     // Onboarding blobs are fetched only for an explicit file request. Ordinary

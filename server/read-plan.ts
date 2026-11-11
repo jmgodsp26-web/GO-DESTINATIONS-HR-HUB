@@ -10,12 +10,13 @@ export const READ_TABLES = {
   '/leave-attachments': ['leaveAttachments'],
   '/auth/me': [],
   '/profile': [],
+  '/work-schedule': [],
   '/settings': [],
   '/employees': ['leaveBalances'],
   '/leave-balances': ['leaveBalances'],
   '/leave-transactions': ['leaveTransactions'],
   '/leave/transactions': ['leaveTransactions'],
-  '/leave-requests': ['leaveRequests'],
+  '/leave-requests': ['leaveRequests', 'holidays'],
   '/holidays': ['holidays'],
   '/holiday-shifts': ['holidayShifts'],
   '/calendar': ['holidays', 'holidayShifts', 'leaveRequests'],
@@ -36,7 +37,8 @@ export const sessionIdFor = (token: string) => createHash('sha256').update(token
 export function readPlanFor(method: string, pathname: string, token: string): ReadPlan | undefined {
   if (!['GET', 'HEAD'].includes(method) || !token) return undefined;
   const route = pathname.replace(/\/+$/, '').toLowerCase();
-  const key = /^\/holiday-coverage\/[^/]+$/.test(route) ? '/holiday-coverage'
+  const key = /^\/employees\/[^/]+\/work-schedule$/.test(route) ? '/work-schedule'
+    : /^\/holiday-coverage\/[^/]+$/.test(route) ? '/holiday-coverage'
     : /^\/leave-attachments\/[^/]+$/.test(route) ? '/leave-attachments'
     : /^\/documents\/[^/]+\/file$/.test(route) || /^\/admin\/employees\/[^/]+\/documents$/.test(route) ? '/documents'
     : /^\/announcements\/[^/]+\/report$/.test(route) ? '/announcements' : route;
@@ -57,6 +59,7 @@ export function writeTablesFor(method: string, pathname: string) {
       (method === 'DELETE' && /^\/leave-requests\/[^/]+$/.test(route))) return [...LEAVE_TABLES];
   if (method === 'PATCH' && route === '/celebrations/visibility') return ['users','sessions','celebrationPreferences'] as const;
   if (method === 'POST' && route === '/celebrations/reaction') return ['users','sessions','celebrationPreferences','celebrationReactions','notifications'] as const;
+  if (method === 'PATCH' && /^\/employees\/[a-z0-9_-]+\/work-schedule$/.test(route)) return ['users', 'sessions', 'leaveRequests', 'holidays', 'auditLogs', 'notifications'] as const;
   if (method === 'POST' && route === '/employees/import') return ['users', 'sessions', 'leaveBalances', 'auditLogs'] as const;
   if (method === 'POST' && route === '/holidays') return ['users', 'sessions', 'holidays', 'auditLogs'] as const;
   if (method === 'PATCH' && /^\/holidays\/[^/]+(?:\/toggle-active)?$/.test(route)) return ['users', 'sessions', 'holidays', 'holidayShifts', 'auditLogs'] as const;

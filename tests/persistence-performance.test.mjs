@@ -208,3 +208,22 @@ test('known document metadata excludes large file contents from list and unrelat
   assert.ok(!query.fields.includes('file_data')); assert.ok(query.bytes < 5000);
   assert.equal(f.documents.get('hr_v2_employeeDocuments/large-0').file_data, data);
 });
+
+test('work schedule transaction reads the target employee leave and protects their approved request', async () => {
+  const f = fixture();
+  f.documents.get('hr_v2_users/employee-0').profile.role = 'admin';
+  f.documents.set('hr_v2_leaveRequests/approved', {id:'approved', employee_id:'employee-1', status:'Approved', start_date:'2026-11-13', end_date:'2026-11-13', total_days:1});
+  const path = '/employees/employee-1/work-schedule';
+  const options = {writeTables:writeTablesFor('PATCH',path),writeSessionId:hash('synthetic-session-0'),writeEmployeeId:'employee-1'};
+  const apply = (exceptions) => transactFirestore(f.firestore, async db => ({
+    result:db.updateWorkSchedule('employee-1',{regular_days:null,exceptions,expected_revision:null,expected_workweek:'Monday to Friday',reason:'Synthetic schedule change'},db.getProfile('employee-0')),
+    commit:true,
+  }), options);
+  await assert.rejects(apply([{date:'2026-11-13',working:false}]), /affects approved leave/);
+  assert.equal(f.writes.length,0);
+  await apply([{date:'2026-11-14',working:true}]);
+  assert.deepEqual(f.documents.get('hr_v2_users/employee-1').profile.work_schedule.exceptions,[{date:'2026-11-14',working:true}]);
+  assert.equal(f.documents.get('hr_v2_leaveRequests/approved').total_days,1);
+  assert.ok(f.queries.some(q=>q.path==='hr_v2_leaveRequests' && q.filters.some(filter=>filter.value==='employee-1')));
+  assert.ok(!f.reads.includes('hr_v2_employeeDocuments'));
+});
