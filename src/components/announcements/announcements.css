@@ -60,19 +60,6 @@
 .go-ann-table-wrap th { background:#f6f8fa; padding:12px; font-weight:600; }
 .go-ann-table-wrap td { padding:14px 12px; border-bottom:1px solid #e5ebf0; }
 .go-ann-table-wrap small { display:block; margin-top:4px; color:#607184; }
-.go-ann-widget { background:white; border:1px solid #dfe6ed; overflow:hidden; }
-.go-ann-widget > header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:18px 22px; border-bottom:1px solid #e5ebf0; }
-.go-ann-widget > header > div { display:flex; align-items:center; gap:10px; }
-.go-ann-widget h2 { font-size:15px; font-weight:700; }
-.go-ann-widget-icon { display:grid; place-items:center; width:34px; height:34px; border-radius:10px; background:#fff1df; color:#8c5114; }
-.go-ann-widget > header button { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#3a5d83; min-height:40px; }
-.go-ann-widget-note { color:#607184; padding:20px 22px; font-size:13px; }
-.go-ann-widget-list > button { display:flex; align-items:center; gap:12px; padding:16px 22px; width:100%; text-align:left; border-bottom:1px solid #edf0f4; }
-.go-ann-widget-list > button:last-child { border:0; }
-.go-ann-widget-list > button:hover { background:#f6f8fb; }
-.go-ann-widget-list > button > span:nth-child(2) { flex:1; min-width:0; }
-.go-ann-widget-list strong { display:block; color:#182e3f; font-size:13px; font-weight:650; overflow-wrap:anywhere; }
-.go-ann-widget-list small { display:block; color:#607184; font-size:11px; margin-top:4px; }
 .go-ann-dot { width:7px; height:7px; border-radius:50%; background:#ed9027; flex-shrink:0; }
 .go-ann-dot.is-read { background:#cfd7e1; }
 @media(max-width:767px) {
@@ -86,7 +73,6 @@
   .go-ann-dialog > header, .go-ann-dialog-body, .go-ann-editor { padding:18px; }
   .go-ann-choice-grid { grid-template-columns:1fr; }
   .go-ann-editor footer button { flex:1 1 auto; }
-  .go-ann-widget > header, .go-ann-widget-list > button { padding:16px; }
 }
 
 .go-ann-image { margin:16px 0; padding:12px; background:#f6f8fa; border:1px solid #dfe6ed; border-radius:12px; overflow:hidden; }

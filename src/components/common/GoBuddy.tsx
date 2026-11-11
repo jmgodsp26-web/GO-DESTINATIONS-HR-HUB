@@ -47,7 +47,7 @@ function useEyeTracking(pupils: React.RefObject<SVGGElement | null>) {
 }
 
 /** A friendly sidebar companion that rotates through short, factual messages. */
-export function GoBuddy({ messages, hint = 'Tap for another tip' }: { messages: string[]; hint?: string }) {
+export function GoBuddy({ messages, hint = 'Tap me' }: { messages: string[]; hint?: string }) {
   const [index, setIndex] = useState(0);
   const [hop, setHop] = useState(0);
   const pupils = useRef<SVGGElement>(null);

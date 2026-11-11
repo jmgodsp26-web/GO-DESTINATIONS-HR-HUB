@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useOnboarding } from '../../context/OnboardingContext';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
@@ -49,9 +49,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
   const { user, logout, notifications } = useAuth();
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
+  // The buddy only appears when the whole menu fits, so it is never half cut off.
+  const scrollRef = useRef<HTMLDivElement>(null), buddyHeight = useRef(76);
+  const [tight, setTight] = useState(false);
 
   const { isAdministration: isAdmin } = useWorkspace();
   const { summary: onboarding } = useOnboarding();
+  useEffect(() => {
+    const area = scrollRef.current;
+    if (!area || typeof ResizeObserver === 'undefined') return;
+    const check = () => {
+      const buddy = area.querySelector<HTMLElement>('.go-buddy');
+      const shown = Boolean(buddy && buddy.offsetHeight);
+      if (shown && buddy) buddyHeight.current = buddy.offsetHeight;
+      setTight(area.scrollHeight + (shown ? 0 : buddyHeight.current + 12) > area.clientHeight + 1);
+    };
+    const observer = new ResizeObserver(check);
+    observer.observe(area); check();
+    return () => observer.disconnect();
+  }, [user?.id, user?.role, isAdmin, onboarding?.available]);
   if (!user) return null;
   const unreadNotifCount = notifications.filter((n) => !n.read).length;
 
@@ -158,12 +174,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
             <span className="go-sidebar-logo"><GoDestinationsLogo size="sm" variant="icon-only" /></span>
             <span className="go-sidebar-brand-copy"><strong>HR Hub</strong><small>GO Destinations</small></span>
           </button>
+          <button type="button" onClick={() => setShowHelpModal(true)} className="go-sidebar-help" aria-label="HR Policies & Help" title="HR Policies & Help">
+            <HelpCircle className="w-5 h-5" aria-hidden="true" />
+          </button>
           <button type="button" aria-label="Close navigation" onClick={onClose} className="go-sidebar-close md:hidden">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="go-sidebar-scroll">
+        <div className={`go-sidebar-scroll${tight ? ' is-tight' : ''}`} ref={scrollRef}>
           {user.role === 'admin' && (
             <div className="go-workspace-switch" role="group" aria-label="Choose workspace">
               {[{ id: 'personal', label: 'My Workspace', tab: 'my-workspace', active: !isAdmin }, { id: 'administration', label: 'Administration', tab: 'admin-dashboard', active: isAdmin }].map(option => (
@@ -210,10 +229,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
               </div>
             ))}
           </nav>
-          <button type="button" onClick={() => setShowHelpModal(true)} className="go-nav-help">
-            <HelpCircle className="w-4 h-4 shrink-0" />
-            <span>HR Policies &amp; Help</span>
-          </button>
           <GoBuddy messages={buddyLines} />
         </div>
 
@@ -223,13 +238,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, isOpe
               {user.avatar_url && user.avatar_url.trim() ? <img src={user.avatar_url} alt="" /> : <span aria-hidden="true">{initials}</span>}
               <span className="go-sidebar-presence" aria-hidden="true" />
             </span>
-            <span className="go-sidebar-user-copy"><strong>{user.full_name}</strong><small>{user.job_title}</small></span>
-            {user.role === 'admin' && <span className="go-sidebar-role" title="Admin Access">Admin</span>}
+            <span className="go-sidebar-user-copy" title={user.role === 'admin' ? `${user.full_name} · Admin access` : user.full_name}><strong>{user.full_name}</strong><small>{user.job_title || (user.role === 'admin' ? 'Administrator' : 'Employee')}</small></span>
+            <button type="button" id="sidebar-logout-btn" onClick={logout} className="go-sidebar-signout" aria-label="Sign out" title="Sign out">
+              <LogOut className="w-4 h-4" aria-hidden="true" />
+            </button>
           </div>
-          <button type="button" id="sidebar-logout-btn" onClick={logout} className="go-sidebar-signout">
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign out</span>
-          </button>
         </div>
       </aside>
 

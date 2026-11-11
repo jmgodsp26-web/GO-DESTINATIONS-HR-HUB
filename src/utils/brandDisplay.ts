@@ -2,6 +2,11 @@ import { isPaidLeaveType, type LeaveBalance, type LeaveRequest } from '../types'
 
 /** Pure display helpers for the GO brand interface. No dates are invented: every value comes from the caller. */
 
+/** Evening and night hours show a moon beside the greeting. */
+export function isNightHour(hour: number): boolean {
+  return hour >= 18 || hour < 5;
+}
+
 export function greetingFor(hour: number): string {
   if (hour >= 5 && hour < 12) return 'Good morning';
   if (hour >= 12 && hour < 18) return 'Good afternoon';
@@ -34,12 +39,18 @@ export function countUpValue(target: number, progress: number, from = 0): number
 const monthDay = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 const monthOnly = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' });
 const weekdayShort = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' });
+const weekdayMedium = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 const weekdayLong = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
 const isoDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(`${value}T12:00:00Z`));
 const asDate = (value: string) => new Date(`${value}T12:00:00Z`);
 
 export function formatShortDate(value: string): string {
   return isoDate(value) ? monthDay.format(asDate(value)) : value;
+}
+
+/** "Wed, Dec 30, 2026". */
+export function formatMediumDate(value: string): string {
+  return isoDate(value) ? weekdayMedium.format(asDate(value)) : value;
 }
 
 export function formatLongDate(value: string): string {
@@ -76,8 +87,51 @@ export function heroTip({ vacation, next }: { vacation?: LeaveBalance; next: Ret
   const remaining = vacation ? Math.max(0, vacation.allocated_days - vacation.used_days) : null;
   const balance = remaining === null ? '' : `${plural(remaining, 'vacation day')} left. `;
   if (next?.current) return `You’re on approved leave until ${formatShortDate(next.request.end_date)}. Enjoy the break!`;
-  if (next) return `${balance}Your next time off: ${formatTripRange(next.request.start_date, next.request.end_date)}.`;
+  if (next) return `${balance}Your next time off is approved for ${formatTripRange(next.request.start_date, next.request.end_date)}.`;
   return `${balance}No time off booked yet.`;
+}
+
+/** Whole calendar days from one stored date to another (negative when in the past). */
+export function daysBetween(from: string, to: string): number | null {
+  if (!isoDate(from) || !isoDate(to)) return null;
+  return Math.round((asDate(to).getTime() - asDate(from).getTime()) / 86400000);
+}
+
+/** "Starts today", "Starts tomorrow" or "40 days to go". */
+export function countdownLabel(today: string, start: string): string {
+  const days = daysBetween(today, start);
+  if (days === null || days < 0) return '';
+  return days === 0 ? 'Starts today' : days === 1 ? 'Starts tomorrow' : `${days} days to go`;
+}
+
+/** "Nov 20, 2026 · 1 day" or "Dec 30 – Jan 2, 2027 · 3 days". */
+export function formatLeaveSpan(request: Pick<LeaveRequest, 'start_date' | 'end_date' | 'total_days' | 'is_half_day'>): string {
+  const year = (isoDate(request.end_date) ? request.end_date : request.start_date).slice(0, 4);
+  const length = request.is_half_day ? 'Half day' : plural(request.total_days, 'day');
+  return `${formatTripRange(request.start_date, request.end_date)}, ${year} · ${length}`;
+}
+
+/** Remaining days and share of an allowance across one or more balances. */
+export function balanceSummary(balances: LeaveBalance[]): { remaining: number; allocated: number; used: number; fraction: number } {
+  const allocated = balances.reduce((sum, b) => sum + b.allocated_days, 0);
+  const remaining = balances.reduce((sum, b) => sum + Math.max(0, b.allocated_days - b.used_days), 0);
+  return { remaining, allocated, used: balances.reduce((sum, b) => sum + b.used_days, 0), fraction: allocated > 0 ? remaining / allocated : 0 };
+}
+
+/** "Emergency and Medical" from a list of leave balances. */
+export function leaveTypeList(balances: LeaveBalance[]): string {
+  const names = balances.map(b => b.leave_type.replace(/ Leave$/, '')).filter((name, index, all) => all.indexOf(name) === index);
+  if (names.length <= 1) return names[0] || '';
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+/** Coordinator coverage for a holiday, in plain words. */
+export function coverageLabel(coverage: { pcs_working_count: number; pcs_required: number; conflicts_count?: number }): { text: string; attention: boolean } {
+  const conflicts = coverage.conflicts_count ? ` · ${plural(coverage.conflicts_count, 'conflict')}` : '';
+  if (coverage.pcs_required <= 0) return { text: `No coordinator required${conflicts}`, attention: Boolean(coverage.conflicts_count) };
+  const missing = coverage.pcs_required - coverage.pcs_working_count;
+  if (missing > 0) return { text: `Needs ${plural(missing, 'more coordinator')}${conflicts}`, attention: true };
+  return { text: `Covered · ${coverage.pcs_working_count} of ${coverage.pcs_required}${conflicts}`, attention: Boolean(coverage.conflicts_count) };
 }
 
 export interface ReviewOutlook {
@@ -106,12 +160,12 @@ export function reviewOutlook(request: LeaveRequest, balance: LeaveBalance | und
 export function buddyMessages({ firstName, hour, weekday, unread, newRequests, onboarding }: {
   firstName: string; hour: number; weekday: number; unread: number; newRequests?: number; onboarding?: boolean;
 }): string[] {
-  const lines = [`${greetingFor(hour)}, ${firstName}!`];
+  // The page heading already says good morning; the buddy opens with a wish for the day.
+  const wish = weekday === 0 || weekday === 6 ? 'Enjoy your weekend' : weekday === 5 ? 'Have a lovely weekend' : weekday === 1 ? 'Have a great week' : hour >= 18 ? 'Have a restful evening' : 'Have a great day';
+  const lines = [`${wish}, ${firstName}!`];
   if (newRequests) lines.push(`${plural(newRequests, 'new leave request')} to review.`);
   lines.push(unread ? `You have ${plural(unread, 'unread notification')}.` : 'You’re all caught up on notifications.');
   if (onboarding) lines.push('Your getting-started checklist is waiting.');
-  if (weekday === 5) lines.push('Happy Friday! Any weekend plans?');
-  else if (weekday === 1) lines.push('New week, new adventures!');
   lines.push('Press Ctrl K to jump to any page.');
   return lines;
 }

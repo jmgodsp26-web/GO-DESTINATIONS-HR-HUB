@@ -11,7 +11,9 @@ import {
   LogOut,
   Search,
   Sun,
+  Moon,
 } from 'lucide-react';
+import { isNightHour } from '../../utils/brandDisplay';
 import { GoDestinationsLogo } from '../common/GoDestinationsLogo';
 
 interface HeaderProps {
@@ -114,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Today's Context Date Pill */}
           <div className="go-date-pill hidden lg:flex">
-            <Sun className="go-date-sun" aria-hidden="true" />
+            {isNightHour(new Date().getHours()) ? <Moon className="go-date-sun is-moon" aria-hidden="true" /> : <Sun className="go-date-sun" aria-hidden="true" />}
             <span className="tabular-nums">{todayFormatted}</span>
           </div>
 

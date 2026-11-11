@@ -22,6 +22,15 @@ Only GO colours are used. Tailwind's `slate`, `indigo`, `blue`, `amber`, `orange
 - **Orange text** on light backgrounds uses `#9A5206` (5.4:1 or better), never `#ED9027`.
 - **Muted text** is `#5E7186` or darker.
 
+## Dashboards
+
+Both dashboards follow the approved mock-up: a greeting, the first screen of key cards, then supporting sections that glide in on scroll.
+
+- **Employee:** hero with the flight to the next approved leave, team celebrations beside the pinned company update, four balance cards with rings, then waiting-on-HR, next time off, holiday boarding passes, recent requests and documents.
+- **Admin:** four stat cards, the quick-review queue, upcoming holidays as boarding passes with coordinator coverage (a ticket opens the team; the full planner sits behind "Coverage planner"), who is out today by department, the pinned update and team milestones.
+
+Shared pieces in `WorkspaceUI.tsx`: `BalanceCard`, `SectionCard`, `DateTile`, `StatusPill`, `Reveal`, `SunMark` / `MoonMark`. The pinned note is `AnnouncementNote` in `AnnouncementsView.tsx`.
+
 ## Building a page
 
 - Start the page with `PageHeading`. The last word of a multi-word title is accented automatically.

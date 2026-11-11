@@ -208,15 +208,29 @@ export function AnnouncementsView() {
   </div>;
 }
 
-export function AnnouncementWidget({ onViewAll }: { onViewAll: () => void }) {
+/** The most important current announcement as a pinned note. Opens the same reader as the Announcements page. */
+export function AnnouncementNote({ onViewAll }: { onViewAll: () => void }) {
   const { refreshNotifications } = useAuth();
   const [items, setItems] = useState<AnnouncementView[]>([]), [loading, setLoading] = useState(true), [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const [detail, setDetail] = useState<AnnouncementView | null>(null);
-  useEffect(() => { let active = true; api.getAnnouncements().then(data => { if (active) setItems(data.filter(item => !expired(item)).sort((a, b) => Number(b.requires_acknowledgment && !b.acknowledged_at) - Number(a.requires_acknowledgment && !a.acknowledged_at) || Number(!b.read_at) - Number(!a.read_at)).slice(0, 3)); }).catch(() => { if (active) setError('Company updates could not load. Open Announcements to try again.'); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, []);
+  useEffect(() => { let active = true; api.getAnnouncements().then(data => { if (active) setItems(data.filter(item => !expired(item)).sort((a, b) => Number(b.requires_acknowledgment && !b.acknowledged_at) - Number(a.requires_acknowledgment && !a.acknowledged_at) || Number(!b.read_at) - Number(!a.read_at) || Number(b.pinned) - Number(a.pinned)).slice(0, 4)); }).catch(() => { if (active) setError('Company updates could not load. Open Announcements to try again.'); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, []);
   const update = (item: AnnouncementView) => { setDetail(item); setItems(previous => previous.map(a => a.id === item.id ? item : a)); void refreshNotifications(); };
-  const activeItems = items.filter(item => !expired(item));
-  return <section className="go-ann-widget go-surface" aria-label="Company updates"><header><div><span className="go-ann-widget-icon"><Megaphone size={19} /></span><h2>{activeItems.some(item => item.requires_acknowledgment && !item.acknowledged_at) ? 'Needs your attention' : 'Company updates'}</h2></div><button type="button" onClick={onViewAll}>View all <ArrowRight size={15} /></button></header>
-    {loading ? <p className="go-ann-widget-note" role="status">Loading updates…</p> : error ? <p className="go-ann-widget-note" role="alert">{error}</p> : !activeItems.length ? <p className="go-ann-widget-note">You’re up to date. New announcements will appear here.</p> : <div className="go-ann-widget-list">{activeItems.map(item => <button key={item.id} type="button" disabled={busy} onClick={async () => { setBusy(true); try { update(await api.readAnnouncement(item)); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}><span className={`go-ann-dot ${item.read_at ? 'is-read' : ''}`} aria-label={item.read_at ? 'Read' : 'Unread'} /><span><strong>{item.title}</strong><small>{item.category}{item.pinned ? ' · Pinned' : ''}{item.requires_acknowledgment && !item.acknowledged_at ? ' · Acknowledgment required' : ''}</small></span><ArrowRight size={16} /></button>)}</div>}
+  const activeItems = items.filter(item => !expired(item)), top = activeItems[0], more = activeItems.length - 1;
+  const needsAcknowledgment = Boolean(top?.requires_acknowledgment && !top.acknowledged_at);
+  return <section className="go-note" aria-label="Company updates" aria-busy={loading}>
+    {top ? <>
+      <button type="button" className="go-note-open" disabled={busy} onClick={async () => { setBusy(true); setError(''); try { update(await api.readAnnouncement(top)); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}>
+        <span className="go-note-tag">{needsAcknowledgment ? <><CheckCheck size={14} aria-hidden="true" />Needs your acknowledgment</> : top.pinned ? <><Pin size={14} aria-hidden="true" />Pinned by HR</> : <><Megaphone size={14} aria-hidden="true" />Company update</>}{!top.read_at && <em>New</em>}</span>
+        <strong className="go-note-title">{top.title}</strong>
+        <span className="go-note-text">{top.message}</span>
+      </button>
+      {error && <p className="go-note-error" role="alert">{error}</p>}
+      <footer className="go-note-foot"><span>{top.author_name} · {top.category}</span><button type="button" onClick={onViewAll}>{more > 0 ? `${more} more ${more === 1 ? 'update' : 'updates'}` : 'All updates'}<ArrowRight size={14} aria-hidden="true" /></button></footer>
+    </> : <div className="go-note-empty">
+      <span className="go-note-tag"><Megaphone size={14} aria-hidden="true" />Company updates</span>
+      {loading ? <p role="status">Loading updates…</p> : error ? <p role="alert">{error}</p> : <><strong className="go-note-title">You’re up to date</strong><p>New announcements will appear here.</p></>}
+      <footer className="go-note-foot"><span /><button type="button" onClick={onViewAll}>All updates<ArrowRight size={14} aria-hidden="true" /></button></footer>
+    </div>}
     {detail && <AnnouncementDetail item={detail} onClose={() => setDetail(null)} onChange={update} />}
   </section>;
 }
