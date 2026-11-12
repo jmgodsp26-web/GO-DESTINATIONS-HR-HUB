@@ -159,7 +159,7 @@ body { color: var(--go-text); background: var(--go-cloud); }
 .go-boot .go-buddy-body { animation: go-hop 1.1s var(--go-spring) infinite; }
 
 /* ---------- Header ---------- */
-.go-polished .go-header { padding: 14px clamp(16px, 2.2vw, 36px) 10px; background: linear-gradient(180deg, #F4F6F9F5 70%, #F4F6F900); border: 0; box-shadow: none; animation: go-drop .7s var(--go-glide) .1s backwards; }
+.go-polished .go-header { padding: 14px clamp(16px, 2.2vw, 36px) 10px; background: linear-gradient(180deg, var(--go-cloud) calc(100% - 8px), #F4F6F900); border: 0; box-shadow: none; animation: go-drop .7s var(--go-glide) .1s backwards; }
 .go-header-bar { display: flex; align-items: center; gap: 14px; max-width: 1400px; height: 54px; margin: 0 auto; }
 .go-header-start { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .go-header-search { flex: 0 1 460px; }
@@ -242,13 +242,45 @@ body { color: var(--go-text); background: var(--go-cloud); }
 .go-polished .go-button-navy:active:not(:disabled) { box-shadow: 0 1px 0 var(--go-deep); }
 .go-polished .go-button-inverse { background: #FFFFFF14; color: #fff; border: 1.5px solid #FFFFFF4D; box-shadow: none; backdrop-filter: blur(4px); }
 .go-polished .go-button-inverse:hover:not(:disabled) { background: #FFFFFF26; border-color: #FFFFFF80; }
-.go-polished .go-button-quiet { min-height: 40px; padding: 0 10px; background: transparent; color: var(--go-orange-ink); border: 0; box-shadow: none; }
+.go-polished .go-button-quiet { min-height: 40px; padding: 0 10px; background: transparent; color: var(--go-orange-ink); border: 0; box-shadow: none; white-space: nowrap; }
 .go-polished .go-button-quiet:hover:not(:disabled) { background: var(--go-wash); transform: none; }
 .go-polished .go-button-quiet:hover:not(:disabled) svg { transform: translateX(4px); }
 .go-polished .go-button-danger { background: #fff; color: #9F1239; border: 1.5px solid #FECDD3; box-shadow: 0 4px 0 #FECDD3; }
 .go-polished .go-button-danger:hover:not(:disabled) { background: #FFF1F2; box-shadow: 0 6px 0 #FECDD3; }
 .go-button-count, .go-polished .go-button .go-button-count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: #fff; color: var(--go-navy); font-size: 12px; font-weight: 800; }
 .go-polished .go-page-header button { border-radius: 999px; font-size: 14px; }
+.go-polished .go-button.go-button-sm, .go-native-dialog .go-button.go-button-sm { min-height: 36px; padding: 0 14px; gap: 6px; font-size: 13px; }
+/* Page-header actions that were not built with go-button still read as secondary pills. */
+.go-polished .go-page-header button:not(.go-button):not(.go-icon-button) {
+  flex: none; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px;
+  background: #fff; color: var(--go-navy); border: 1.5px solid var(--go-line); box-shadow: 0 4px 0 var(--go-line);
+  font-size: 14px; font-weight: 800; transition: transform .15s var(--go-glide), box-shadow .15s var(--go-glide), border-color .2s;
+}
+.go-polished .go-page-header button:not(.go-button):not(.go-icon-button):hover:not(:disabled) { transform: translateY(-2px); border-color: var(--go-steel); box-shadow: 0 6px 0 var(--go-mist); background: #fff; color: var(--go-navy); }
+.go-polished .go-page-header button:not(.go-button):not(.go-icon-button):disabled { opacity: .55; box-shadow: none; }
+.go-polished .go-page-header button:not(.go-button):not(.go-icon-button) > * { margin: 0 !important; }
+
+/* ---------- Segmented controls: one style for every tab row and quick filter ---------- */
+:is(.go-polished, .go-native-dialog) :is(.go-segmented, .go-read-filter) {
+  display: inline-flex; flex-wrap: nowrap; align-items: center; gap: 4px; max-width: 100%; width: max-content; padding: 4px;
+  overflow-x: auto; scrollbar-width: none; border-radius: 999px; background: #EAEFF5; border: 1.5px solid var(--go-line);
+}
+:is(.go-polished, .go-native-dialog) :is(.go-segmented, .go-read-filter)::-webkit-scrollbar { display: none; }
+:is(.go-polished, .go-native-dialog) :is(.go-segmented, .go-read-filter) > button {
+  display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 0 16px;
+  border: 0; border-radius: 999px; background: transparent; color: var(--go-text-soft); font-size: 13.5px; font-weight: 700; white-space: nowrap;
+  box-shadow: none; transition: background-color .2s, color .2s, box-shadow .25s;
+}
+:is(.go-polished, .go-native-dialog) :is(.go-segmented, .go-read-filter) > button > * { margin: 0 !important; }
+:is(.go-polished, .go-native-dialog) :is(.go-segmented, .go-read-filter) > button:hover:not([aria-pressed="true"]):not(:disabled) { background: #FFFFFFA6; color: var(--go-navy); }
+:is(.go-polished, .go-native-dialog) :is(.go-segmented, .go-read-filter) > button[aria-pressed="true"] {
+  background: #fff; color: var(--go-navy); font-weight: 800; box-shadow: 0 1px 2px #182E3F14, 0 6px 14px -8px #182E3F66;
+}
+:is(.go-polished, .go-native-dialog) :is(.go-segmented, .go-read-filter) > button[aria-pressed="true"] svg { color: var(--go-orange-ink); }
+:is(.go-polished, .go-native-dialog) .go-segmented.is-small > button { min-height: 32px; padding: 0 12px; font-size: 12.5px; }
+
+/* Typed passwords stay monospace so similar characters are easy to tell apart; hints use the normal font. */
+input.font-mono::placeholder { font-family: 'Nunito', system-ui, sans-serif; letter-spacing: 0; }
 
 /* ---------- Cards and panels ---------- */
 .go-polished .go-main .go-surface, .go-polished .go-main .go-task-panel, .go-polished .go-main .go-coverage, .go-polished .go-team-celebrations, .go-polished .go-main .go-directory-summary {
@@ -261,7 +293,8 @@ body { color: var(--go-text); background: var(--go-cloud); }
 .go-polished .go-main .go-task-row:hover { background: var(--go-snow); }
 .go-polished .go-main .go-task-row strong { font-weight: 800; color: var(--go-navy); }
 .go-polished .go-main .go-task-row small { color: var(--go-text-muted); }
-.go-polished .go-main .go-workflow-label { font-family: var(--go-display); font-size: 22px; font-weight: 600; color: var(--go-navy); }
+.go-polished .go-main .go-workflow-label, .go-native-dialog .go-workflow-label { display: block; font-size: 13px; font-weight: 800; color: var(--go-navy); }
+.go-polished .go-main .go-workflow-label :is(select, input, textarea) { font-weight: 600; }
 
 /* Stat cards: count-up numbers, icon tiles, optional ring, gentle tilt. */
 .go-polished .go-stat-grid { gap: 18px; }
@@ -423,6 +456,7 @@ body { color: var(--go-text); background: var(--go-cloud); }
 .go-note { position: relative; display: flex; flex-direction: column; min-height: 240px; margin-top: 6px; padding: 30px 24px 16px; border: 1.5px solid var(--go-cream); border-radius: 8px 8px 26px 8px; background: linear-gradient(170deg, #FFF9F1, var(--go-wash)); box-shadow: 0 18px 30px -20px #C9721A80; transform: rotate(-1.4deg); transition: transform .5s var(--go-spring), box-shadow .3s; }
 .go-note:hover, .go-note:focus-within { transform: rotate(0deg) translateY(-6px) scale(1.012); box-shadow: 0 28px 40px -22px #C9721A99; }
 .go-note::before { content: ""; position: absolute; top: -12px; left: 50%; width: 96px; height: 26px; transform: translateX(-50%) rotate(2deg); border-radius: 4px; background: #CFD7E1B8; }
+.go-note::after { content: ""; position: absolute; right: 18px; top: 16px; width: 84px; height: 44px; pointer-events: none; opacity: .8; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 52'%3E%3Cpath d='M4 46 C 24 44, 34 30, 52 30 S 70 40, 76 22' fill='none' stroke='%23F1C48E' stroke-width='2' stroke-linecap='round' stroke-dasharray='2 6'/%3E%3Cpath d='M78 6 L94 14 L80 20 L82 14 Z' fill='%23F1C48E'/%3E%3Cpath d='M80 20 L84 26 L82 14' fill='%23F8DEC1'/%3E%3C/svg%3E") no-repeat right bottom / contain; }
 .go-note-open { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; width: 100%; text-align: left; border-radius: 12px; }
 .go-note-open:disabled { cursor: wait; }
 .go-note-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px; border-radius: 999px; background: var(--go-cream); color: var(--go-orange-ink); font-size: 12px; font-weight: 800; }
@@ -623,6 +657,35 @@ button.go-row:hover .go-date-tile { transform: rotate(-6deg) scale(1.06); }
 .go-polished .go-coverage-track { height: 7px; background: var(--go-cloud); }
 .go-polished .go-coverage-team { border-radius: 999px; font-weight: 800; }
 
+/* Leave approvals list. */
+.go-polished .go-main .go-approval-row button.font-bold { min-height: 32px; display: inline-flex; align-items: center; font-size: 16px; color: var(--go-navy); }
+.go-polished .go-main .go-approval-row button.font-bold:hover { color: var(--go-orange-ink); text-decoration: underline; text-underline-offset: 3px; }
+.go-polished .go-main .go-approval-row input[type="checkbox"] { flex: none; width: 18px; height: 18px; margin-top: 7px; }
+.go-polished .go-main .go-approval-row p { margin: 0; }
+.go-polished .go-main .go-approval-filters .go-button { min-height: 44px; }
+.go-polished .go-page-header .go-icon-button { width: 44px; height: 44px; }
+
+/* Holiday list rows: calm chips and a "who is working" strip instead of emoji badges. */
+.go-chip.is-good { background: #E1F3E8; color: #1F6B45; }
+.go-chip svg { flex: none; }
+.go-holiday-stats { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0 0; padding: 0; list-style: none; font-size: 12.5px; font-weight: 700; color: var(--go-text-soft); }
+.go-holiday-stats li { display: inline-flex; align-items: center; gap: 5px; }
+.go-holiday-stats svg { width: 14px; height: 14px; color: var(--go-slate); }
+.go-holiday-stats li.is-working svg { color: #2F6B4F; }
+.go-holiday-stats li.is-pending { color: var(--go-orange-ink); }
+.go-holiday-stats li.is-pending svg { color: var(--go-orange-ink); }
+
+/* Filter dropdowns that sit inside an icon wrapper: the wrapper is the field, not the select. */
+.go-polished .go-main select.bg-transparent, .go-polished .go-main select.bg-transparent:focus { min-height: 36px; background-color: transparent; border: 0; box-shadow: none; padding-right: 4px; }
+.go-polished .go-main :has(> select.bg-transparent) { background: #fff; border-color: #D5DEE8; border-radius: 14px; min-height: 44px; transition: border-color .2s, box-shadow .2s; }
+.go-polished .go-main :has(> select.bg-transparent):focus-within { border-color: var(--go-blue); box-shadow: 0 0 0 4px #3A5D831F; }
+
+/* Company calendar: today is an orange date circle, not a filled bar. */
+.go-cal-num { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 4px; border-radius: 999px; }
+.go-cal-num.is-today { background: var(--go-orange); color: var(--go-on-orange); font-weight: 800; box-shadow: 0 0 0 4px #ED902733; }
+.go-cal-date { display: flex; align-items: center; justify-content: space-between; }
+.go-cal-date > span:last-child { float: none !important; padding-right: 4px; color: var(--go-text-muted); }
+
 /* ---------- Announcements ---------- */
 .go-polished .go-main .go-ann-card { border: 1.5px solid var(--go-line); border-radius: var(--go-card-radius); box-shadow: var(--go-card-shadow); transition: transform .35s var(--go-spring), box-shadow .3s; }
 .go-polished .go-main .go-ann-card:hover { transform: translateY(-3px); box-shadow: var(--go-card-shadow-hover); }
@@ -660,6 +723,15 @@ button.go-row:hover .go-date-tile { transform: rotate(-6deg) scale(1.06); }
 }
 @media (max-width: 767px) {
   .go-polished .go-home { gap: 18px; }
+  .go-polished .go-page-header > div:not(.go-page-heading) { width: 100%; }
+  .go-polished .go-page-header > div:not(.go-page-heading) > button { flex: 1 1 auto; }
+  .go-review-head { flex-wrap: wrap; padding: 16px; }
+  .go-polished .go-stat-card { min-height: 0; padding: 16px; }
+  .go-polished .go-stat-label { font-size: 13px; }
+  .go-polished .go-stat-icon { width: 32px; height: 32px; border-radius: 11px; }
+  .go-polished .go-stat-icon svg { width: 16px; height: 16px; }
+  .go-polished .go-stat-footer { font-size: 12px; }
+  .go-note::after { display: none; }
   .go-polished .go-main .go-card { padding: 18px 16px; }
   .go-card-head { flex-wrap: wrap; }
   .go-card-actions:has(> :nth-child(2)) { width: 100%; justify-content: flex-start; }

@@ -379,9 +379,9 @@ export const CompanyCalendar: React.FC = () => {
                       aria-current={date === today ? "date" : undefined}
                       aria-label={`${prettyDate(date)}, ${schedule.length} events`}
                       onClick={() => selectDay(date)}
-                      className={`w-full mb-1 rounded-lg text-left px-2 text-xs font-semibold ${date === today ? "bg-[#3A5D83] text-white" : "text-slate-700 hover:bg-slate-100"}`}
+                      className="go-cal-date w-full mb-1 rounded-lg text-left px-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                     >
-                      {Number(date.slice(-2))}
+                      <span className={`go-cal-num${date === today ? " is-today" : ""}`}>{Number(date.slice(-2))}</span>
                       <span className="float-right text-[12px] font-normal">
                         {schedule.length || ""}
                       </span>

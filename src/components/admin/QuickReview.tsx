@@ -4,7 +4,7 @@ import { AlertTriangle, Check, ChevronDown, ExternalLink, Paperclip, Users, X } 
 import type { LeaveBalance, LeaveRequest } from '../../types';
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
-import { formatTripRange, reviewOutlook } from '../../utils/brandDisplay';
+import { formatDayCount, formatTripRange, reviewOutlook } from '../../utils/brandDisplay';
 import { launchConfetti, prefersReducedMotion } from '../../utils/confetti';
 
 const initials = (name?: string) => name?.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'HR';
@@ -91,7 +91,7 @@ export function QuickReviewItem({ request, balance, approved, canReview, onOpenF
               <p>
                 <strong>{!outlook.paid ? 'Unpaid leave: no paid balance is deducted.'
                   : outlook.enough ? `After approval: ${outlook.after} of ${outlook.allocated ?? 0} ${request.leave_type} days left`
-                    : `Not enough balance: ${Math.max(0, outlook.remaining ?? 0)} ${request.leave_type} day(s) left`}</strong>
+                    : `Not enough balance: ${formatDayCount(Math.max(0, outlook.remaining ?? 0))} of ${request.leave_type} left`}</strong>
                 <small><Users size={13} aria-hidden="true" />{outlook.overlaps.length
                   ? `Also off in ${dept}: ${outlook.overlaps.join(', ')}`
                   : `No one else in ${dept} has approved leave on these dates.`}</small>

@@ -224,7 +224,7 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
             </h2>
             {todayCelebrations.length > 0 && (
               <span className="go-chip is-pending">
-                {todayCelebrations.length} Today! 🎉
+                {todayCelebrations.length} today
               </span>
             )}
           </div>
@@ -237,11 +237,11 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
         <div className="flex items-center space-x-2 text-xs">
           <span className="px-2.5 py-1 rounded-lg bg-pink-50 border border-pink-100 text-pink-700 font-medium flex items-center space-x-1 shadow-2xs">
             <Cake className="w-3.5 h-3.5 text-pink-500" />
-            <span>{thisMonthStats.birthdaysThisMonth} Birthdays this mo.</span>
+            <span>{thisMonthStats.birthdaysThisMonth} {thisMonthStats.birthdaysThisMonth === 1 ? 'birthday' : 'birthdays'} this month</span>
           </span>
           <span className="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 font-medium flex items-center space-x-1 shadow-2xs">
             <Award className="w-3.5 h-3.5 text-indigo-500" />
-            <span>{thisMonthStats.anniversariesThisMonth} Anniversaries</span>
+            <span>{thisMonthStats.anniversariesThisMonth} {thisMonthStats.anniversariesThisMonth === 1 ? 'anniversary' : 'anniversaries'} this month</span>
           </span>
         </div>
       </div>
@@ -326,26 +326,18 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
       {/* 3. Controls & Filter Tabs */}
       <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
         {/* Category Tabs */}
-        <div className="flex items-center space-x-1 bg-white p-1 rounded-lg border border-slate-200 shadow-2xs">
+        <div className="go-segmented is-small" role="group" aria-label="Milestone type">
           <button
             type="button"
             onClick={() => setFilterType('all')}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-              filterType === 'all'
-                ? 'bg-indigo-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
+            aria-pressed={filterType === 'all'}
           >
             All Milestones ({celebrations.length})
           </button>
           <button
             type="button"
             onClick={() => setFilterType('birthday')}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors flex items-center space-x-1 ${
-              filterType === 'birthday'
-                ? 'bg-pink-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
+            aria-pressed={filterType === 'birthday'}
           >
             <Cake className="w-3 h-3" />
             <span>
@@ -355,11 +347,7 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
           <button
             type="button"
             onClick={() => setFilterType('anniversary')}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors flex items-center space-x-1 ${
-              filterType === 'anniversary'
-                ? 'bg-amber-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
+            aria-pressed={filterType === 'anniversary'}
           >
             <Award className="w-3 h-3" />
             <span>
@@ -475,7 +463,7 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
                       </span>
                       {isToday ? (
                         <span className="px-2 py-0.5 rounded text-[12px] font-bold bg-amber-500 text-white animate-pulse">
-                          Today! 🎉
+                          Today
                         </span>
                       ) : isTomorrow ? (
                         <span className="px-1.5 py-0.5 rounded text-[12px] font-bold bg-purple-100 text-purple-700">

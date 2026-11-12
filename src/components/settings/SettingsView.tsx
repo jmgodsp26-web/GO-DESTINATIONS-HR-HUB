@@ -382,7 +382,7 @@ export const SettingsView: React.FC = () => {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="Enter current password"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83] font-mono"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83]"
                 />
                 <span className="text-[12px] text-slate-400 mt-0.5 block">Use your current personal password</span>
               </div>
@@ -396,7 +396,7 @@ export const SettingsView: React.FC = () => {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="At least 12 characters"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83] font-mono"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83]"
                 />
               </div>
 
@@ -409,7 +409,7 @@ export const SettingsView: React.FC = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Repeat new password"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83] font-mono"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50/50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3A5D83]/20 focus:border-[#3A5D83]"
                 />
               </div>
             </div>
@@ -419,7 +419,7 @@ export const SettingsView: React.FC = () => {
                 type="button"
                 onClick={handlePasswordChange}
                 disabled={isUpdatingPassword || !newPassword}
-                className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#182E3F] disabled:opacity-50 transition-colors shadow-2xs"
+                className="go-button go-button-primary"
               >
                 <KeyRound className="w-3.5 h-3.5" />
                 <span>{isUpdatingPassword ? 'Updating...' : 'Update Password'}</span>
@@ -442,7 +442,7 @@ export const SettingsView: React.FC = () => {
             <button
               type="submit"
               disabled={isSaving || isLoading || Boolean(loadError)}
-              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#182E3F] shadow-xs transition-all disabled:opacity-50"
+              className="go-button go-button-primary"
             >
               <Save className="w-4 h-4" />
               <span>{isSaving ? 'Saving...' : 'Save System Settings'}</span>

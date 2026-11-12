@@ -400,7 +400,7 @@ export const EmployeeManagement: React.FC = () => {
             setFormError(null);
             initialNew.current = JSON.stringify(newEmployee); setIsAddModalOpen(true);
           }}
-          className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-lg font-semibold text-xs transition-colors shadow-xs"
+          className="go-button go-button-primary"
         >
           <UserPlus className="w-4 h-4" />
           <span>Add Employee</span>
@@ -1103,7 +1103,7 @@ export const EmployeeManagement: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting || isPhotoProcessing}
-                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] disabled:opacity-50"
+                  className="go-button go-button-primary"
                 >
                   {isPhotoProcessing ? 'Preparing photo...' : isSubmitting ? 'Creating...' : 'Create Employee'}
                 </button>
@@ -1410,7 +1410,7 @@ export const EmployeeManagement: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting || isPhotoProcessing}
-                    className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] disabled:opacity-50 cursor-pointer"
+                    className="go-button go-button-primary"
                   >
                     {isPhotoProcessing ? 'Preparing photo...' : isSubmitting ? 'Saving...' : 'Save Changes'}
                   </button>
@@ -1518,7 +1518,7 @@ export const EmployeeManagement: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting || isPhotoProcessing}
-                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] disabled:opacity-50"
+                  className="go-button go-button-primary"
                 >
                   {isSubmitting ? 'Updating...' : 'Update Balance'}
                 </button>
@@ -1602,7 +1602,7 @@ export const EmployeeManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setCreatedEmployeeInfo(null)}
-                  className="w-full sm:w-auto px-5 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F]"
+                  className="go-button go-button-primary w-full sm:w-auto"
                 >
                   Done & Close
                 </button>

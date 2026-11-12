@@ -1,5 +1,6 @@
-import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
+import { formatStamp } from '../../utils/brandDisplay';
 import { DocumentActions } from '../documents/DocumentActions';
+import { LeaveBalanceGrid } from '../common/WorkspaceUI';
 import './employee-profile.css';
 import { employeeCalendar } from '../../utils/employeeCalendar';
 import React, { useState, useEffect } from 'react';
@@ -103,16 +104,7 @@ export const EmployeeProfile: React.FC = () => {
         {isLoading ? <p role="status" className="go-profile-empty">Loading leave balances…</p> :
           balanceError ? <p role="alert" className="go-profile-empty">Could not load leave balances. Please refresh to try again.</p> :
           balances.length === 0 ? <p className="go-profile-empty">No leave allowances assigned yet. Contact HR for details.</p> :
-          <div className="go-profile-balances">{balances.map(bal => {
-            const remaining = bal.allocated_days - bal.used_days;
-            const availablePercent = bal.allocated_days > 0 ? Math.min(100, Math.max(0, remaining / bal.allocated_days * 100)) : 0;
-            return <article key={bal.id} className="go-profile-balance">
-              <h3>{bal.leave_type}</h3>
-              <div className="go-profile-balance-number"><strong>{remaining}</strong><span>days remaining</span></div>
-              <div className="go-profile-balance-track" aria-hidden="true"><span style={{ width: availablePercent + '%' }} /></div>
-              <div className="go-profile-balance-meta"><span><b>{bal.used_days}</b> used</span><span><b>{bal.allocated_days}</b> allocated</span></div>
-            </article>;
-          })}</div>}
+          <LeaveBalanceGrid balances={balances} />}
       </section>
 
       {/* Employee Confidential Documents Section */}
@@ -178,7 +170,7 @@ export const EmployeeProfile: React.FC = () => {
                         {doc.name}
                       </h4>
                       <p className="text-[12px] text-slate-400 mt-1">
-                        Uploaded {new Date(doc.uploaded_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE })}
+                        Uploaded {formatStamp(doc.uploaded_at)}
                       </p>
                     </div>
                   </div>

@@ -3,7 +3,8 @@ import { Dialog } from '../common/Dialog';
 import { useNavigation } from '../../context/NavigationContext';
 import { LoadError, RefreshStatus } from '../common/LoadFeedback';
 import { useViewPreference } from '../../hooks/useViewPreference';
-import { PageHeading } from '../common/WorkspaceUI';
+import { LeaveBalanceGrid, PageHeading } from '../common/WorkspaceUI';
+import { formatDateRange, formatDayCount, formatStamp } from '../../utils/brandDisplay';
 import { motion } from 'motion/react';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -90,7 +91,7 @@ export const LeaveHistory: React.FC = () => {
       showToast({
         type: 'info',
         title: 'Leave Request Cancelled',
-        message: cancellingRequest.status === 'Approved' && isPaidLeaveType(cancellingRequest.leave_type) ? `Your leave request has been cancelled. ${cancellingRequest.total_days} day(s) have been returned to your balance.` : 'Your leave request has been cancelled. Your PTO balance is unchanged.',
+        message: cancellingRequest.status === 'Approved' && isPaidLeaveType(cancellingRequest.leave_type) ? `Your leave request has been cancelled. ${formatDayCount(cancellingRequest.total_days)} have been returned to your balance.` : 'Your leave request has been cancelled. Your PTO balance is unchanged.',
       });
       setCancellingRequest(null);
       setSelectedRequest(null);
@@ -131,7 +132,7 @@ export const LeaveHistory: React.FC = () => {
           type="button"
           id="leave-history-new-request-btn"
           disabled={isLoading || Boolean(loadError)} onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-xl font-semibold text-xs transition-colors shadow-xs"
+          className="go-button go-button-primary"
         >
           <PlusCircle className="w-4 h-4" />
           <span>New Leave Request</span>
@@ -145,85 +146,19 @@ export const LeaveHistory: React.FC = () => {
           </button>
         ))}
       </div>
-      {/* Balance Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {balances.map((bal) => {
-          const isPaid = isPaidLeaveType(bal.leave_type);
-          const remaining = isPaid ? bal.allocated_days - bal.used_days : null;
-
-          return (
-            <div
-              key={bal.id}
-              className="rounded-2xl border p-4 sm:p-5 shadow-xs transition-all bg-white border-slate-200/80"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800">
-                  {bal.leave_type}
-                </span>
-                <span
-                  className={`text-[12px] font-semibold px-2 py-0.5 rounded-md ${
-                    !isPaid
-                      ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                      : 'text-slate-600 bg-slate-100'
-                  }`}
-                >
-                  {isPaid ? `${bal.allocated_days} days total` : 'Unpaid'}
-                </span>
-              </div>
-              <div className="mt-3 flex items-baseline justify-between">
-                <div>
-                  <span className="text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-slate-900">
-                    {isPaid ? remaining : bal.used_days}
-                  </span>
-                  <span className="text-xs text-slate-500 font-medium ml-1.5">
-                    {isPaid ? 'days remaining' : 'days taken'}
-                  </span>
-                </div>
-                {isPaid && (
-                  <div className="text-right">
-                    <span className="text-xs font-bold text-slate-700 tabular-nums">{bal.used_days}</span>
-                    <span className="text-[12px] text-slate-400 block">days used</span>
-                  </div>
-                )}
-                {!isPaid && (
-                  <div className="text-right">
-                    <span className="text-[12px] text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded">
-                      No paid quota deduction
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Progress Bar */}
-              {isPaid && (
-                <div className="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
-                  <div
-                    className="h-2 rounded-full transition-all duration-300 bg-indigo-600"
-                    style={{
-                      width: `${Math.min(100, Math.round((bal.used_days / (bal.allocated_days || 1)) * 100))}%`,
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {/* Balance cards: the same ring cards as the dashboard */}
+      {balances.length > 0 && <LeaveBalanceGrid balances={balances} />}
 
       {/* Main Card with View Switcher */}
       <div className="go-surface bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         {/* Nav Header Switcher */}
         <div className="px-5 py-3.5 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60">
-          <div className="inline-flex rounded-xl border border-slate-200 p-1 bg-slate-100/80">
+          <div className="go-segmented" role="group" aria-label="Leave views">
             <button
               type="button"
               id="view-tab-requests"
               onClick={() => setActiveView('requests')}
-              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1.5 ${
-                activeView === 'requests'
-                  ? 'bg-white text-[#3A5D83] shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              aria-pressed={activeView === 'requests'}
             >
               <CalendarCheck className="w-3.5 h-3.5" />
               <span>My requests ({requests.length})</span>
@@ -232,11 +167,7 @@ export const LeaveHistory: React.FC = () => {
               type="button"
               id="view-tab-ledger"
               onClick={() => setActiveView('ledger')}
-              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1.5 ${
-                activeView === 'ledger'
-                  ? 'bg-white text-[#3A5D83] shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              aria-pressed={activeView === 'ledger'}
             >
               <History className="w-3.5 h-3.5" />
               <span>Balance history ({transactions.length})</span>
@@ -247,18 +178,13 @@ export const LeaveHistory: React.FC = () => {
             <div className="go-status-filter flex items-center space-x-2">
               <Filter className="w-3.5 h-3.5 text-slate-400" />
               <span className="text-xs font-medium text-slate-600">Filter:</span>
-              <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-white">
+              <div className="go-segmented is-small" role="group" aria-label="Filter by status">
                 {['All', 'Pending', 'Approved', 'Rejected', 'Cancelled'].map((status) => (
                   <button
                     key={status}
                     type="button"
                     aria-pressed={statusFilter === status}
                     onClick={() => setStatusFilter(status)}
-                    className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                      statusFilter === status
-                        ? 'bg-[#3A5D83] text-white shadow-2xs font-semibold'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
                   >
                     {status}
                   </button>
@@ -309,13 +235,11 @@ export const LeaveHistory: React.FC = () => {
                             <td className="px-5 py-3.5">
                               <div className="font-bold text-slate-900">{req.leave_type}</div>
                               <div className="text-[12px] text-slate-400 mt-0.5">
-                                Submitted: {new Date(req.submitted_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE })}
+                                Submitted: {formatStamp(req.submitted_at)}
                               </div>
                             </td>
                             <td className="px-5 py-3.5 text-slate-700 font-medium tabular-nums">
-                              {req.start_date === req.end_date
-                                ? req.start_date
-                                : `${req.start_date} → ${req.end_date}`}
+                              {formatDateRange(req.start_date, req.end_date)}
                             </td>
                             <td className="px-5 py-3.5 text-center">
                               {req.is_half_day ? (
@@ -406,7 +330,7 @@ export const LeaveHistory: React.FC = () => {
                         <div className="flex items-start justify-between">
                           <div>
                             <span className="font-bold text-slate-900 text-sm">{req.leave_type}</span>
-                            <p className="text-[12px] text-slate-400">Submitted: {new Date(req.submitted_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE })}</p>
+                            <p className="text-[12px] text-slate-400">Submitted: {formatStamp(req.submitted_at)}</p>
                           </div>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-semibold border ${statusClass}`}>
                             {req.status}
@@ -417,7 +341,7 @@ export const LeaveHistory: React.FC = () => {
                           <div className="flex justify-between font-medium">
                             <span className="text-slate-500">Dates:</span>
                             <span className="text-slate-800 tabular-nums">
-                              {req.start_date === req.end_date ? req.start_date : `${req.start_date} → ${req.end_date}`}
+                              {formatDateRange(req.start_date, req.end_date)}
                             </span>
                           </div>
                           <div className="flex justify-between font-medium">
@@ -503,7 +427,7 @@ export const LeaveHistory: React.FC = () => {
                                 ) : (
                                   <ArrowDownLeft className="w-3.5 h-3.5 mr-0.5" />
                                 )}
-                                {isCredit ? `+${tx.amount}` : tx.amount} day(s)
+                                {isCredit ? `+${tx.amount}` : tx.amount} {Math.abs(Number(tx.amount)) === 1 ? 'day' : 'days'}
                               </span>
                             </td>
                             <td className="px-5 py-3.5 text-center">
@@ -538,7 +462,7 @@ export const LeaveHistory: React.FC = () => {
                               isCredit ? 'text-emerald-600' : 'text-rose-600'
                             }`}
                           >
-                            {isCredit ? `+${tx.amount}` : tx.amount} day(s)
+                            {isCredit ? `+${tx.amount}` : tx.amount} {Math.abs(Number(tx.amount)) === 1 ? 'day' : 'days'}
                           </span>
                         </div>
                         <p className="text-xs text-slate-600">{tx.description}</p>
@@ -581,9 +505,7 @@ export const LeaveHistory: React.FC = () => {
               <div className="flex justify-between py-1 border-b border-slate-100">
                 <span className="text-slate-500">{selectedRequest.is_half_day ? 'Date:' : 'Date Range:'}</span>
                 <span className="font-semibold text-slate-900 tabular-nums">
-                  {selectedRequest.start_date === selectedRequest.end_date
-                    ? selectedRequest.start_date
-                    : `${selectedRequest.start_date} to ${selectedRequest.end_date}`}
+                  {formatDateRange(selectedRequest.start_date, selectedRequest.end_date)}
                 </span>
               </div>
 
@@ -599,7 +521,7 @@ export const LeaveHistory: React.FC = () => {
               <div className="flex justify-between py-1 border-b border-slate-100">
                 <span className="text-slate-500">Duration:</span>
                 <span className="font-bold text-slate-900 tabular-nums">
-                  {selectedRequest.total_days} day(s) {selectedRequest.is_half_day ? '(Half-Day)' : ''}
+                  {formatDayCount(selectedRequest.total_days)}{selectedRequest.is_half_day ? ' · half day' : ''}
                 </span>
               </div>
 
@@ -638,7 +560,7 @@ export const LeaveHistory: React.FC = () => {
                 <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <p className="text-[12px] font-semibold text-slate-700">
                     Reviewed by {selectedRequest.reviewed_by_name} on{' '}
-                    {selectedRequest.reviewed_at ? new Date(selectedRequest.reviewed_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE }) : ''}
+                    {selectedRequest.reviewed_at ? formatStamp(selectedRequest.reviewed_at) : ''}
                   </p>
                   {selectedRequest.admin_note && (
                     <p className="text-slate-600 mt-1 italic">
@@ -652,7 +574,7 @@ export const LeaveHistory: React.FC = () => {
                 <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <p className="text-[12px] font-semibold text-slate-700">
                     Cancelled by {selectedRequest.cancelled_by_name}
-                    {selectedRequest.cancelled_at ? ` on ${new Date(selectedRequest.cancelled_at).toLocaleDateString('en-US', { timeZone: EASTERN_TIME_ZONE })}` : ''}
+                    {selectedRequest.cancelled_at ? ` on ${formatStamp(selectedRequest.cancelled_at)}` : ''}
                   </p>
                   {selectedRequest.cancellation_reason && (
                     <p className="text-slate-600 mt-1 italic">Reason: &ldquo;{selectedRequest.cancellation_reason}&rdquo;</p>
@@ -689,7 +611,7 @@ export const LeaveHistory: React.FC = () => {
                           employeeName: user.full_name,
                         })
                       }
-                      className="px-3 py-1.5 bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-lg text-xs font-semibold inline-flex items-center space-x-1.5 shadow-2xs transition-colors"
+                      className="go-button go-button-secondary go-button-sm"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Download .ICS</span>
@@ -750,15 +672,13 @@ export const LeaveHistory: React.FC = () => {
                 Are you sure you want to cancel your {cancellingRequest.status.toLowerCase()}{' '}
                 <strong className="text-slate-900 font-semibold">{cancellingRequest.leave_type}</strong> application for{' '}
                 <span className="font-semibold text-slate-800">
-                  {cancellingRequest.start_date === cancellingRequest.end_date
-                    ? cancellingRequest.start_date
-                    : `${cancellingRequest.start_date} → ${cancellingRequest.end_date}`}
+                  {formatDateRange(cancellingRequest.start_date, cancellingRequest.end_date)}
                 </span>?
               </p>
               <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[12px] text-slate-500 space-y-1">
-                <p><strong>Requested days:</strong> {cancellingRequest.total_days} day(s)</p>
+                <p><strong>Requested days:</strong> {formatDayCount(cancellingRequest.total_days)}</p>
                 <p className="text-emerald-700 font-medium">
-                  {cancellingRequest.status === 'Approved' ? (isPaidLeaveType(cancellingRequest.leave_type) ? `${cancellingRequest.total_days} day(s) will be returned to your balance. Cancel only if you will not take this leave.` : 'This is unpaid leave. No paid balance will be refunded.') : 'This request is not yet approved. No PTO has been deducted.'}
+                  {cancellingRequest.status === 'Approved' ? (isPaidLeaveType(cancellingRequest.leave_type) ? `${formatDayCount(cancellingRequest.total_days)} will be returned to your balance. Cancel only if you will not take this leave.` : 'This is unpaid leave. No paid balance will be refunded.') : 'This request is not yet approved. No PTO has been deducted.'}
                 </p>
               </div>
               {cancelError && <p role="alert" className="text-xs text-rose-700">{cancelError}</p>}

@@ -438,7 +438,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                 <button
                   type="submit"
                   disabled={isAssigningShift}
-                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
+                  className="go-button go-button-primary"
                 >
                   <Users className="w-3.5 h-3.5" />
                   <span>{isAssigningShift ? 'Assigning...' : 'Assign Staff Shift'}</span>

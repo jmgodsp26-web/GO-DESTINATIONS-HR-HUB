@@ -34,10 +34,22 @@ Shared pieces in `WorkspaceUI.tsx`: `BalanceCard`, `SectionCard`, `DateTile`, `S
 ## Building a page
 
 - Start the page with `PageHeading`. The last word of a multi-word title is accented automatically.
-- Use `go-button` with `go-button-primary` (orange), `go-button-secondary`, `go-button-navy`, `go-button-quiet` or `go-button-danger`.
+- Use `go-button` with `go-button-primary` (orange), `go-button-secondary`, `go-button-navy`, `go-button-quiet` or `go-button-danger`. Add `go-button-sm` in dense rows. Each screen has one orange main action; everything else is secondary.
+- Buttons placed in a page header without `go-button` are drawn as secondary pills automatically.
+- For tabs and quick filters, use a `go-segmented` group (`is-small` for compact rows) and mark the selected button with `aria-pressed`. `go-read-filter` looks the same.
 - Wrap content in `go-surface` or `go-task-panel` cards. Use `StatCard` for numbers; pass `ring` for a 0–1 progress ring.
+- Show leave balances with `LeaveBalanceGrid` (the dashboard ring cards). Use `go-chip` for small labels (`is-type`, `is-pending`, `is-good`).
 - Use `go-ticket-list` / `go-ticket` for dated items such as holidays.
 - Use the shared `Dialog` component. Use toasts through `useToast()`.
+
+## Dates and wording
+
+Never show a raw `2026-11-20` or "day(s)". Use the helpers in `brandDisplay.ts`:
+
+- `formatDateRange(start, end)`: "Nov 20, 2026", "Dec 21–23, 2026".
+- `formatDayCount(n)`: "1 day", "3 days".
+- `formatStamp(timestamp, withTime?)`: "Nov 7, 2026" or "Nov 7, 2026, 4:04 AM EST", in company (Eastern) time.
+- `friendlyMessage(text)`: tidies older stored notification text that still has ISO dates or "day(s)".
 
 ## Motion
 

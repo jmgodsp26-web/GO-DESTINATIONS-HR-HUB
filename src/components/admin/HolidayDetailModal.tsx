@@ -392,7 +392,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
             <button
               id="btn-assign-holiday-shift-top"
               onClick={() => setIsAssignShiftOpen(true)}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white shadow-xs transition-colors"
+              className="go-button go-button-primary go-button-sm"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Schedule Shift</span>
@@ -1532,7 +1532,7 @@ export const HolidayDetailModal: React.FC<HolidayDetailModalProps> = ({
                 <button
                   type="submit"
                   disabled={isProcessing}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white shadow-xs transition-colors"
+                  className="go-button go-button-primary"
                 >
                   Save Shift
                 </button>

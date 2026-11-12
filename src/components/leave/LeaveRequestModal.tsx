@@ -1,4 +1,5 @@
 import type { WorkScheduleView } from '../../types/workSchedule';
+import { formatDateRange, formatDayCount } from '../../utils/brandDisplay';
 import { scheduleLabel } from '../../utils/workSchedule';
 import { easternDate } from '../../utils/easternTime';
 import { Dialog } from '../common/Dialog';
@@ -33,6 +34,8 @@ import {
   Sun,
   Sunset,
 } from 'lucide-react';
+
+const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
 interface LeaveRequestModalProps {
   isOpen: boolean;
@@ -156,7 +159,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     if (!isHalfDay && !endDate) errors['end-date-input'] = 'Choose an end date.';
     if (!reason.trim()) errors['leave-reason-input'] = 'Tell HR why you need this leave.';
     if (isPaid && remainingDays === null) errors['leave-type-select'] = 'No allowance is assigned for this leave type. Contact HR.';
-    if (isPaid && remainingDays !== null && calculatedDays > remainingDays) errors['leave-type-select'] = `You have ${remainingDays} day(s) available for ${leaveType}.`;
+    if (isPaid && remainingDays !== null && calculatedDays > remainingDays) errors['leave-type-select'] = `You have ${formatDayCount(remainingDays)} available for ${leaveType}.`;
     setFieldErrors(errors);
     if (Object.keys(errors).length) return;
     setStep('confirm');
@@ -184,7 +187,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
       showToast({
         type: 'success',
         title: 'Leave Request Submitted',
-        message: `Your ${leaveType} application (${saved.total_days} day(s)) has been submitted to HR.`,
+        message: `Your ${leaveType} application (${formatDayCount(saved.total_days)}) has been submitted to HR.`,
       });
 
       setSubmitted(saved);
@@ -199,7 +202,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
   return (
     <Dialog title={submitted ? 'Request submitted' : step === 'form' ? 'Request leave' : 'Review your request'} onClose={closeDialog} busy={isSubmitting}>
-      {submitted ? <div className="go-dialog-body"><div className="go-status-confirmation" role="status"><h3>Your leave request is with HR</h3><p>{submitted.leave_type} · {submitted.start_date} to {submitted.end_date} · {submitted.total_days} day(s)</p><p>Submitted → Awaiting HR review</p><p>Your balance changes only when HR approves the request. Track the decision in My Leave.</p></div><div className="flex gap-3 mt-5"><button type="button" className="go-button" onClick={closeDialog}>Done</button><button type="button" className="go-button go-button-primary" onClick={() => { onClose(); navigate(`personal/leave?request=${encodeURIComponent(submitted.id)}`); }}>View my request</button></div></div> : <>
+      {submitted ? <div className="go-dialog-body"><div className="go-status-confirmation" role="status"><h3>Your leave request is with HR</h3><p>{submitted.leave_type} · {formatDateRange(submitted.start_date, submitted.end_date)} · {formatDayCount(submitted.total_days)}</p><p>Submitted → Awaiting HR review</p><p>Your balance changes only when HR approves the request. Track the decision in My Leave.</p></div><div className="flex gap-3 mt-5"><button type="button" className="go-button" onClick={closeDialog}>Done</button><button type="button" className="go-button go-button-primary" onClick={() => { onClose(); navigate(`personal/leave?request=${encodeURIComponent(submitted.id)}`); }}>View my request</button></div></div> : <>
         {Object.keys(fieldErrors).length > 0 && <div ref={errorRef} tabIndex={-1} className="go-error-summary" role="alert"><strong>Check these details</strong><ul>{Object.entries(fieldErrors).map(([id, message]) => <li key={id}><a href={'#'+id} onClick={e => { e.preventDefault(); document.getElementById(id)?.focus(); }}>{message}</a></li>)}</ul></div>}
         <ol className="go-form-steps" aria-label="Leave request progress">
           <li aria-current={step === 'form' ? 'step' : undefined} className={step === 'form' ? 'is-current' : 'is-complete'}><span>1</span><div><strong>Request details</strong><small>Dates, balance &amp; reason</small></div></li>
@@ -244,7 +247,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 <p className="text-[12px] text-slate-500 mt-1 flex items-center space-x-1">
                   <Info className="w-3.5 h-3.5 text-indigo-500" />
                   <span>
-                    Current Balance: <strong className="text-slate-800">{remainingDays} day(s)</strong> remaining
+                    Current balance: <strong className="text-slate-800">{formatDayCount(remainingDays)}</strong> remaining
                   </span>
                 </p>
               )}
@@ -377,7 +380,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               )}
             </div>
 
-            <div className="go-live-audience" aria-live="polite"><p><strong>{leaveCalendar.country} holiday calendar</strong> · {scheduleLabel(workSchedule, workweek)}{Boolean(workSchedule?.exceptions.length) && ' · Date changes applied'}</p>{holidaysReady && !dateError && (() => { const days = leaveDayBreakdown(startDate, isHalfDay ? startDate : endDate, holidays, leaveCalendar.country, leaveCalendar.region, workweek, workSchedule); return <p>{days.selected} calendar day(s) · {days.nonWorking} non-working day(s) · {days.holidays} holiday(s) excluded → <strong>{calculatedDays} day(s) requested</strong>{isHalfDay ? ' (half day)' : ''}</p>; })()}{holidayError && <button type="button" className="go-button" onClick={() => setReload(n=>n+1)}>Retry calendar</button>}</div>
+            <div className="go-live-audience" aria-live="polite"><p><strong>{leaveCalendar.country} holiday calendar</strong> · {scheduleLabel(workSchedule, workweek)}{Boolean(workSchedule?.exceptions.length) && ' · Date changes applied'}</p>{holidaysReady && !dateError && (() => { const days = leaveDayBreakdown(startDate, isHalfDay ? startDate : endDate, holidays, leaveCalendar.country, leaveCalendar.region, workweek, workSchedule); return <p>{plural(days.selected, 'calendar day')} · {plural(days.nonWorking, 'non-working day')} · {plural(days.holidays, 'holiday')} excluded → <strong>{formatDayCount(calculatedDays)} requested</strong>{isHalfDay ? ' (half day)' : ''}</p>; })()}{holidayError && <button type="button" className="go-button" onClick={() => setReload(n=>n+1)}>Retry calendar</button>}</div>
             {/* Auto-calculated duration & Real-Time Balance Exhaustion Indicator */}
             {calculatedDays > 0 && (
               <div
@@ -474,7 +477,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                           <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-600" />
                           <span>
                             Requested time off exceeds your available quota by{' '}
-                            <strong>{Math.abs(projectedRemaining!)} day(s)</strong>. Please reduce the date range or select Unpaid Leave.
+                            <strong>{formatDayCount(Math.abs(projectedRemaining!))}</strong>. Please reduce the date range or select Unpaid Leave.
                           </span>
                         </div>
                       )}
@@ -490,7 +493,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                         <div className="text-amber-900 font-medium flex items-start space-x-1.5">
                           <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
                           <span>
-                            You will have only <strong>{projectedRemaining} day(s)</strong> remaining for {leaveType} after this request.
+                            You will have only <strong>{formatDayCount(projectedRemaining!)}</strong> remaining for {leaveType} after this request.
                           </span>
                         </div>
                       )}
@@ -498,7 +501,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                         <div className="text-slate-600 flex items-center space-x-1.5">
                           <CheckCircle className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
                           <span>
-                            Healthy balance. You will retain <strong>{projectedRemaining} day(s)</strong> of {leaveType}.
+                            Healthy balance. You will retain <strong>{formatDayCount(projectedRemaining!)}</strong> of {leaveType}.
                           </span>
                         </div>
                       )}
@@ -576,7 +579,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 type="submit"
                 id="submit-leave-review-btn"
                 disabled={!holidaysReady || !!dateError}
-                className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] transition-colors flex items-center space-x-1.5"
+                className="go-button go-button-primary"
               >
                 <span>Review Request</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -588,7 +591,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
           <div className="p-6 space-y-5">
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-xs font-medium text-amber-900">
-                You are requesting <strong className="text-base font-bold text-amber-950">{calculatedDays} day(s)</strong>
+                You are requesting <strong className="text-base font-bold text-amber-950">{formatDayCount(calculatedDays)}</strong>
                 {isHalfDay && ` (${halfDayPeriod === 'morning' ? 'Morning' : 'Afternoon'})`} of {leaveType}.
               </p>
               <p className="text-[12px] text-amber-800 mt-1">
@@ -628,7 +631,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               )}
               <div className="flex justify-between py-1 border-b border-slate-200/60">
                 <span className="text-slate-500">Total Duration:</span>
-                <span className="font-semibold text-slate-900">{calculatedDays} day(s)</span>
+                <span className="font-semibold text-slate-900">{formatDayCount(calculatedDays)}</span>
               </div>
               {attachmentName && (
                 <div className="flex justify-between py-1 border-b border-slate-200/60">
@@ -656,7 +659,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 id="confirm-submit-leave-btn"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="px-5 py-2 text-xs font-semibold bg-[#3A5D83] text-white rounded-lg hover:bg-[#182E3F] transition-colors flex items-center space-x-2 disabled:opacity-50"
+                className="go-button go-button-primary"
               >
                 {isSubmitting ? (
                   <span role="status" className="inline-flex items-center gap-2"><LoaderCircle className="w-4 h-4 animate-spin" aria-hidden="true" />Submitting…</span>

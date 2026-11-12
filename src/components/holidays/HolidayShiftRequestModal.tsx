@@ -232,7 +232,7 @@ export const HolidayShiftRequestModal: React.FC<HolidayShiftRequestModalProps> =
             <button
               type="submit"
               disabled={isSubmitting || !leaveReady}
-              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white shadow-xs transition-colors"
+              className="go-button go-button-primary"
             >
               <Send className="w-3.5 h-3.5" />
               <span>{isSubmitting ? 'Submitting...' : 'Submit Shift Request'}</span>

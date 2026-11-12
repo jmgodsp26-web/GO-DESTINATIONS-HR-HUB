@@ -13,7 +13,7 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
-import { isNightHour } from '../../utils/brandDisplay';
+import { friendlyMessage, isNightHour } from '../../utils/brandDisplay';
 import { GoDestinationsLogo } from '../common/GoDestinationsLogo';
 
 interface HeaderProps {
@@ -195,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
                           <p className={`text-xs ${!notif.read ? 'font-semibold text-slate-900' : 'text-slate-700'}`}>
                             {notif.title}
                           </p>
-                          <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{notif.message}</p>
+                          <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{friendlyMessage(notif.message)}</p>
                           <p className="text-[12px] text-slate-400 mt-1 tabular-nums">
                             {new Date(notif.created_at).toLocaleTimeString('en-US', { timeZone: EASTERN_TIME_ZONE, timeZoneName: 'short', hour: '2-digit', minute: '2-digit' })}
                           </p>
