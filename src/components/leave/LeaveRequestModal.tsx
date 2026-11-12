@@ -618,7 +618,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               <div className="flex justify-between py-1 border-b border-slate-200/60">
                 <span className="text-slate-500">{isHalfDay ? 'Date:' : 'Date Range:'}</span>
                 <span className="font-semibold text-slate-900">
-                  {isHalfDay ? startDate : `${startDate} to ${endDate}`}
+                  {formatDateRange(startDate, isHalfDay ? startDate : endDate)}
                 </span>
               </div>
               {isHalfDay && (
