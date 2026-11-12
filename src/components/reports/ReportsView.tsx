@@ -303,7 +303,7 @@ export const ReportsView: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Approved Leave</span>
+            <span className="go-report-stat-label">Approved leave</span>
             <span className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg">
               <CheckCircle2 className="w-4 h-4" />
             </span>
@@ -319,7 +319,7 @@ export const ReportsView: React.FC = () => {
 
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Review</span>
+            <span className="go-report-stat-label">Pending review</span>
             <span className="p-1.5 bg-amber-50 text-amber-700 rounded-lg">
               <Clock className="w-4 h-4" />
             </span>
@@ -335,7 +335,7 @@ export const ReportsView: React.FC = () => {
 
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Workforce Size</span>
+            <span className="go-report-stat-label">Workforce size</span>
             <span className="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg">
               <Users className="w-4 h-4" />
             </span>
@@ -353,7 +353,7 @@ export const ReportsView: React.FC = () => {
 
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg Absence Rate</span>
+            <span className="go-report-stat-label">Average absence</span>
             <span className="p-1.5 bg-purple-50 text-purple-700 rounded-lg">
               <TrendingUp className="w-4 h-4" />
             </span>

@@ -1,20 +1,40 @@
 import { notificationDestination } from '../../utils/navigation';
 import { PageHeading } from '../common/WorkspaceUI';
 import { formatStamp, friendlyMessage } from '../../utils/brandDisplay';
+import type { NotificationItem } from '../../types';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { api } from '../../services/api';
 import {
   Bell,
+  CalendarDays,
+  CalendarPlus,
+  CalendarX,
   CheckCircle2,
+  ClipboardList,
+  Megaphone,
+  PartyPopper,
   XCircle,
-  Clock,
   Check,
   Filter,
   Trash2,
   ArrowRight,
 } from 'lucide-react';
+
+/** One icon and colour per kind of update, so the list can be scanned at a glance. */
+function notificationKind(notif: NotificationItem): { icon: typeof Bell; tone: 'good' | 'bad' | 'warm' | 'calm' } {
+  const title = `${notif.title} ${notif.message}`.toLowerCase();
+  if (notif.type === 'leave_approved') return { icon: CheckCircle2, tone: 'good' };
+  if (notif.type === 'leave_rejected') return { icon: XCircle, tone: 'bad' };
+  if (notif.announcement_id || title.includes('announcement')) return { icon: Megaphone, tone: 'warm' };
+  if (notif.onboarding_id || title.includes('onboarding')) return { icon: ClipboardList, tone: 'calm' };
+  if (title.includes('cancel')) return { icon: CalendarX, tone: 'warm' };
+  if (title.includes('birthday') || title.includes('anniversary')) return { icon: PartyPopper, tone: 'warm' };
+  if (notif.type === 'holiday' || title.includes('holiday') || title.includes('shift')) return { icon: CalendarDays, tone: 'calm' };
+  if (notif.type === 'new_request' || title.includes('leave request')) return { icon: CalendarPlus, tone: 'warm' };
+  return { icon: Bell, tone: 'calm' };
+}
 
 interface NotificationsViewProps {
   onNavigateTab: (tab: string) => void;
@@ -146,10 +166,6 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
           </div>
         ) : (
           filteredNotifications.map((notif) => {
-            const isApproved = notif.type === 'leave_approved';
-            const isRejected = notif.type === 'leave_rejected';
-            const isPending = notif.type === 'new_request';
-
             return (
               <div
                 key={notif.id}
@@ -158,21 +174,11 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
                 }`}
               >
                 <div className="flex items-start space-x-3.5">
-                  <div className="mt-0.5 shrink-0">
-                    {isApproved ? (
-                      <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80">
-                        <CheckCircle2 className="w-5 h-5" />
-                      </div>
-                    ) : isRejected ? (
-                      <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200/80">
-                        <XCircle className="w-5 h-5" />
-                      </div>
-                    ) : (
-                      <div className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80">
-                        <Clock className="w-5 h-5" />
-                      </div>
-                    )}
-                  </div>
+                  {(() => {
+                    const kind = notificationKind(notif);
+                    const Icon = kind.icon;
+                    return <span className={`go-notif-icon is-${kind.tone} mt-0.5`} aria-hidden="true"><Icon className="w-5 h-5" /></span>;
+                  })()}
 
                   <div>
                     <div className="flex items-center space-x-2">

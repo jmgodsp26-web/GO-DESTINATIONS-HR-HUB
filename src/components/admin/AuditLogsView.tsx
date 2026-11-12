@@ -1,28 +1,62 @@
-import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
+import { easternDate } from '../../utils/easternTime';
+import { LoadError } from '../common/LoadFeedback';
 import { PageHeading } from '../common/WorkspaceUI';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AuditLog } from '../../types';
 import { api } from '../../services/api';
+import { auditTone, groupAuditLogs } from '../../utils/auditDisplay';
+import { formatStamp } from '../../utils/brandDisplay';
 import {
+  Activity,
+  CalendarDays,
+  CalendarX,
+  CheckCircle2,
+  ClipboardList,
+  FileText,
+  KeyRound,
+  LogIn,
+  Megaphone,
+  RefreshCw,
+  Scale,
   Search,
-  Filter,
+  Settings,
+  ShieldAlert,
+  UserCog,
+  UserPlus,
+  UserX,
+  XCircle,
+  type LucideIcon,
 } from 'lucide-react';
+
+const PAGE_SIZE = 60;
+
+const TONE_ICON: Record<ReturnType<typeof auditTone>['icon'], LucideIcon> = {
+  signin: LogIn, signinFailed: ShieldAlert, password: KeyRound, approved: CheckCircle2, rejected: XCircle, cancelled: CalendarX,
+  employeeCreated: UserPlus, employeeUpdated: UserCog, employeeRemoved: UserX, balance: Scale, holiday: CalendarDays,
+  announcement: Megaphone, document: FileText, settings: Settings, onboarding: ClipboardList, other: Activity,
+};
+
+const targetLabel = (type: string) => { const text = String(type || 'record').replace(/_/g, ' '); return text.charAt(0).toUpperCase() + text.slice(1); };
+
+const timeOnly = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' });
 
 export const AuditLogsView: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [actionFilter, setActionFilter] = useState<string>('All');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState('');
+  const [shown, setShown] = useState(PAGE_SIZE);
 
   const loadLogs = useCallback(async () => {
     setIsLoading(true);
+    setError('');
     try {
-      const data = await api.getAuditLogs();
-      setLogs(data);
+      setLogs(await api.getAuditLogs());
+      setLoaded(true);
     } catch (err: any) {
-      if (!err?.message?.includes('Session expired') && !err?.message?.includes('token')) {
-        console.error('Failed to load audit logs:', err);
-      }
+      setError(err?.message || 'Could not load the activity log.');
     } finally {
       setIsLoading(false);
     }
@@ -32,126 +66,94 @@ export const AuditLogsView: React.FC = () => {
     loadLogs();
   }, [loadLogs]);
 
-  const filteredLogs = logs.filter((log) => {
-    const matchesSearch =
-      log.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.action.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => setShown(PAGE_SIZE), [searchQuery, actionFilter]);
 
-    const matchesAction = actionFilter === 'All' || log.action === actionFilter;
-
-    return matchesSearch && matchesAction;
-  });
-
-  const getActionBadge = (action: string) => {
-    if (action.includes('approved')) {
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    }
-    if (action.includes('rejected') || action.includes('disabled') || action.includes('deleted')) {
-      return 'bg-rose-50 text-rose-700 border-rose-200';
-    }
-    if (action.includes('created')) {
-      return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    }
-    return 'bg-amber-50 text-amber-700 border-amber-200';
-  };
+  const actions = useMemo(() => [...new Set(logs.map(log => log.action))].sort((a, b) => a.localeCompare(b)), [logs]);
+  const query = searchQuery.trim().toLowerCase();
+  const filteredLogs = useMemo(() => logs.filter((log) => {
+    const matchesSearch = !query || [log.user_name, log.details, log.action].some(value => String(value || '').toLowerCase().includes(query));
+    return matchesSearch && (actionFilter === 'All' || log.action === actionFilter);
+  }), [logs, query, actionFilter]);
+  const groups = useMemo(() => groupAuditLogs(filteredLogs.slice(0, shown), easternDate()), [filteredLogs, shown]);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Top Header */}
-      <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <PageHeading eyebrow="Administration" title="Activity Log" description="See changes to employee records, leave requests, and HR settings." />
+    <div className="go-activity space-y-6 max-w-5xl mx-auto">
+      <div className="go-page-header">
+        <PageHeading
+          eyebrow="Administration"
+          title="Activity Log"
+          description="See changes to employee records, leave requests, and HR settings."
+          badge={loaded ? <span className="go-heading-badge">{logs.length} {logs.length === 1 ? 'event' : 'events'}</span> : undefined}
+        />
+        <button type="button" onClick={loadLogs} disabled={isLoading}><RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} aria-hidden="true" />Refresh</button>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by person, action, or details..."
-            className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500"
-          />
+      {error && <LoadError message={loaded ? 'Could not refresh. The activity below may be out of date.' : error} onRetry={loadLogs} />}
+
+      <div className="go-surface go-activity-filters">
+        <label className="go-activity-search">
+          <Search size={16} aria-hidden="true" />
+          <span className="sr-only">Search activity</span>
+          <input type="search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by person, action, or details…" />
+        </label>
+        <label className="go-activity-action">
+          <span className="sr-only">Filter by action</span>
+          <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)}>
+            <option value="All">All actions</option>
+            {actions.map(action => <option key={action} value={action}>{action}</option>)}
+          </select>
+        </label>
+      </div>
+
+      {!loaded ? (
+        !error && <p className="go-refresh-status" role="status">Loading activity…</p>
+      ) : filteredLogs.length === 0 ? (
+        <div className="go-surface go-activity-empty">
+          <Activity size={28} aria-hidden="true" />
+          <p><strong>No activity found</strong>{query || actionFilter !== 'All' ? 'Nothing matches this search or action. Try clearing the filters.' : 'Changes to records, leave and settings will appear here.'}</p>
         </div>
-
-        <select
-          value={actionFilter}
-          onChange={(e) => setActionFilter(e.target.value)}
-          className="text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-700 focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="All">All Actions</option>
-          <option value="Publish Announcement">Announcement Published</option>
-          <option value="Save Announcement Draft">Announcement Draft Saved</option>
-          <option value="Archive Announcement">Announcement Archived</option>
-          <option value="Acknowledge Announcement">Announcement Acknowledged</option>
-          <option value="Signed in">Signed In</option>
-          <option value="Sign-in failed">Sign-In Failed</option>
-          <option value="Leave approved">Leave Approved</option>
-          <option value="Leave rejected">Leave Rejected</option>
-          <option value="Employee created">Employee Created</option>
-          <option value="Employee updated">Employee Updated</option>
-          <option value="Employee disabled">Employee Disabled</option>
-          <option value="Leave balance changed">Balance Changed</option>
-          <option value="Holiday created">Holiday Created</option>
-        </select>
-      </div>
-
-      {/* Audit Log Entries */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="divide-y divide-slate-100">
-          {filteredLogs.length === 0 ? (
-            <div className="p-12 text-center text-xs text-slate-400">
-              No audit records found matching the query.
+      ) : (
+        <>
+          {groups.map(group => (
+            <section key={group.date} className="go-surface go-activity-day" aria-labelledby={`activity-${group.date}`}>
+              <header>
+                <h2 id={`activity-${group.date}`}>{group.label}</h2>
+                <span>{group.items.length} {group.items.length === 1 ? 'event' : 'events'}</span>
+              </header>
+              <ol className="go-activity-list">
+                {group.items.map(log => {
+                  const tone = auditTone(log.action);
+                  const Icon = TONE_ICON[tone.icon];
+                  const at = new Date(log.timestamp);
+                  return (
+                    <li key={log.id} className={`go-activity-item is-${tone.color}`}>
+                      <span className="go-activity-icon" aria-hidden="true"><Icon size={17} /></span>
+                      <div className="go-activity-copy">
+                        <p className="go-activity-line">
+                          <strong>{log.action}</strong>
+                          <span>by {log.user_name || 'System'}</span>
+                          {log.user_role && <span className="go-chip">{log.user_role === 'admin' ? 'HR admin' : 'Employee'}</span>}
+                        </p>
+                        {log.details && <p className="go-activity-details">{log.details}</p>}
+                        <p className="go-activity-meta">
+                          <time dateTime={log.timestamp} title={formatStamp(log.timestamp, true)}>{Number.isFinite(at.getTime()) ? timeOnly.format(at) : ''}</time>
+                          {log.target_id && <span title={`${log.target_type} ${log.target_id}`}>{targetLabel(log.target_type)} · {log.target_id}</span>}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ))}
+          {filteredLogs.length > shown && (
+            <div className="go-activity-more">
+              <p>Showing {shown} of {filteredLogs.length} events</p>
+              <button type="button" className="go-button go-button-secondary" onClick={() => setShown(count => count + PAGE_SIZE)}>Show {Math.min(PAGE_SIZE, filteredLogs.length - shown)} more</button>
             </div>
-          ) : (
-            filteredLogs.map((log) => {
-              const dateStr = new Date(log.timestamp).toLocaleString('en-US', { timeZone: EASTERN_TIME_ZONE, timeZoneName: 'short',
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              });
-
-              return (
-                <div
-                  key={log.id}
-                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-3 hover:bg-slate-50/60 transition-colors"
-                >
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-md text-[12px] font-bold border ${getActionBadge(log.action)}`}>
-                        {log.action}
-                      </span>
-                      <span className="text-xs font-semibold text-slate-800">
-                        by {log.user_name}
-                      </span>
-                      <span className="text-[12px] text-slate-400 font-mono">
-                        ({log.user_role})
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                      {log.details}
-                    </p>
-
-                    <div className="text-[12px] text-slate-400 font-mono">
-                      Target Ref: {log.target_type} • ID: {log.target_id}
-                    </div>
-                  </div>
-
-                  <div className="text-left sm:text-right shrink-0">
-                    <span className="text-xs text-slate-500 font-medium">{dateStr}</span>
-                  </div>
-                </div>
-              );
-            })
           )}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

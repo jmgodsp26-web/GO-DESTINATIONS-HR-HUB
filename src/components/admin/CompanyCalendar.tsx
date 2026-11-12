@@ -1,6 +1,9 @@
 import { easternDate } from '../../utils/easternTime';
 import { useViewPreference } from '../../hooks/useViewPreference';
-import { PageHeading } from '../common/WorkspaceUI';
+import { DateTile, PageHeading } from '../common/WorkspaceUI';
+
+/** Short label for a month-grid chip: "Shift: Ana Reyes (9–5)" becomes "Ana Reyes". The full title stays in the tooltip. */
+const compactTitle = (title: string) => title.replace(/^Shift:\s*/, '').replace(/\s*\([^)]*\)\s*$/, '') || title;
 import React, {
   useCallback,
   useEffect,
@@ -166,7 +169,7 @@ export const CompanyCalendar: React.FC = () => {
         type="button"
         onClick={() => selectDay(date, event)}
         aria-label={`View ${event.title} on ${prettyDate(date)}`}
-        className={`w-full rounded-lg border text-left transition-colors hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3A5D83] ${category.color} ${compact ? "px-1.5 py-1 text-[12px]" : "p-3 text-xs"} ${selectedDate === date && selectedEventKey === eventKey(event) ? "ring-2 ring-[#3A5D83] ring-offset-1" : ""}`}
+        className={`go-cal-event w-full rounded-lg border text-left transition-colors hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3A5D83] ${category.color} ${compact ? "is-compact px-1.5 py-1 text-[12px]" : "p-3 text-xs"} ${selectedDate === date && selectedEventKey === eventKey(event) ? "ring-2 ring-[#3A5D83] ring-offset-1" : ""}`}
       >
         <span className="flex items-start gap-1.5">
           <Icon
@@ -175,8 +178,9 @@ export const CompanyCalendar: React.FC = () => {
           />
           <span
             className={compact ? "truncate font-semibold" : "font-semibold"}
+            title={compact ? event.title : undefined}
           >
-            {event.title}
+            {compact ? compactTitle(event.title) : event.title}
           </span>
         </span>
         {!compact && (
@@ -461,17 +465,16 @@ export const CompanyCalendar: React.FC = () => {
           aria-label="Selected day details"
           className="scroll-mt-20 rounded-2xl border border-slate-200 bg-white overflow-hidden lg:sticky lg:top-4"
         >
-          <div className="p-5 bg-[#182E3F] text-white">
-            <p className="text-[12px] font-semibold uppercase tracking-widest text-slate-300">
-              Day overview
-            </p>
-            <h3 className="mt-2 text-lg font-bold">
-              {prettyDate(selectedDate, { weekday: "long" })}
-            </h3>
-            <p className="text-xs text-slate-300 mt-1">
-              {prettyDate(selectedDate)} · {dayEvents.length}{" "}
-              {dayEvents.length === 1 ? "event" : "events"}
-            </p>
+          <div className="go-calendar-day-head">
+            <DateTile date={selectedDate} />
+            <div>
+              <p className="go-calendar-day-kicker">{selectedDate === today ? "Today" : "Day overview"}</p>
+              <h3>{prettyDate(selectedDate, { weekday: "long" })}</h3>
+              <p>
+                {prettyDate(selectedDate)} · {dayEvents.length}{" "}
+                {dayEvents.length === 1 ? "event" : "events"}
+              </p>
+            </div>
           </div>
           <div key={`${selectedDate}:${selectedEventKey || "day"}`} className="go-calendar-detail-content p-4 space-y-3" aria-live="polite">
             {selectedEvent ? (
@@ -558,8 +561,8 @@ export const CompanyCalendar: React.FC = () => {
             ) : (
               <>
                 {!loading && dayEvents.length === 0 && (
-                  <div className="text-center py-7">
-                    <CalendarDays className="w-7 h-7 mx-auto text-slate-300 mb-3" />
+                  <div className="go-calendar-empty">
+                    <CalendarDays className="w-7 h-7" aria-hidden="true" />
                     <p className="text-sm font-semibold text-slate-700">
                       No events for this day
                     </p>
@@ -568,6 +571,27 @@ export const CompanyCalendar: React.FC = () => {
                     </p>
                   </div>
                 )}
+                {!loading && dayEvents.length === 0 && (() => {
+                  const later = agenda.filter((day) => day.date > selectedDate).slice(0, 3);
+                  return later.length > 0 ? (
+                    <div className="go-calendar-later">
+                      <p className="go-calendar-day-kicker">Later this month</p>
+                      <ul>
+                        {later.map((day) => (
+                          <li key={day.date}>
+                            <button type="button" onClick={() => selectDay(day.date)}>
+                              <DateTile date={day.date} />
+                              <span>
+                                <strong>{compactTitle(day.events[0].title)}{day.events.length > 1 ? ` + ${day.events.length - 1} more` : ""}</strong>
+                                <small>{categories[day.events[0].type].label}</small>
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null;
+                })()}
                 {dayEvents.map((event) =>
                   renderEventButton(event, selectedDate),
                 )}

@@ -131,7 +131,7 @@ export const SettingsView: React.FC = () => {
 
   if (!loaded) return <div><PageHeading eyebrow="HR Hub" title="Settings" description="Company policies and account settings" />{loadError ? <LoadError message={loadError} onRetry={loadSettings}/> : <p className="go-refresh-status" role="status">Loading company settings…</p>}</div>;
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className={`go-settings space-y-6 animate-in fade-in duration-200${isAdmin ? '' : ' is-readonly'}`}>
       {loadError && <LoadError message={loadError} onRetry={loadSettings}/>}<RefreshStatus active={isLoading}/>
       {/* Header */}
       <div className="go-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -143,7 +143,7 @@ export const SettingsView: React.FC = () => {
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
             <Building className="w-4 h-4 text-indigo-600" />
-            <h2 className="text-sm font-bold text-slate-900">Company Details &amp; Work Hours</h2>
+            <h2 className="text-sm font-bold text-slate-900">Company Details &amp; Work Hours</h2>{!isAdmin && <span className="go-chip go-settings-tag">Set by HR</span>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -199,7 +199,7 @@ export const SettingsView: React.FC = () => {
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
             <CalendarCheck className="w-4 h-4 text-indigo-600" />
-            <h2 className="text-sm font-bold text-slate-900">Leave Allowances &amp; Rules</h2>
+            <h2 className="text-sm font-bold text-slate-900">Leave Allowances &amp; Rules</h2>{!isAdmin && <span className="go-chip go-settings-tag">Set by HR</span>}
           </div>
 
           <p className="mb-4 text-sm text-slate-600">Philippines employees start with 0 days of Sick, Emergency and Medical Leave. Vacation Leave follows the default below. Other countries keep the company defaults. These defaults apply to new accounts; existing balances are not changed.</p>
@@ -306,7 +306,7 @@ export const SettingsView: React.FC = () => {
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
           <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
             <Bell className="w-4 h-4 text-indigo-600" />
-            <h2 className="text-sm font-bold text-slate-900">Notifications</h2>
+            <h2 className="text-sm font-bold text-slate-900">Notifications</h2>{!isAdmin && <span className="go-chip go-settings-tag">Set by HR</span>}
           </div>
 
           <div className="space-y-3 text-xs">
@@ -324,7 +324,7 @@ export const SettingsView: React.FC = () => {
                 onChange={(e) =>
                   setSettings({ ...settings, email_notifications_enabled: e.target.checked })
                 }
-                className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                className="go-switch" role="switch"
               />
             </label>
 
@@ -341,7 +341,7 @@ export const SettingsView: React.FC = () => {
                 onChange={(e) =>
                   setSettings({ ...settings, browser_notifications_enabled: e.target.checked })
                 }
-                className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                className="go-switch" role="switch"
               />
             </label>
           </div>

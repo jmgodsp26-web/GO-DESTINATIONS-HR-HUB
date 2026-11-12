@@ -464,6 +464,10 @@ input.font-mono::placeholder { font-family: 'Nunito', system-ui, sans-serif; let
 .go-note:hover .go-note-tag svg { animation: go-ring .7s ease-in-out; transform-origin: 50% 20%; }
 .go-note-title { display: block; font-family: var(--go-display); font-size: 21px; font-weight: 600; line-height: 1.2; color: var(--go-navy); overflow-wrap: anywhere; }
 .go-note-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; font-size: 14px; line-height: 1.55; color: var(--go-text-soft); white-space: pre-line; overflow-wrap: anywhere; }
+.go-note-read { display: inline-flex; align-items: center; gap: 6px; margin-top: auto; padding: 5px 12px; border-radius: 999px; background: #FFFFFFB3; border: 1.5px dashed var(--go-apricot); color: var(--go-orange-ink); font-size: 12.5px; font-weight: 800; transition: background-color .2s; }
+.go-note-read svg { transition: transform .3s var(--go-spring); }
+.go-note-open:hover .go-note-read { background: #fff; }
+.go-note-open:hover .go-note-read svg { transform: translateX(4px); }
 .go-note-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; font-size: 13px; font-weight: 700; color: var(--go-text-muted); }
 .go-note-foot > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .go-note-foot button { display: inline-flex; align-items: center; gap: 5px; flex: none; min-height: 36px; padding: 0 10px; margin-right: -10px; border-radius: 999px; color: var(--go-orange-ink); font-weight: 800; }
@@ -554,6 +558,33 @@ button.go-row:hover .go-date-tile { transform: rotate(-6deg) scale(1.06); }
 .go-planner .go-coverage-summary, .go-planner .go-coverage-help { margin-inline: 0; }
 .go-planner .go-coverage-body { padding-inline: 0; padding-bottom: 0; }
 .go-polished .go-main .go-milestones { overflow: hidden; }
+
+/* ---------- Team milestones (admin dashboard) ---------- */
+.go-polished .go-main .go-milestones .go-card-title h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.go-milestone-month { flex-wrap: wrap; }
+.go-milestone-today { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 560px)); gap: 12px; margin-bottom: 16px; }
+.go-milestone-spotlight { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border: 1.5px solid var(--go-cream); border-radius: 20px; background: linear-gradient(135deg, #FFF9F1, var(--go-wash)); }
+.go-milestone-avatar { position: relative; width: 46px; height: 46px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--go-cream); color: var(--go-orange-ink); font-size: 14px; font-weight: 800; box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--go-apricot); }
+.go-milestone-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.go-milestone-avatar i { position: absolute; right: -5px; bottom: -5px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; border: 2px solid #fff; background: var(--go-orange); color: var(--go-on-orange); }
+.go-milestone-spotlight:hover .go-milestone-avatar i { animation: go-ring .8s ease-in-out; }
+.go-milestone-copy { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.go-milestone-copy strong { font-size: 15px; font-weight: 800; color: var(--go-navy); }
+.go-milestone-copy > span { font-size: 13px; font-weight: 800; color: var(--go-orange-ink); }
+.go-milestone-copy small { overflow: hidden; font-size: 12.5px; color: var(--go-text-muted); text-overflow: ellipsis; white-space: nowrap; }
+.go-polished .go-button.is-done { color: #1F6B45; border-color: #BFE3CC; box-shadow: 0 4px 0 #D6EEDF; }
+.go-milestone-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; padding-bottom: 12px; border-bottom: 1.5px dashed var(--go-line); }
+.go-milestone-range { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--go-text-muted); }
+.go-polished .go-main .go-milestone-range select { min-height: 36px; padding: 0 30px 0 14px; border: 1.5px solid var(--go-line); border-radius: 999px; background-color: #fff; font-size: 13px; font-weight: 700; color: var(--go-navy); }
+.go-milestone-list .go-row-copy strong { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.go-milestone-list .go-row:hover { background: var(--go-snow); }
+.go-milestone-list .go-row.is-today { background: var(--go-wash); }
+.go-polished .go-icon-button.is-done { border-color: #BFE3CC; background: #E1F3E8; color: #1F6B45; }
+.go-milestone-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1.5px dashed var(--go-line); font-size: 13px; color: var(--go-text-muted); }
+.go-card-empty:has(> svg) { display: flex; align-items: center; gap: 12px; }
+.go-card-empty > svg { flex: none; color: var(--go-steel); }
+.go-card-empty > p { margin: 0; }
+.go-card-empty > p strong { display: block; color: var(--go-navy); }
 
 /* ---------- Review queue with quick decisions ---------- */
 .go-polished .go-main .go-review-queue { overflow: hidden; border-top: 1.5px solid var(--go-line) !important; }
@@ -685,6 +716,108 @@ button.go-row:hover .go-date-tile { transform: rotate(-6deg) scale(1.06); }
 .go-cal-num.is-today { background: var(--go-orange); color: var(--go-on-orange); font-weight: 800; box-shadow: 0 0 0 4px #ED902733; }
 .go-cal-date { display: flex; align-items: center; justify-content: space-between; }
 .go-cal-date > span:last-child { float: none !important; padding-right: 4px; color: var(--go-text-muted); }
+
+/* ---------- Employee directory ---------- */
+.go-directory-avatar { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--go-cream); color: var(--go-orange-ink); font-size: 13px; font-weight: 800; object-fit: cover; }
+.go-directory-avatar.is-large { width: 46px; height: 46px; font-size: 14px; }
+.go-polished .go-directory-table th { white-space: nowrap; }
+.go-polished .go-directory-table td { vertical-align: middle; }
+.go-polished .go-main .go-directory-email { max-width: 210px; margin: 1px 0 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; }
+.go-directory-id { height: 22px; padding: 0 9px; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.go-directory-account { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.go-polished .go-directory-table th:last-child { background: var(--go-cloud); }
+.go-polished .go-directory-table td:last-child button { border-radius: 12px; }
+.go-polished .go-directory-table td:last-child button:hover:not([title^="Disable"]):not([title^="Delete"]):not([title^="Reactivate"]) { background: var(--go-wash); color: var(--go-orange-ink); }
+
+/* ---------- Settings: switches, and read-only company details for employees ---------- */
+.go-polished input.go-switch { appearance: none; position: relative; width: 46px; height: 26px; flex: none; margin: 0 0 0 12px; border: 0; border-radius: 999px; background: var(--go-mist); cursor: pointer; transition: background-color .2s; }
+.go-polished input.go-switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #182E3F4D; transition: transform .3s var(--go-spring); }
+.go-polished input.go-switch:checked { background: var(--go-orange); }
+.go-polished input.go-switch:checked::after { transform: translateX(20px); }
+.go-polished input.go-switch:disabled { opacity: .5; cursor: not-allowed; }
+.go-polished input.go-switch:focus-visible { outline: 3px solid var(--go-orange); outline-offset: 3px; }
+.go-settings-tag { margin-left: auto; }
+.go-polished .go-main .go-settings.is-readonly :is(input:not([type="checkbox"]), select, textarea):disabled {
+  border-color: transparent; background: var(--go-cloud); color: var(--go-navy); -webkit-text-fill-color: var(--go-navy); font-weight: 700; opacity: 1; cursor: default; box-shadow: none;
+}
+
+/* Notification icons: one per kind of update. */
+.go-notif-icon { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 14px; background: var(--go-tile); color: var(--go-blue); }
+.go-notif-icon.is-good { background: #E1F3E8; color: #1F6B45; }
+.go-notif-icon.is-bad { background: #FFE4E6; color: #9F1239; }
+.go-notif-icon.is-warm { background: var(--go-wash); color: var(--go-orange-ink); }
+
+/* Calendar: day panel and compact event chips. */
+.go-calendar-day-head { display: flex; align-items: center; gap: 14px; padding: 18px 20px; background: linear-gradient(140deg, var(--go-blue), var(--go-navy) 70%); color: #fff; }
+.go-calendar-day-head .go-date-tile { width: 54px; height: 58px; background: #FFFFFF1F; }
+.go-calendar-day-head .go-date-tile small { color: var(--go-apricot); }
+.go-calendar-day-head .go-date-tile b { color: #fff; font-size: 24px; }
+.go-polished .go-main .go-calendar-day-head h3 { margin: 1px 0 0; font-size: 20px; color: #fff; }
+.go-calendar-day-head p { margin: 0; font-size: 13px; color: var(--go-mist); }
+.go-calendar-day-kicker { margin: 0; font-size: 11px !important; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--go-apricot) !important; }
+.go-calendar-empty { padding: 22px 8px 12px; text-align: center; }
+.go-calendar-empty > svg { margin: 0 auto 10px; color: var(--go-steel); }
+.go-calendar-later { padding-top: 12px; border-top: 1.5px dashed var(--go-line); }
+.go-calendar-later .go-calendar-day-kicker { color: var(--go-orange-ink) !important; margin-bottom: 6px; }
+.go-calendar-later ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.go-calendar-later button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px; border-radius: 16px; text-align: left; transition: background-color .2s; }
+.go-calendar-later button:hover { background: var(--go-snow); }
+.go-calendar-later button > span { display: grid; min-width: 0; }
+.go-calendar-later strong { overflow: hidden; font-size: 14px; color: var(--go-navy); text-overflow: ellipsis; white-space: nowrap; }
+.go-calendar-later small { font-size: 12.5px; color: var(--go-text-muted); }
+.go-cal-event.is-compact { padding: 3px 6px !important; border-radius: 8px; font-size: 11.5px !important; }
+.go-cal-event.is-compact > span { gap: 4px !important; align-items: center !important; }
+
+/* Reports: sentence-case stat labels like every other card. */
+.go-report-stat-label { font-size: 14px; font-weight: 800; color: var(--go-navy); }
+
+/* ---------- Profile: the identity card matches the dashboard hero ---------- */
+.go-polished .go-main .go-profile-hero { position: relative; isolation: isolate; overflow: hidden; border: 0; border-radius: 28px; background: linear-gradient(112deg, var(--go-deep) 0%, var(--go-navy) 40%, var(--go-blue) 100%); box-shadow: inset 0 1px 0 #FFFFFF24, 0 26px 46px -28px #182E3FE0; }
+.go-polished .go-main .go-profile-hero::before { content: ""; position: absolute; z-index: -1; width: 380px; height: 380px; left: -140px; top: -210px; border-radius: 50%; background: radial-gradient(circle, #ED90272E, transparent 66%); }
+.go-polished .go-main .go-profile-hero::after { content: ""; position: absolute; z-index: -1; right: 28px; top: 26px; width: 150px; height: 80px; opacity: .55; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 80'%3E%3Cpath d='M4 72 C 40 70, 60 44, 92 44 S 120 58, 128 30' fill='none' stroke='%23F1C48E' stroke-width='2' stroke-linecap='round' stroke-dasharray='2 7'/%3E%3Cpath d='M128 8 L148 18 L131 25 L133 18 Z' fill='%23F1C48E'/%3E%3C/svg%3E") no-repeat right top / contain; pointer-events: none; }
+.go-polished .go-main .go-profile-accent { display: none; }
+.go-polished .go-main .go-profile-avatar { border-radius: 50%; background: var(--go-cream); box-shadow: none; outline: 2px dashed var(--go-orange); outline-offset: 5px; }
+.go-polished .go-main .go-profile-avatar > span { font-family: var(--go-display); font-weight: 600; color: var(--go-orange-ink); }
+.go-polished .go-main .go-profile-eyebrow { color: var(--go-apricot); }
+.go-polished .go-main .go-profile-name { color: #fff; font-family: var(--go-display); font-weight: 600; }
+.go-polished .go-main .go-profile-subtitle { color: var(--go-mist); }
+.go-polished .go-main .go-profile-badges > span { border-radius: 999px; padding: 4px 12px; background: #FFFFFF1F; color: #fff; font-weight: 800; }
+.go-polished .go-main .go-profile-badges > .is-active { background: #1F6B4566; color: #CFF5DF; }
+.go-polished .go-main .go-profile-badges > .is-disabled { background: #9F123966; color: #FFE4E6; }
+.go-polished .go-main .go-profile-badges > .go-profile-id { background: #FFFFFF14; color: var(--go-mist); }
+.go-polished .go-main .go-profile-notice { background: #0C1B2759; border-top: 1px solid #FFFFFF1A; color: var(--go-mist); }
+@media (max-width: 640px) { .go-polished .go-main .go-profile-hero::after { display: none; } }
+
+/* ---------- Activity log: grouped by day, one icon per kind of change ---------- */
+.go-activity-filters { display: flex; flex-wrap: wrap; gap: 12px; padding: 14px; }
+.go-activity-search { position: relative; flex: 1 1 320px; display: block; }
+.go-activity-search > svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--go-slate); pointer-events: none; }
+.go-polished .go-main .go-activity-search input { width: 100%; padding-left: 40px; border: 1.5px solid #D5DEE8; }
+.go-activity-action { flex: 0 1 260px; }
+.go-polished .go-main .go-activity-action select { width: 100%; border: 1.5px solid #D5DEE8; padding: 0 34px 0 14px; }
+.go-activity-day { overflow: hidden; }
+.go-activity-day > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 22px; border-bottom: 1.5px dashed var(--go-line); }
+.go-polished .go-main .go-activity-day h2 { font-size: 18px; }
+.go-activity-day > header span { font-size: 12.5px; font-weight: 800; color: var(--go-text-muted); }
+.go-activity-list { margin: 0; padding: 6px 22px 10px; list-style: none; }
+.go-activity-item { position: relative; display: flex; gap: 14px; padding: 12px 0; }
+.go-activity-item:not(:last-child)::before { content: ""; position: absolute; left: 17px; top: 50px; bottom: -6px; width: 2px; border-radius: 2px; background: var(--go-line); }
+.go-activity-icon { position: relative; width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 12px; background: var(--go-tile); color: var(--go-blue); }
+.go-activity-item.is-good .go-activity-icon { background: #E1F3E8; color: #1F6B45; }
+.go-activity-item.is-bad .go-activity-icon { background: #FFE4E6; color: #9F1239; }
+.go-activity-item.is-warm .go-activity-icon { background: var(--go-wash); color: var(--go-orange-ink); }
+.go-activity-copy { flex: 1; min-width: 0; }
+.go-polished .go-main .go-activity-copy p { margin: 0; line-height: 1.5; }
+.go-activity-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 14px; color: var(--go-text-soft); }
+.go-activity-line strong { font-weight: 800; color: var(--go-navy); }
+.go-activity-line .go-chip { height: 22px; padding: 0 9px; font-size: 11.5px; }
+.go-activity-details { margin-top: 2px !important; font-size: 14px; color: var(--go-text); overflow-wrap: anywhere; }
+.go-activity-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px !important; font-size: 12.5px; font-weight: 600; color: var(--go-text-muted); }
+.go-activity-meta span { overflow-wrap: anywhere; }
+.go-activity-more { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px 0 8px; font-size: 13px; font-weight: 700; color: var(--go-text-muted); }
+.go-activity-empty { display: flex; align-items: center; gap: 14px; padding: 28px; color: var(--go-steel); }
+.go-activity-empty p { margin: 0; color: var(--go-text-soft); font-size: 14px; }
+.go-activity-empty strong { display: block; color: var(--go-navy); font-size: 16px; }
 
 /* ---------- Announcements ---------- */
 .go-polished .go-main .go-ann-card { border: 1.5px solid var(--go-line); border-radius: var(--go-card-radius); box-shadow: var(--go-card-shadow); transition: transform .35s var(--go-spring), box-shadow .3s; }

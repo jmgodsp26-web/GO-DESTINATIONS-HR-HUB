@@ -1,19 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { UserProfile, LeaveBalance } from '../../types';
 import { goAnniversaryLabel } from '../../utils/celebrations';
-import {
-  Cake,
-  Award,
-  Sparkles,
-  Mail,
-  Calendar,
-  Gift,
-  PartyPopper,
-  Clock,
-  ChevronRight,
-  Filter,
-  CheckCircle2,
-} from 'lucide-react';
+import { Cake, Award, Mail, Gift, PartyPopper, Clock, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { DateTile } from '../common/WorkspaceUI';
+import { formatDateRange } from '../../utils/brandDisplay';
+import { launchConfetti } from '../../utils/confetti';
 
 export interface CelebrationsWidgetProps {
   employees: (UserProfile & { leave_balances?: LeaveBalance[] })[];
@@ -207,323 +198,129 @@ export const CelebrationsWidget: React.FC<CelebrationsWidgetProps> = ({
     )}&body=${encodeURIComponent(body)}`;
   };
 
+  const initials = (name: string) => name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'GO';
+  const localIso = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const countdown = (days: number) => (days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`);
+  const wish = (item: CelebrationItem, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!wishedEmployees[item.id]) launchConfetti(e.currentTarget, 26);
+    handleSendWish(item, e);
+  };
+
   return (
-    <div
-      id="admin-celebrations-widget"
-      className={`go-surface go-milestones bg-white ${className}`}
-    >
-      {/* 1. Header Bar */}
-      <div className="px-6 py-5 border-b border-dashed border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="go-card-bubble">
-              <PartyPopper className="w-5 h-5" />
-            </span>
-            <h2 className="text-sm font-bold text-slate-900">
-              Upcoming Birthdays & Work Anniversaries
-            </h2>
-            {todayCelebrations.length > 0 && (
-              <span className="go-chip is-pending">
-                {todayCelebrations.length} today
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            See upcoming birthdays and work anniversaries.
-          </p>
+    <section id="admin-celebrations-widget" className={`go-card go-milestones ${className}`} aria-labelledby="admin-milestones-title">
+      <header className="go-card-head">
+        <span className="go-card-bubble is-orange"><PartyPopper size={20} aria-hidden="true" /></span>
+        <div className="go-card-title">
+          <h2 id="admin-milestones-title">Team milestones {todayCelebrations.length > 0 && <span className="go-chip is-pending">{todayCelebrations.length} today</span>}</h2>
+          <p>Upcoming birthdays and work anniversaries from employee profiles.</p>
         </div>
-
-        {/* Quick Month Metrics */}
-        <div className="flex items-center space-x-2 text-xs">
-          <span className="px-2.5 py-1 rounded-lg bg-pink-50 border border-pink-100 text-pink-700 font-medium flex items-center space-x-1 shadow-2xs">
-            <Cake className="w-3.5 h-3.5 text-pink-500" />
-            <span>{thisMonthStats.birthdaysThisMonth} {thisMonthStats.birthdaysThisMonth === 1 ? 'birthday' : 'birthdays'} this month</span>
-          </span>
-          <span className="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 font-medium flex items-center space-x-1 shadow-2xs">
-            <Award className="w-3.5 h-3.5 text-indigo-500" />
-            <span>{thisMonthStats.anniversariesThisMonth} {thisMonthStats.anniversariesThisMonth === 1 ? 'anniversary' : 'anniversaries'} this month</span>
-          </span>
+        <div className="go-card-actions go-milestone-month" aria-label="This month">
+          <span className="go-chip"><Cake className="w-3.5 h-3.5" aria-hidden="true" />{thisMonthStats.birthdaysThisMonth} {thisMonthStats.birthdaysThisMonth === 1 ? 'birthday' : 'birthdays'} this month</span>
+          <span className="go-chip is-type"><Award className="w-3.5 h-3.5" aria-hidden="true" />{thisMonthStats.anniversariesThisMonth} {thisMonthStats.anniversariesThisMonth === 1 ? 'anniversary' : 'anniversaries'} this month</span>
         </div>
-      </div>
+      </header>
 
-      {/* 2. Today's Highlight Spotlight Banner (if any celebration is today) */}
-      {todayCelebrations.length > 0 && (
-        <div className="bg-amber-50 border-b border-amber-200/60 p-4">
-          <div className="flex items-center space-x-2 text-amber-900 font-bold text-xs uppercase tracking-wider mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-spin" style={{ animationDuration: '3s' }} />
-            <span>Today's Milestone Spotlight</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="go-card-body">
+        {todayCelebrations.length > 0 && (
+          <div className="go-milestone-today" aria-label="Celebrating today">
             {todayCelebrations.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white/95 backdrop-blur-xs border border-amber-200 rounded-xl p-3.5 shadow-xs flex items-center justify-between gap-3"
-              >
-                <div className="flex items-center space-x-3 min-w-0">
-                  <div className="relative shrink-0">
-                    {item.employeeAvatar && item.employeeAvatar.trim() ? (
-                      <img
-                        src={item.employeeAvatar}
-                        alt={item.employeeName}
-                        className="w-11 h-11 rounded-full object-cover border-2 border-amber-400 shadow-2xs"
-                      />
-                    ) : (
-                      <div className="w-11 h-11 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs border-2 border-amber-400 shadow-2xs">
-                        {item.employeeName?.split(' ').map((n) => n[0]).join('').slice(0, 2) || 'GO'}
-                      </div>
-                    )}
-                    <span className="absolute -bottom-1 -right-1 text-base">
-                      {item.type === 'birthday' ? '🎂' : '🏆'}
-                    </span>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center space-x-1.5">
-                      <span className="font-bold text-slate-900 text-xs truncate">
-                        {item.employeeName}
-                      </span>
-                      <span className="px-1.5 py-0.2 rounded text-[12px] font-bold bg-amber-100 text-amber-800 shrink-0">
-                        TODAY!
-                      </span>
-                    </div>
-                    <p className="text-[12px] font-semibold text-indigo-700 mt-0.5 truncate">
-                      {item.milestoneTitle}
-                    </p>
-                    <p className="text-[12px] text-slate-500 truncate">
-                      {item.employeeDepartment} • {item.employeeJobTitle}
-                    </p>
-                  </div>
-                </div>
-
+              <article key={item.id} className="go-milestone-spotlight">
+                <span className="go-milestone-avatar">
+                  {item.employeeAvatar && item.employeeAvatar.trim()
+                    ? <img src={item.employeeAvatar} alt="" />
+                    : initials(item.employeeName)}
+                  <i aria-hidden="true">{item.type === 'birthday' ? <Cake size={12} /> : <Award size={12} />}</i>
+                </span>
+                <span className="go-milestone-copy">
+                  <strong>{item.employeeName}</strong>
+                  <span>{item.milestoneTitle}</span>
+                  <small>{[item.employeeDepartment, item.employeeJobTitle].filter(Boolean).join(' · ')}</small>
+                </span>
                 <button
                   type="button"
                   id={`wish-btn-${item.id}`}
-                  onClick={(e) => handleSendWish(item, e)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-colors shadow-2xs flex items-center space-x-1.5 ${
-                    wishedEmployees[item.id]
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : 'bg-[#182E3F] hover:bg-[#23384B] text-white'
-                  }`}
+                  onClick={(e) => wish(item, e)}
+                  className={`go-button go-button-sm ${wishedEmployees[item.id] ? 'go-button-secondary is-done' : 'go-button-navy'}`}
                 >
-                  {wishedEmployees[item.id] ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Wished!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Gift className="w-3.5 h-3.5" />
-                      <span>Send Wishes</span>
-                    </>
-                  )}
+                  {wishedEmployees[item.id] ? <><CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />Wished</> : <><Gift className="w-3.5 h-3.5" aria-hidden="true" />Send wishes</>}
                 </button>
-              </div>
+              </article>
             ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 3. Controls & Filter Tabs */}
-      <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
-        {/* Category Tabs */}
-        <div className="go-segmented is-small" role="group" aria-label="Milestone type">
-          <button
-            type="button"
-            onClick={() => setFilterType('all')}
-            aria-pressed={filterType === 'all'}
-          >
-            All Milestones ({celebrations.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterType('birthday')}
-            aria-pressed={filterType === 'birthday'}
-          >
-            <Cake className="w-3 h-3" />
-            <span>
-              Birthdays ({celebrations.filter((c) => c.type === 'birthday').length})
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterType('anniversary')}
-            aria-pressed={filterType === 'anniversary'}
-          >
-            <Award className="w-3 h-3" />
-            <span>
-              Anniversaries ({celebrations.filter((c) => c.type === 'anniversary').length})
-            </span>
-          </button>
+        <div className="go-milestone-controls">
+          <div className="go-segmented is-small" role="group" aria-label="Milestone type">
+            <button type="button" onClick={() => setFilterType('all')} aria-pressed={filterType === 'all'}>
+              All ({celebrations.length})
+            </button>
+            <button type="button" onClick={() => setFilterType('birthday')} aria-pressed={filterType === 'birthday'}>
+              <Cake className="w-3 h-3" aria-hidden="true" />
+              <span>Birthdays ({celebrations.filter((c) => c.type === 'birthday').length})</span>
+            </button>
+            <button type="button" onClick={() => setFilterType('anniversary')} aria-pressed={filterType === 'anniversary'}>
+              <Award className="w-3 h-3" aria-hidden="true" />
+              <span>Anniversaries ({celebrations.filter((c) => c.type === 'anniversary').length})</span>
+            </button>
+          </div>
+          <label className="go-milestone-range">
+            <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Show</span>
+            <select value={daysRange} onChange={(e) => setDaysRange(parseInt(e.target.value, 10))}>
+              <option value={14}>Next 14 days</option>
+              <option value={30}>Next 30 days</option>
+              <option value={60}>Next 60 days</option>
+              <option value={90}>Next 90 days</option>
+              <option value={365}>Full year</option>
+            </select>
+          </label>
         </div>
 
-        {/* Time Horizon Selector */}
-        <div className="flex items-center space-x-2">
-          <span className="text-xs text-slate-500 font-medium flex items-center space-x-1">
-            <Clock className="w-3.5 h-3.5" />
-            <span>Timeframe:</span>
-          </span>
-          <select
-            value={daysRange}
-            onChange={(e) => setDaysRange(parseInt(e.target.value, 10))}
-            className="text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 py-1 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 shadow-2xs"
-          >
-            <option value={14}>Next 14 Days</option>
-            <option value={30}>Next 30 Days</option>
-            <option value={60}>Next 60 Days</option>
-            <option value={90}>Next 90 Days</option>
-            <option value={365}>Full Year</option>
-          </select>
-        </div>
-      </div>
-
-      {/* 4. Celebrations List */}
-      <div className="divide-y divide-slate-100">
         {filteredCelebrations.length === 0 ? (
-          <div className="p-10 text-center text-xs text-slate-500">
-            <Cake className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            <p className="font-semibold text-slate-700">No upcoming celebrations found</p>
-            <p className="text-slate-400 mt-0.5">
-              No employee birthdays or work anniversaries match the selected filter within the next {daysRange} days.
-            </p>
+          <div className="go-card-empty">
+            <Cake className="w-7 h-7" aria-hidden="true" />
+            <p><strong>No celebrations in this window</strong>No birthdays or work anniversaries match this filter in the next {daysRange} days.</p>
           </div>
         ) : (
-          filteredCelebrations.map((item) => {
-            const isToday = item.daysUntil === 0;
-            const isTomorrow = item.daysUntil === 1;
-            const isWithinAWeek = item.daysUntil <= 7 && item.daysUntil > 1;
+          <ul className="go-row-list go-milestone-list">
+            {filteredCelebrations.map((item) => (
+              <li key={item.id} className={`go-row${item.daysUntil === 0 ? ' is-today' : ''}`}>
+                <DateTile date={localIso(item.nextOccurrenceDate)} />
+                <span className="go-row-copy">
+                  <strong>
+                    {item.employeeName}
+                    <span className={`go-chip ${item.type === 'birthday' ? '' : 'is-type'}`}>{item.type === 'birthday' ? 'Birthday' : 'Work anniversary'}</span>
+                  </strong>
+                  <small>
+                    {item.milestoneTitle}
+                    {item.type === 'birthday' ? ` · ${item.nextOccurrenceStr}` : item.rawDate ? ` · Joined ${formatDateRange(item.rawDate, item.rawDate)}` : ''}
+                    {item.employeeDepartment ? ` · ${item.employeeDepartment}` : ''}
+                  </small>
+                </span>
+                <span className={`go-pill ${item.daysUntil === 0 ? 'is-pending' : item.daysUntil <= 7 ? 'is-approved' : 'is-cancelled'}`}>{countdown(item.daysUntil)}</span>
+                <button
+                  type="button"
+                  className={`go-icon-button${wishedEmployees[item.id] ? ' is-done' : ''}`}
+                  onClick={(e) => wish(item, e)}
+                  aria-label={wishedEmployees[item.id] ? `Wishes sent to ${item.employeeName}` : `Send wishes to ${item.employeeName}`}
+                  title={`Send celebration wish to ${item.employeeName}`}
+                >
+                  {wishedEmployees[item.id] ? <CheckCircle2 size={16} aria-hidden="true" /> : <Mail size={16} aria-hidden="true" />}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
 
-            return (
-              <div
-                key={item.id}
-                className={`p-4 sm:p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
-                  isToday
-                    ? 'bg-amber-50/40 hover:bg-amber-50/70'
-                    : 'hover:bg-slate-50/80'
-                }`}
-              >
-                {/* Left Employee Info & Milestone Type */}
-                <div className="flex items-center space-x-3.5 min-w-0">
-                  <div className="relative shrink-0">
-                    {item.employeeAvatar && item.employeeAvatar.trim() ? (
-                      <img
-                        src={item.employeeAvatar}
-                        alt={item.employeeName}
-                        className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-[#3A5D83]/10 text-[#3A5D83] flex items-center justify-center font-bold text-xs border border-[#3A5D83]/20">
-                        {item.employeeName.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-                      </div>
-                    )}
-                    <span className="absolute -bottom-1 -right-1 text-xs">
-                      {item.type === 'birthday' ? '🎂' : '🎖️'}
-                    </span>
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="flex items-center space-x-2 flex-wrap">
-                      <span className="font-bold text-slate-900 text-xs sm:text-sm">
-                        {item.employeeName}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        ({item.employeeDepartment})
-                      </span>
-                      {item.type === 'birthday' ? (
-                        <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-pink-100 text-pink-800 border border-pink-200">
-                          Birthday
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
-                          Work Anniversary
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center space-x-2 text-xs text-slate-600 mt-1">
-                      <span className="font-semibold text-slate-900">
-                        {item.milestoneTitle}
-                      </span>
-                      <span className="text-slate-300">•</span>
-                      <span className="text-slate-500 text-[12px]">
-                        {item.type === 'birthday'
-                          ? `Birthday on ${item.nextOccurrenceStr}`
-                          : `Hired on ${item.rawDate}`}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Date Badge & Quick Action */}
-                <div className="flex items-center space-x-3 self-end sm:self-center shrink-0">
-                  {/* Countdown Badge */}
-                  <div className="text-right">
-                    <div className="flex items-center space-x-1.5 justify-end">
-                      <span className="text-xs font-bold text-slate-900">
-                        {item.nextOccurrenceStr}
-                      </span>
-                      {isToday ? (
-                        <span className="px-2 py-0.5 rounded text-[12px] font-bold bg-amber-500 text-white animate-pulse">
-                          Today
-                        </span>
-                      ) : isTomorrow ? (
-                        <span className="px-1.5 py-0.5 rounded text-[12px] font-bold bg-purple-100 text-purple-700">
-                          Tomorrow
-                        </span>
-                      ) : isWithinAWeek ? (
-                        <span className="px-1.5 py-0.5 rounded text-[12px] font-bold bg-blue-100 text-blue-700">
-                          In {item.daysUntil} days
-                        </span>
-                      ) : (
-                        <span className="text-[12px] text-slate-400 font-medium">
-                          In {item.daysUntil} days
-                        </span>
-                      )}
-                    </div>
-                    <span className="block text-[12px] text-slate-400">
-                      {item.employeeJobTitle}
-                    </span>
-                  </div>
-
-                  {/* Send Wish Mail Button */}
-                  <button
-                    type="button"
-                    onClick={(e) => handleSendWish(item, e)}
-                    title={`Send celebration wish to ${item.employeeName}`}
-                    className={`p-2 rounded-lg text-xs font-semibold transition-colors shadow-2xs border ${
-                      wishedEmployees[item.id]
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200'
-                    }`}
-                  >
-                    {wishedEmployees[item.id] ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    ) : (
-                      <Mail className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            );
-          })
+        {onNavigateTab && (
+          <footer className="go-milestone-foot">
+            <span>Dates come from employee profiles.</span>
+            <button type="button" className="go-button go-button-quiet" onClick={() => onNavigateTab('employees')}>
+              Manage employee records <ChevronRight className="w-4 h-4" aria-hidden="true" />
+            </button>
+          </footer>
         )}
       </div>
-
-      {/* 5. Footer Summary & Navigation */}
-      {onNavigateTab && (
-        <div className="px-5 py-3 border-t border-slate-200 bg-slate-50/80 flex items-center justify-between text-xs">
-          <span className="text-slate-500">
-            Dates are based on employee profiles.
-          </span>
-          <button
-            type="button"
-            onClick={() => onNavigateTab('employees')}
-            className="font-semibold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1"
-          >
-            <span>Manage Employee Records</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-    </div>
+    </section>
   );
 };

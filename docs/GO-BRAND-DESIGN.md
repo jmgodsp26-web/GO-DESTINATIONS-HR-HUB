@@ -42,6 +42,13 @@ Shared pieces in `WorkspaceUI.tsx`: `BalanceCard`, `SectionCard`, `DateTile`, `S
 - Use `go-ticket-list` / `go-ticket` for dated items such as holidays.
 - Use the shared `Dialog` component. Use toasts through `useToast()`.
 
+## Other shared patterns
+
+- **Activity Log:** entries are grouped by company date ("Today", "Yesterday") with one icon and colour per kind of change (`utils/auditDisplay.ts`). Sixty entries show at a time.
+- **Notifications:** each kind of update has its own icon (`go-notif-icon is-good | is-bad | is-warm | is-calm`).
+- **Settings:** use `go-switch` (with `role="switch"`) for on/off settings. Employees see company settings as read-only text with a "Set by HR" tag.
+- **Avatars:** initials sit in a round cream circle (`go-directory-avatar`, `go-row-avatar`, `go-milestone-avatar`).
+
 ## Dates and wording
 
 Never show a raw `2026-11-20` or "day(s)". Use the helpers in `brandDisplay.ts`:

@@ -494,7 +494,7 @@ export const EmployeeManagement: React.FC = () => {
             <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200/80">
               <tr>
                 <th className="px-5 py-3.5 font-semibold">Employee</th>
-                <th className="px-5 py-3.5 font-semibold">Department & Title</th>
+                <th className="px-5 py-3.5 font-semibold">Role & team</th>
                 <th className="px-5 py-3.5 font-semibold">Location</th>
                 <th className="px-5 py-3.5 font-semibold">Leave remaining</th>
                 <th className="px-5 py-3.5 font-semibold">Account</th>
@@ -519,20 +519,18 @@ export const EmployeeManagement: React.FC = () => {
                           <img
                             src={emp.avatar_url}
                             alt={emp.full_name}
-                            className="w-9 h-9 rounded-xl object-cover border border-slate-200"
+                            className="go-directory-avatar"
                           />
                         ) : (
-                          <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs border border-indigo-200">
-                            {emp.full_name.split(' ').map(n => n[0]).join('')}
+                          <div className="go-directory-avatar" aria-hidden="true">
+                            {emp.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                           </div>
                         )}
                         <div>
                           <button type="button" className="font-bold text-slate-900 text-left underline-offset-4 hover:underline" onClick={() => navigate(`administration/employees?employee=${encodeURIComponent(emp.id)}`)}>{emp.full_name}</button>
-                          <p className="go-directory-email">{emp.email}</p>
+                          <p className="go-directory-email" title={emp.email}>{emp.email}</p>
                           {emp.phone && <p className="text-[12px] text-slate-500">{emp.phone}</p>}
-                          <span className="font-mono text-[12px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
-                            {emp.employee_id}
-                          </span>
+                          <span className="go-chip go-directory-id">{emp.employee_id}</span>
                         </div>
                       </div>
                     </td>
@@ -550,11 +548,8 @@ export const EmployeeManagement: React.FC = () => {
                           {getCountryFlag(emp.country || DEFAULT_COUNTRY)}
                         </span>
                         <div>
-                          <p className="font-semibold text-slate-800">{emp.country || DEFAULT_COUNTRY}</p>
-                          <p className="text-[11px] text-slate-500">Calendar: {employeeCalendar(emp).country || 'Company-wide only'}</p>
-                          <p className="text-[12px] text-slate-400">
-                            {emp.region && emp.region !== 'All' ? emp.region : 'Nationwide'}
-                          </p>
+                          <p className="font-semibold text-slate-800">{emp.country || DEFAULT_COUNTRY}{emp.region && emp.region !== 'All' ? <span className="font-normal text-slate-500"> · {emp.region}</span> : null}</p>
+                          <p className="text-[12px] text-slate-500">{employeeCalendar(emp).country ? `${employeeCalendar(emp).country} holiday calendar` : 'Company-wide holidays only'}</p>
                         </div>
                       </div>
                     </td>
@@ -566,21 +561,10 @@ export const EmployeeManagement: React.FC = () => {
 
                     {/* Role badge */}
                     <td className="px-5 py-3.5">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-semibold border ${
-                        emp.role === 'admin'
-                          ? 'bg-purple-50 text-purple-700 border-purple-200/80'
-                          : 'bg-slate-100 text-slate-700 border-slate-200/80'
-                      }`}>
-                        {emp.role === 'admin' ? 'Admin' : 'Employee'}
-                      </span>
-                      <div className="mt-2" />
-                      <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-semibold border ${
-                        emp.status === 'active'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
-                          : 'bg-rose-50 text-rose-700 border-rose-200/80'
-                      }`}>
-                        {emp.status === 'active' ? 'Active' : 'Disabled'}
-                      </span>
+                      <div className="go-directory-account">
+                        <span className={`go-chip ${emp.role === 'admin' ? 'is-type' : ''}`}>{emp.role === 'admin' ? 'HR admin' : 'Employee'}</span>
+                        <span className={`go-pill ${emp.status === 'active' ? 'is-approved' : 'is-rejected'}`}>{emp.status === 'active' ? 'Active' : 'Disabled'}</span>
+                      </div>
                     </td>
 
                     {/* Action buttons */}
@@ -684,36 +668,28 @@ export const EmployeeManagement: React.FC = () => {
                         <img
                           src={emp.avatar_url}
                           alt={emp.full_name}
-                          className="w-11 h-11 rounded-xl object-cover border border-slate-200 shrink-0"
+                          className="go-directory-avatar is-large"
                         />
                       ) : (
-                        <div className="w-11 h-11 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs border border-indigo-200 shrink-0">
-                          {emp.full_name.split(' ').map(n => n[0]).join('')}
+                        <div className="go-directory-avatar is-large" aria-hidden="true">
+                          {emp.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
                       )}
                       <div>
                         <button type="button" className="text-sm font-bold text-slate-900 text-left" onClick={() => navigate(`administration/employees?employee=${encodeURIComponent(emp.id)}`)}>{emp.full_name}</button>
                         <p className="text-xs text-slate-500">{emp.job_title} • {emp.department}</p>
                         <div className="flex items-center space-x-2 mt-0.5">
-                          <span className="font-mono text-[12px] text-slate-400">
-                            {emp.employee_id}
-                          </span>
-                          <span className="inline-flex items-center space-x-1 text-[12px] text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">
-                            <span>{getCountryFlag(emp.country || DEFAULT_COUNTRY)}</span>
-                            <span>{emp.country || DEFAULT_COUNTRY}</span>
+                          <span className="go-chip go-directory-id">{emp.employee_id}</span>
+                          <span className="go-chip">
+                            <span aria-hidden="true">{getCountryFlag(emp.country || DEFAULT_COUNTRY)}</span>
+                            {emp.country || DEFAULT_COUNTRY}
                           </span>
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-center space-x-1">
-                      <span className={`px-2 py-0.5 rounded-full text-[12px] font-semibold border ${
-                        emp.role === 'admin'
-                          ? 'bg-purple-50 text-purple-700 border-purple-200/80'
-                          : 'bg-slate-100 text-slate-700 border-slate-200/80'
-                      }`}>
-                        {emp.role === 'admin' ? 'Admin' : 'Employee'}
-                      </span>
+                      <span className={`go-pill ${emp.status === 'active' ? 'is-approved' : 'is-rejected'}`}>{emp.role === 'admin' ? 'HR admin' : emp.status === 'active' ? 'Active' : 'Disabled'}</span>
                     </div>
                   </div>
 
