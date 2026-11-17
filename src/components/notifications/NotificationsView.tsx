@@ -1,20 +1,40 @@
-import { EASTERN_TIME_ZONE } from '../../utils/easternTime';
 import { notificationDestination } from '../../utils/navigation';
 import { PageHeading } from '../common/WorkspaceUI';
+import { formatStamp, friendlyMessage } from '../../utils/brandDisplay';
+import type { NotificationItem } from '../../types';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { api } from '../../services/api';
 import {
   Bell,
+  CalendarDays,
+  CalendarPlus,
+  CalendarX,
   CheckCircle2,
+  ClipboardList,
+  Megaphone,
+  PartyPopper,
   XCircle,
-  Clock,
   Check,
   Filter,
   Trash2,
   ArrowRight,
 } from 'lucide-react';
+
+/** One icon and colour per kind of update, so the list can be scanned at a glance. */
+function notificationKind(notif: NotificationItem): { icon: typeof Bell; tone: 'good' | 'bad' | 'warm' | 'calm' } {
+  const title = `${notif.title} ${notif.message}`.toLowerCase();
+  if (notif.type === 'leave_approved') return { icon: CheckCircle2, tone: 'good' };
+  if (notif.type === 'leave_rejected') return { icon: XCircle, tone: 'bad' };
+  if (notif.announcement_id || title.includes('announcement')) return { icon: Megaphone, tone: 'warm' };
+  if (notif.onboarding_id || title.includes('onboarding')) return { icon: ClipboardList, tone: 'calm' };
+  if (title.includes('cancel')) return { icon: CalendarX, tone: 'warm' };
+  if (title.includes('birthday') || title.includes('anniversary')) return { icon: PartyPopper, tone: 'warm' };
+  if (notif.type === 'holiday' || title.includes('holiday') || title.includes('shift')) return { icon: CalendarDays, tone: 'calm' };
+  if (notif.type === 'new_request' || title.includes('leave request')) return { icon: CalendarPlus, tone: 'warm' };
+  return { icon: Bell, tone: 'calm' };
+}
 
 interface NotificationsViewProps {
   onNavigateTab: (tab: string) => void;
@@ -111,37 +131,22 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
 
       <div className="go-inbox-summary"><span className="go-shortcut-icon"><Bell className="w-5 h-5" /></span><div><strong>{unreadCount ? `${unreadCount} unread update${unreadCount === 1 ? '' : 's'}` : "You're all caught up"}</strong><p>Use the filters below to find the updates you need.</p></div></div>
       {/* Tabs Filter Bar */}
-      <div className="flex items-center space-x-2 border-b border-slate-200 pb-2 text-xs">
+      <div className="go-segmented" role="group" aria-label="Filter notifications">
         <button
           type="button"
           aria-pressed={activeFilter === 'all'} onClick={() => setActiveFilter('all')}
-          className={`px-3.5 py-2 rounded-xl font-semibold transition-all ${
-            activeFilter === 'all'
-              ? 'bg-slate-900 text-white shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
         >
           All Notifications ({notifications.length})
         </button>
         <button
           type="button"
           aria-pressed={activeFilter === 'unread'} onClick={() => setActiveFilter('unread')}
-          className={`px-3.5 py-2 rounded-xl font-semibold transition-all ${
-            activeFilter === 'unread'
-              ? 'bg-slate-900 text-white shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
         >
           Unread ({unreadCount})
         </button>
         <button
           type="button"
           aria-pressed={activeFilter === 'leaves'} onClick={() => setActiveFilter('leaves')}
-          className={`px-3.5 py-2 rounded-xl font-semibold transition-all ${
-            activeFilter === 'leaves'
-              ? 'bg-slate-900 text-white shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
         >
           Leave Applications
         </button>
@@ -161,10 +166,6 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
           </div>
         ) : (
           filteredNotifications.map((notif) => {
-            const isApproved = notif.type === 'leave_approved';
-            const isRejected = notif.type === 'leave_rejected';
-            const isPending = notif.type === 'new_request';
-
             return (
               <div
                 key={notif.id}
@@ -173,21 +174,11 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
                 }`}
               >
                 <div className="flex items-start space-x-3.5">
-                  <div className="mt-0.5 shrink-0">
-                    {isApproved ? (
-                      <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80">
-                        <CheckCircle2 className="w-5 h-5" />
-                      </div>
-                    ) : isRejected ? (
-                      <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200/80">
-                        <XCircle className="w-5 h-5" />
-                      </div>
-                    ) : (
-                      <div className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80">
-                        <Clock className="w-5 h-5" />
-                      </div>
-                    )}
-                  </div>
+                  {(() => {
+                    const kind = notificationKind(notif);
+                    const Icon = kind.icon;
+                    return <span className={`go-notif-icon is-${kind.tone} mt-0.5`} aria-hidden="true"><Icon className="w-5 h-5" /></span>;
+                  })()}
 
                   <div>
                     <div className="flex items-center space-x-2">
@@ -203,16 +194,10 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate
                       )}
                     </div>
                     <p className="text-xs text-slate-600 mt-1 leading-relaxed max-w-2xl">
-                      {notif.message}
+                      {friendlyMessage(notif.message)}
                     </p>
                     <p className="text-[12px] text-slate-400 mt-1.5 tabular-nums">
-                      {new Date(notif.created_at).toLocaleString('en-US', { timeZone: EASTERN_TIME_ZONE, timeZoneName: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatStamp(notif.created_at, true)}
                     </p>
                   </div>
                 </div>

@@ -78,7 +78,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
   // Calculated metrics
   const totalEmployeesCount = employees.filter(e=>e.status==='active').length;
-  const pendingRequests = requests.filter((r) => r.status === 'Pending').sort((a,b)=>a.submitted_at.localeCompare(b.submitted_at));
+  // Newest first, the same order as Leave approvals.
+  const pendingRequests = requests.filter((r) => r.status === 'Pending').sort((a, b) => Date.parse(b.submitted_at) - Date.parse(a.submitted_at));
   const approvedRequests = requests.filter((r) => r.status === 'Approved');
 
   // Currently on leave (approved requests covering today)
@@ -209,7 +210,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         <header className="go-review-head">
           <div>
             <h2>Needs your review {pendingRequests.length > 0 && <span className="go-chip is-pending">{pendingRequests.length} pending</span>}</h2>
-            <p>Review leave requests and check available balances.</p>
+            <p>Newest first. Review leave requests and check available balances.</p>
           </div>
           <button type="button" onClick={() => onNavigateTab('administration/leave-requests')} className="go-button go-button-quiet">
             All requests <ArrowRight size={15} aria-hidden="true" />
@@ -438,7 +439,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                 <button
                   type="submit"
                   disabled={isAssigningShift}
-                  className="px-4 py-2 text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white rounded-xl transition-colors shadow-2xs cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
+                  className="go-button go-button-primary"
                 >
                   <Users className="w-3.5 h-3.5" />
                   <span>{isAssigningShift ? 'Assigning...' : 'Assign Staff Shift'}</span>

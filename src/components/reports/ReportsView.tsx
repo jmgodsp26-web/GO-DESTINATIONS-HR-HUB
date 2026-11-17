@@ -239,8 +239,9 @@ export const ReportsView: React.FC = () => {
             type="button"
             onClick={loadData}
             disabled={isLoading}
-            className="p-2 text-slate-500 hover:text-slate-900 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs"
+            className="go-icon-button"
             title="Refresh Data"
+            aria-label="Refresh data"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-indigo-600' : ''}`} />
           </button>
@@ -302,7 +303,7 @@ export const ReportsView: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Approved Leave</span>
+            <span className="go-report-stat-label">Approved leave</span>
             <span className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg">
               <CheckCircle2 className="w-4 h-4" />
             </span>
@@ -318,7 +319,7 @@ export const ReportsView: React.FC = () => {
 
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Review</span>
+            <span className="go-report-stat-label">Pending review</span>
             <span className="p-1.5 bg-amber-50 text-amber-700 rounded-lg">
               <Clock className="w-4 h-4" />
             </span>
@@ -334,7 +335,7 @@ export const ReportsView: React.FC = () => {
 
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Workforce Size</span>
+            <span className="go-report-stat-label">Workforce size</span>
             <span className="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg">
               <Users className="w-4 h-4" />
             </span>
@@ -346,13 +347,13 @@ export const ReportsView: React.FC = () => {
             <span className="text-xs font-semibold text-slate-500">team members</span>
           </div>
           <p className="text-[12px] text-slate-400 mt-1">
-            {departments.length} functional operational divisions
+            Across {departmentStats.length} {departmentStats.length === 1 ? 'department' : 'departments'}
           </p>
         </div>
 
         <div className="go-surface bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg Absence Rate</span>
+            <span className="go-report-stat-label">Average absence</span>
             <span className="p-1.5 bg-purple-50 text-purple-700 rounded-lg">
               <TrendingUp className="w-4 h-4" />
             </span>
@@ -470,12 +471,14 @@ export const ReportsView: React.FC = () => {
             </div>
           )}
 
-          <div className="mt-5 p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 text-indigo-900 text-xs flex items-start space-x-2">
-            <Sparkles className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-            <p className="leading-relaxed text-[12px]">
-              Vacation Leave accounts for the largest proportion of planned absences, aligned with standard company time-off pacing.
-            </p>
-          </div>
+          {leaveTypeStats.length > 0 && (
+            <div className="mt-5 p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 text-indigo-900 text-xs flex items-start space-x-2">
+              <Sparkles className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <p className="leading-relaxed text-[12px]">
+                {leaveTypeStats[0].type} accounts for the largest share of approved leave in this view ({leaveTypeStats[0].percentage}% of {leaveTypeStats.reduce((sum, item) => sum + item.days, 0)} days).
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

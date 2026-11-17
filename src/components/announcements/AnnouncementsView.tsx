@@ -223,6 +223,7 @@ export function AnnouncementNote({ onViewAll }: { onViewAll: () => void }) {
         <span className="go-note-tag">{needsAcknowledgment ? <><CheckCheck size={14} aria-hidden="true" />Needs your acknowledgment</> : top.pinned ? <><Pin size={14} aria-hidden="true" />Pinned by HR</> : <><Megaphone size={14} aria-hidden="true" />Company update</>}{!top.read_at && <em>New</em>}</span>
         <strong className="go-note-title">{top.title}</strong>
         <span className="go-note-text">{top.message}</span>
+        <span className="go-note-read" aria-hidden="true">{needsAcknowledgment ? 'Read and acknowledge' : 'Read the full update'}<ArrowRight size={14} /></span>
       </button>
       {error && <p className="go-note-error" role="alert">{error}</p>}
       <footer className="go-note-foot"><span>{top.author_name} · {top.category}</span><button type="button" onClick={onViewAll}>{more > 0 ? `${more} more ${more === 1 ? 'update' : 'updates'}` : 'All updates'}<ArrowRight size={14} aria-hidden="true" /></button></footer>

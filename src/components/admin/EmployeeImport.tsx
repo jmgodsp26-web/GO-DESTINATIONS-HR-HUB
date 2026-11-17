@@ -80,7 +80,7 @@ export function EmployeeImport({existing, onClose, onComplete}:{existing:{full_n
           <label className="block text-sm font-semibold">Temporary password for new accounts<input className={inputClass+' block mt-1 max-w-md'} type="password" autoComplete="new-password" minLength={12} value={password} disabled={busy} onChange={e=>setPassword(e.target.value)}/></label>
           <p className="text-xs text-slate-600">At least 12 characters. Employees must change it at first sign-in. It is not stored in your browser or included in import results. No invitation emails are sent.</p>
           <label className="flex gap-2 items-start text-sm"><input type="checkbox" checked={reviewed} disabled={busy} onChange={e=>setReviewed(e.target.checked)}/>I reviewed the new accounts, including {ready.filter(p=>p.row.role==='admin').length} Admin account(s), holiday calendars and opening leave allowances. Admins can access all HR records.</label>
-          <button type="button" className="rounded-lg bg-[#3A5D83] text-white px-5 py-3 font-semibold disabled:opacity-50" disabled={busy||!reviewed||invalid.length>0||!ready.length||password.trim().length<12||new TextEncoder().encode(password.trim()).length>72} onClick={()=>void submit()}>{busy?'Importing…':`Import ${ready.length} new employees`}</button>
+          <button type="button" className="go-button go-button-primary" disabled={busy||!reviewed||invalid.length>0||!ready.length||password.trim().length<12||new TextEncoder().encode(password.trim()).length>72} onClick={()=>void submit()}>{busy?'Importing…':`Import ${ready.length} new employees`}</button>
         </div>
       </>}
       <p role="status" aria-live="polite" className="text-sm">{progress}</p>

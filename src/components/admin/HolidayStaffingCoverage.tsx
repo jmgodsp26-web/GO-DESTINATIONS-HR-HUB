@@ -134,7 +134,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
             type="button"
             onClick={handleRetry}
             disabled={isRetrying}
-            className="mt-4 inline-flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-[#3A5D83] hover:bg-[#182E3F] disabled:opacity-50 transition-colors shadow-2xs"
+            className="go-button go-button-primary mt-4"
           >
             <RotateCcw
               className={`w-3.5 h-3.5 ${isRetrying ? 'animate-spin' : ''}`}
@@ -219,7 +219,7 @@ export const HolidayStaffingCoverageWidget: React.FC<
               type="button"
               id="btn-quick-schedule-holiday-shift"
               onClick={() => onOpenScheduleShift()}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#3A5D83] hover:bg-[#182E3F] text-white shadow-2xs transition-colors"
+              className="go-button go-button-primary go-button-sm"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add shift</span>

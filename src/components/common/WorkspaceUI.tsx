@@ -1,6 +1,7 @@
 import React, { useId, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowUpRight, type LucideIcon } from 'lucide-react';
-import { RING_CIRCUMFERENCE, ringOffset, ticketParts, titleWords } from '../../utils/brandDisplay';
+import { ArrowUpRight, Briefcase, CalendarCheck, CalendarOff, HeartPulse, Plane, Siren, Stethoscope, Sun, type LucideIcon } from 'lucide-react';
+import { RING_CIRCUMFERENCE, balanceCardFigures, ringOffset, ticketParts, titleWords } from '../../utils/brandDisplay';
+import type { LeaveBalance } from '../../types';
 import { useCountUp } from '../../hooks/useCountUp';
 import { tiltHandlers } from '../../hooks/useTilt';
 import { prefersReducedMotion } from '../../utils/confetti';
@@ -133,6 +134,23 @@ export function BalanceCard({ label, icon: Icon, remaining, unit, caption, fract
   return onClick
     ? <button type="button" className={className} onClick={onClick} {...tiltHandlers()}>{content}</button>
     : <div className={className} {...tiltHandlers()}>{content}</div>;
+}
+
+const LEAVE_ICONS: Record<string, LucideIcon> = {
+  'Vacation Leave': Plane, 'Sick Leave': HeartPulse, 'Emergency Leave': Siren, 'Medical Leave': Stethoscope,
+  'Unpaid Leave': CalendarOff, 'Holiday Shift Credit': Sun,
+};
+
+/** Every leave balance as a ring card, the same cards the dashboard uses. */
+export function LeaveBalanceGrid({ balances, onOpen }: { balances: LeaveBalance[]; onOpen?: (balance: LeaveBalance) => void }) {
+  return (
+    <div className="go-balance-grid">
+      {balances.map(balance => (
+        <BalanceCard key={balance.id} label={balance.leave_type} icon={LEAVE_ICONS[balance.leave_type] || (balance.leave_type.includes('Leave') ? Briefcase : CalendarCheck)}
+          {...balanceCardFigures(balance)} onClick={onOpen ? () => onOpen(balance) : undefined} />
+      ))}
+    </div>
+  );
 }
 
 /** A dashboard card with an icon bubble, a title and optional actions. */

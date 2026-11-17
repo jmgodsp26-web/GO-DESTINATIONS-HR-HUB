@@ -217,7 +217,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = () => {
           <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
             {searchQuery || selectedCategory !== 'All'
               ? 'No documents matched your current search or category filter. Try clearing your filters.'
-              : 'There are no official HR documents uploaded to your employee record yet.'}
+              : isAdmin ? 'No employee documents have been uploaded yet. Open an employee from Employees to add one.' : 'There are no official HR documents uploaded to your employee record yet.'}
           </p>
           {(searchQuery || selectedCategory !== 'All') && (
             <button

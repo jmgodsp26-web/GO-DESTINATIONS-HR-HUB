@@ -5,7 +5,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { greetingFor, isNightHour, titleWords, ringOffset, RING_CIRCUMFERENCE, countUpValue, formatTripRange, formatMediumDate, ticketParts, nextTimeOff, heroTip, reviewOutlook, buddyMessages, daysBetween, countdownLabel, formatLeaveSpan, balanceSummary, leaveTypeList, coverageLabel } from '../src/utils/brandDisplay.ts';
+import { greetingFor, isNightHour, titleWords, ringOffset, RING_CIRCUMFERENCE, countUpValue, formatTripRange, formatMediumDate, ticketParts, nextTimeOff, heroTip, reviewOutlook, buddyMessages, daysBetween, countdownLabel, formatLeaveSpan, balanceSummary, leaveTypeList, coverageLabel, formatDateRange, formatDayCount, formatStamp, friendlyMessage, balanceCardFigures } from '../src/utils/brandDisplay.ts';
+import { auditTone, groupAuditLogs } from '../src/utils/auditDisplay.ts';
 
 const leave = (overrides = {}) => ({ id: 'r1', employee_id: 'e1', employee_name: 'Synthetic Person', employee_department: 'Operations', leave_type: 'Vacation Leave', start_date: '2026-12-21', end_date: '2026-12-23', total_days: 3, status: 'Approved', reason: 'Synthetic', submitted_at: '2026-11-01T00:00:00Z', ...overrides });
 const balance = (overrides = {}) => ({ id: 'b1', employee_id: 'e1', leave_type: 'Vacation Leave', allocated_days: 20, used_days: 3, created_at: '', updated_at: '', ...overrides });
@@ -111,6 +112,65 @@ test('countdowns, leave spans and balances are derived from stored values only',
   assert.equal(leaveTypeList([]), '');
 });
 
+test('inner pages show friendly dates, day counts and company-time stamps', () => {
+  assert.equal(formatDateRange('2026-11-20', '2026-11-20'), 'Nov 20, 2026');
+  assert.equal(formatDateRange('2026-12-21', '2026-12-23'), 'Dec 21–23, 2026');
+  assert.equal(formatDateRange('2026-12-30', '2027-01-02'), 'Dec 30 – Jan 2, 2027');
+  assert.equal(formatDateRange('not-a-date', 'also-not'), 'not-a-date – also-not');
+  assert.deepEqual([1, 0.5, 3].map(formatDayCount), ['1 day', '0.5 days', '3 days']);
+  assert.equal(formatStamp('2026-11-07T09:04:27Z'), 'Nov 7, 2026');
+  assert.equal(formatStamp('2026-11-07T09:04:27Z', true), 'Nov 7, 2026, 4:04 AM EST');
+  assert.equal(formatStamp('2026-07-01T16:30:00Z', true), 'Jul 1, 2026, 12:30 PM EDT');
+  assert.equal(formatStamp(''), '');
+  assert.equal(formatStamp('garbage'), '');
+});
+
+test('older notification messages lose raw ISO dates and "day(s)"', () => {
+  assert.equal(friendlyMessage('Ben Carter submitted a request for 1 day(s) of Vacation Leave (2026-11-27).'), 'Ben Carter submitted a request for 1 day of Vacation Leave (Nov 27, 2026).');
+  assert.equal(friendlyMessage('3 day(s) of Vacation Leave (2026-12-21 to 2026-12-23).'), '3 days of Vacation Leave (Dec 21–23, 2026).');
+  assert.equal(friendlyMessage('Shift on 2026-13-45 stays as written'), 'Shift on 2026-13-45 stays as written');
+  assert.equal(friendlyMessage('A company update is available.'), 'A company update is available.');
+});
+
+test('balance cards everywhere use the same figures', () => {
+  assert.deepEqual(balanceCardFigures(balance()), { remaining: 17, unit: 'of 20 days left', fraction: 0.85, caption: '3 days used or booked' });
+  assert.deepEqual(balanceCardFigures(balance({ allocated_days: 0, used_days: 0 })), { remaining: 0, unit: 'days left', fraction: 0, caption: 'No allowance assigned' });
+  assert.deepEqual(balanceCardFigures(balance({ allocated_days: 1, used_days: 2 })).remaining, 0);
+  assert.deepEqual(balanceCardFigures(balance({ leave_type: 'Unpaid Leave', allocated_days: 0, used_days: 2 })), { remaining: 2, unit: 'days taken', fraction: 0, caption: 'Unpaid · no balance deducted' });
+  assert.equal(balanceCardFigures(undefined).remaining, null);
+});
+
+test('activity log entries get an icon and colour from their action', () => {
+  assert.deepEqual(auditTone('Sign-in failed'), { icon: 'signinFailed', color: 'bad' });
+  assert.deepEqual(auditTone('Signed in'), { icon: 'signin', color: 'calm' });
+  assert.deepEqual(auditTone('Leave approved'), { icon: 'approved', color: 'good' });
+  assert.deepEqual(auditTone('Leave rejected'), { icon: 'rejected', color: 'bad' });
+  assert.deepEqual(auditTone('Leave request cancelled'), { icon: 'cancelled', color: 'warm' });
+  assert.deepEqual(auditTone('Employee deleted'), { icon: 'employeeRemoved', color: 'bad' });
+  assert.deepEqual(auditTone('Employee created'), { icon: 'employeeCreated', color: 'good' });
+  assert.deepEqual(auditTone('Holiday shift approved'), { icon: 'holiday', color: 'good' });
+  assert.deepEqual(auditTone('Company settings updated'), { icon: 'settings', color: 'warm' });
+  assert.deepEqual(auditTone('Admin password reset'), { icon: 'password', color: 'warm' });
+  assert.deepEqual(auditTone('Something new'), { icon: 'other', color: 'calm' });
+});
+
+test('activity log groups by company date, newest first', () => {
+  const logs = [
+    { id: 'a', timestamp: '2026-11-11T15:00:00Z' },
+    { id: 'b', timestamp: '2026-11-12T14:00:00Z' },
+    { id: 'c', timestamp: '2026-11-12T03:30:00Z' },
+    { id: 'd', timestamp: '2026-11-09T12:00:00Z' },
+    { id: 'e', timestamp: 'not a date' },
+  ];
+  const groups = groupAuditLogs(logs, '2026-11-12');
+  assert.deepEqual(groups.map(g => [g.label, g.items.map(i => i.id)]), [
+    ['Today', ['b']],
+    ['Yesterday', ['c', 'a']],
+    ['Monday, Nov 9, 2026', ['d']],
+    ['Date not recorded', ['e']],
+  ]);
+});
+
 test('holiday coverage labels say what is missing', () => {
   assert.deepEqual(coverageLabel({ pcs_working_count: 0, pcs_required: 2 }), { text: 'Needs 2 more coordinators', attention: true });
   assert.deepEqual(coverageLabel({ pcs_working_count: 1, pcs_required: 2, conflicts_count: 1 }), { text: 'Needs 1 more coordinator · 1 conflict', attention: true });
@@ -159,4 +219,8 @@ test('balance cards show a dash without an allowance and only draw a ring when d
   assert.match(renderToStaticMarkup(React.createElement(ui.StatusPill, { status: 'Approved' })), /go-pill is-approved/);
   assert.match(renderToStaticMarkup(React.createElement(ui.StatusPill, { status: 'Something else' })), /go-pill is-cancelled/);
   assert.match(visible(renderToStaticMarkup(React.createElement(ui.DateTile, { date: '2026-11-20' }))), /NOV 20/);
+  const grid = renderToStaticMarkup(React.createElement(ui.LeaveBalanceGrid, { balances: [balance(), balance({ id: 'b2', leave_type: 'Medical Leave', allocated_days: 0, used_days: 0 })] }));
+  assert.equal((grid.match(/go-balance-card/g) || []).length, 2);
+  assert.match(visible(grid), /Vacation Leave.*of 20 days left.*Medical Leave.*No allowance assigned/);
+  assert.doesNotMatch(grid, /<button/);
 });

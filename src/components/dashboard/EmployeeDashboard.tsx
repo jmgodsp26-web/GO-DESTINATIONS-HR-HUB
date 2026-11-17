@@ -8,7 +8,7 @@ import { useSections } from '../../hooks/useSections';
 import { DataRegion } from '../common/LoadFeedback';
 import { BalanceCard, DateTile, MoonMark, PageHeading, Reveal, SectionCard, StatusPill, SunMark } from '../common/WorkspaceUI';
 import { JourneySky } from './JourneySky';
-import { balanceSummary, countdownLabel, formatLeaveSpan, formatLongDate, formatMediumDate, greetingFor, heroTip, isNightHour, leaveTypeList, nextTimeOff, ticketParts } from '../../utils/brandDisplay';
+import { balanceCardFigures, balanceSummary, countdownLabel, formatLeaveSpan, formatLongDate, formatMediumDate, greetingFor, heroTip, isNightHour, leaveTypeList, nextTimeOff, ticketParts } from '../../utils/brandDisplay';
 import { prefersReducedMotion } from '../../utils/confetti';
 import { AnnouncementNote } from '../announcements/AnnouncementsView';
 import { DocumentActions } from '../documents/DocumentActions';
@@ -20,7 +20,6 @@ import { downloadIcsFile } from '../../utils/calendar';
 import { api } from '../../services/api';
 import type { LeaveBalance, LeaveRequest, Holiday, EmployeeDocument, HolidayShiftRequest } from '../../types';
 
-const days = (count: number) => `${count} ${count === 1 ? 'day' : 'days'}`;
 
 /** The sky drifts slightly with the pointer. Mouse only, and never for reduced-motion users. */
 function heroParallax(event: React.PointerEvent<HTMLElement>) {
@@ -63,10 +62,7 @@ export const EmployeeDashboard: React.FC<{ onNavigateTab: (tab: string) => void 
   const tip = sections.balances?.ready && sections.requests?.ready ? heroTip({ vacation, next: trip }) : 'Loading your time off…';
   const leaveLink = (r: LeaveRequest) => onNavigateTab(`personal/leave?request=${encodeURIComponent(r.id)}`);
   const retryRequests = () => void run('requests', () => api.getLeaveRequests({ scope: 'mine' }), setRequests);
-  const single = (balance?: LeaveBalance) => balance
-    ? { remaining: Math.max(0, balance.allocated_days - balance.used_days), unit: balance.allocated_days > 0 ? `of ${days(balance.allocated_days)} left` : 'days left', fraction: balanceSummary([balance]).fraction,
-      caption: balance.allocated_days === 0 ? 'No allowance assigned' : balance.used_days > 0 ? `${days(balance.used_days)} used or booked` : 'Nothing used yet' }
-    : { remaining: null, unit: 'Not assigned', fraction: 0, caption: 'Ask HR to check your allowance' };
+  const single = balanceCardFigures;
   const requestRow = (r: LeaveRequest, note?: string) => (
     <li key={r.id}>
       <button type="button" className="go-row" onClick={() => leaveLink(r)}>

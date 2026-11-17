@@ -106,9 +106,50 @@ export function countdownLabel(today: string, start: string): string {
 
 /** "Nov 20, 2026 · 1 day" or "Dec 30 – Jan 2, 2027 · 3 days". */
 export function formatLeaveSpan(request: Pick<LeaveRequest, 'start_date' | 'end_date' | 'total_days' | 'is_half_day'>): string {
-  const year = (isoDate(request.end_date) ? request.end_date : request.start_date).slice(0, 4);
   const length = request.is_half_day ? 'Half day' : plural(request.total_days, 'day');
-  return `${formatTripRange(request.start_date, request.end_date)}, ${year} · ${length}`;
+  return `${formatDateRange(request.start_date, request.end_date)} · ${length}`;
+}
+
+/** "1 day", "3 days", "0.5 days". */
+export function formatDayCount(count: number): string {
+  return plural(count, 'day');
+}
+
+/** "Nov 20, 2026", "Dec 21–23, 2026" or "Dec 30 – Jan 2, 2027" (the year of the last day). */
+export function formatDateRange(start: string, end: string): string {
+  if (!isoDate(start)) return end && end !== start ? `${start} – ${end}` : start;
+  return `${formatTripRange(start, end)}, ${(isoDate(end) ? end : start).slice(0, 4)}`;
+}
+
+/** Older server messages carry raw dates and "day(s)": "1 day(s) of Vacation Leave (2026-11-27)" becomes "1 day of Vacation Leave (Nov 27, 2026)". */
+export function friendlyMessage(text: string): string {
+  return String(text ?? '')
+    .replace(/\b(\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})\b/g, (whole, start: string, end: string) => isoDate(start) && isoDate(end) ? formatDateRange(start, end) : whole)
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, value => isoDate(value) ? formatDateRange(value, value) : value)
+    .replace(/\b(\d+(?:\.\d+)?) day\(s\)/g, (_, count: string) => plural(Number(count), 'day'));
+}
+
+const stampDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' });
+const stampTime = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' });
+
+/** A stored timestamp in company (Eastern) time: "Nov 7, 2026" or "Nov 7, 2026, 4:04 AM EST". */
+export function formatStamp(value: string | number | Date | null | undefined, withTime = false): string {
+  if (value === null || value === undefined || value === '') return '';
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  return (withTime ? stampTime : stampDate).format(date);
+}
+
+/** What one balance card shows: days left, the allowance, what was used, and the ring share. */
+export function balanceCardFigures(balance: LeaveBalance | undefined): { remaining: number | null; unit: string; fraction: number; caption: string } {
+  if (!balance) return { remaining: null, unit: 'Not assigned', fraction: 0, caption: 'Ask HR to check your allowance' };
+  if (!isPaidLeaveType(balance.leave_type)) return { remaining: balance.used_days, unit: balance.used_days === 1 ? 'day taken' : 'days taken', fraction: 0, caption: 'Unpaid · no balance deducted' };
+  return {
+    remaining: Math.max(0, balance.allocated_days - balance.used_days),
+    unit: balance.allocated_days > 0 ? `of ${plural(balance.allocated_days, 'day')} left` : 'days left',
+    fraction: balanceSummary([balance]).fraction,
+    caption: balance.allocated_days === 0 ? 'No allowance assigned' : balance.used_days > 0 ? `${plural(balance.used_days, 'day')} used or booked` : 'Nothing used yet',
+  };
 }
 
 /** Remaining days and share of an allowance across one or more balances. */
