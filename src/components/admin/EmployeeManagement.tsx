@@ -235,6 +235,7 @@ export const EmployeeManagement: React.FC = () => {
         phone: editingEmployee.phone,
         personal_email: editingEmployee.personal_email?.trim() ?? '',
         personal_phone: editingEmployee.personal_phone?.trim() ?? '',
+        home_address: editingEmployee.home_address?.trim() ?? '',
         emergency_contact_name: editingEmployee.emergency_contact_name?.trim() ?? '',
         emergency_contact_phone: editingEmployee.emergency_contact_phone?.trim() ?? '',
         department: editingEmployee.department,
@@ -1313,7 +1314,7 @@ export const EmployeeManagement: React.FC = () => {
               </div>
 
               <fieldset className="go-contact-fields">
-                <legend>Personal and emergency contacts <span>Optional · only HR and the employee can see these</span></legend>
+                <legend>Personal details and emergency contacts <span>Optional · only HR and the employee can see these</span></legend>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1" htmlFor="edit-personal-email">Personal email</label>
@@ -1336,6 +1337,19 @@ export const EmployeeManagement: React.FC = () => {
                       autoComplete="off"
                       value={editingEmployee.personal_phone ?? ''}
                       onChange={(e) => setEditingEmployee({ ...editingEmployee, personal_phone: e.target.value })}
+                      className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block font-semibold text-slate-700 mb-1" htmlFor="edit-home-address">Home address</label>
+                    <textarea
+                      id="edit-home-address"
+                      rows={3}
+                      maxLength={500}
+                      autoComplete="off"
+                      placeholder="Street, city, state or province, postal code, country"
+                      value={editingEmployee.home_address ?? ''}
+                      onChange={(e) => setEditingEmployee({ ...editingEmployee, home_address: e.target.value })}
                       className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900"
                     />
                   </div>

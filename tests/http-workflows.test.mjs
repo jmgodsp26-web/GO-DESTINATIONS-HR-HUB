@@ -52,6 +52,21 @@ try{
  });
  await check('anonymous employee directory denied',async()=>assert.equal((await call('/api/employees')).status,401));
  await check('employee administration denied',async()=>assert.equal((await call('/api/settings','PATCH',{company_name:'Unauthorized'},employee.cookie)).status,403));
+ await check('home address and private contacts are visible only to HR and the employee',async()=>{
+   const privateDetails={home_address:'77 Synthetic Lane\nUnit 9\nTestville 4410',personal_email:'private-employee@example.test',personal_phone:'+63 900 000 0000',emergency_contact_name:'Synthetic Guardian',emergency_contact_phone:'+63 900 111 1111'};
+   const saved=await call(`/api/employees/${employee.id}`,'PATCH',privateDetails,admin);
+   assert.equal(saved.status,200);assert.equal(saved.data.home_address,privateDetails.home_address);
+   const mine=await call('/api/auth/me','GET',undefined,employee.cookie);
+   for(const value of Object.values(privateDetails))assert.ok(JSON.stringify(mine.data).includes(JSON.stringify(value).slice(1,-1)),'employee sees own '+value);
+   for(const path of ['/api/employees','/api/calendar','/api/celebrations','/api/holiday-coverage','/api/dashboard/personal','/api/auth/me','/api/profile','/api/leave-requests','/api/notifications']){
+     const seen=JSON.stringify((await call(path,'GET',undefined,other.cookie)).data);
+     for(const needle of ['Synthetic Lane','private-employee@example.test','900 000 0000','Synthetic Guardian','900 111 1111'])assert.equal(seen.includes(needle),false,`${path} must not expose ${needle} to a colleague`);
+   }
+   assert.equal((await call(`/api/employees/${employee.id}`,'PATCH',{home_address:'Changed by a colleague'},other.cookie)).status,403);
+   assert.equal((await call(`/api/employees/${employee.id}`,'PATCH',{home_address:'Changed by myself'},employee.cookie)).status,403);
+   assert.equal((await call(`/api/employees/${employee.id}`,'PATCH',{home_address:'x'.repeat(501)},admin)).status,400);
+   assert.equal((await call('/api/employees','GET',undefined,admin)).data.find(e=>e.id===employee.id).home_address,privateDetails.home_address);
+ });
  let created;
  await check('individual work schedule persists and protects leave deductions',async()=>{
    const schedulePath = `/api/employees/${employee.id}/work-schedule`;
@@ -159,5 +174,5 @@ try{
  });
  await check('bodyless logout works and invalidates session',async()=>{assert.equal((await call('/api/auth/logout','POST',undefined,employee.cookie)).status,200);assert.equal((await call('/api/auth/me','GET',undefined,employee.cookie)).status,401);});
 }finally{const exited=new Promise(r=>child.once('exit',r));child.kill();await exited;await rm(dir,{recursive:true,force:true});}
-assert.equal(results.length,26);
+assert.equal(results.length,27);
 });

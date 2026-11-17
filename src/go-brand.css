@@ -721,6 +721,9 @@ button.go-row:hover .go-date-tile { transform: rotate(-6deg) scale(1.06); }
 .go-contact-fields { margin: 0; padding: 16px 16px 18px; border: 1.5px dashed var(--go-line); border-radius: 18px; background: var(--go-snow); }
 .go-contact-fields legend { padding: 0 8px; font-size: 13px; font-weight: 800; color: var(--go-navy); }
 .go-contact-fields legend span { margin-left: 6px; font-weight: 600; color: var(--go-text-muted); }
+.go-contact-fields textarea { display: block; min-height: 84px; resize: vertical; line-height: 1.5; }
+/* A home address can run over several lines. */
+.go-profile-field dd, .go-detail-grid dd { white-space: pre-line; }
 
 /* ---------- Employee directory ---------- */
 .go-directory-avatar { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--go-cream); color: var(--go-orange-ink); font-size: 13px; font-weight: 800; object-fit: cover; }
