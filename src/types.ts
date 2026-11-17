@@ -58,6 +58,10 @@ export interface UserProfile {
   full_name: string;
   email: string;
   phone: string;
+  personal_email?: string;
+  personal_phone?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
   department: string;
   job_title: string;
   country: string;
