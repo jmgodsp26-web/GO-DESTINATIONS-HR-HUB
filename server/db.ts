@@ -42,7 +42,7 @@ const FAILED_SIGNIN_AUDIT_PER_NETWORK = 25;
 const MAX_LEAVE_REASON_LENGTH = 5000;
 // Profile fields an administrator may edit. Unknown keys are ignored so older
 // clients keep working, but they are never stored on the employee record.
-const EDITABLE_PROFILE_FIELDS = ['full_name', 'email', 'phone', 'department', 'job_title', 'country', 'holiday_calendar',
+const EDITABLE_PROFILE_FIELDS = ['personal_email', 'personal_phone', 'emergency_contact_name', 'emergency_contact_phone', 'full_name', 'email', 'phone', 'department', 'job_title', 'country', 'holiday_calendar',
   'holiday_region', 'region', 'timezone', 'date_joined', 'hire_date', 'date_of_birth', 'birthday', 'avatar_url', 'role', 'status', 'is_pc'];
 const isIsoDate = (value: unknown): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
   && Number.isFinite(Date.parse(value + 'T00:00:00Z')) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value;

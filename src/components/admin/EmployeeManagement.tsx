@@ -233,6 +233,10 @@ export const EmployeeManagement: React.FC = () => {
         full_name: editingEmployee.full_name,
         email: editingEmployee.email,
         phone: editingEmployee.phone,
+        personal_email: editingEmployee.personal_email?.trim() ?? '',
+        personal_phone: editingEmployee.personal_phone?.trim() ?? '',
+        emergency_contact_name: editingEmployee.emergency_contact_name?.trim() ?? '',
+        emergency_contact_phone: editingEmployee.emergency_contact_phone?.trim() ?? '',
         department: editingEmployee.department,
         job_title: editingEmployee.job_title,
         country: editingEmployee.country || DEFAULT_COUNTRY,
@@ -1189,7 +1193,13 @@ export const EmployeeManagement: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
+                <fieldset className="sm:col-span-2 grid gap-3"><legend>Personal and emergency contacts (optional)</legend>
+<label className="block">Personal email<input className="go-filter-input" type="email" maxLength={254} value={editingEmployee.personal_email ?? ''} onChange={e=>setEditingEmployee({...editingEmployee,personal_email:e.target.value})}/></label>
+<label className="block">Personal phone number<input className="go-filter-input" type="tel" maxLength={254} value={editingEmployee.personal_phone ?? ''} onChange={e=>setEditingEmployee({...editingEmployee,personal_phone:e.target.value})}/></label>
+<label className="block">Emergency contact name<input className="go-filter-input" type="text" maxLength={254} value={editingEmployee.emergency_contact_name ?? ''} onChange={e=>setEditingEmployee({...editingEmployee,emergency_contact_name:e.target.value})}/></label>
+<label className="block">Emergency contact number<input className="go-filter-input" type="tel" maxLength={254} value={editingEmployee.emergency_contact_phone ?? ''} onChange={e=>setEditingEmployee({...editingEmployee,emergency_contact_phone:e.target.value})}/></label>
+</fieldset>
+<div>
                   <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
                   <input
                     type="text"
