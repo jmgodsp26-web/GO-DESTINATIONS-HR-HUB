@@ -717,6 +717,11 @@ button.go-row:hover .go-date-tile { transform: rotate(-6deg) scale(1.06); }
 .go-cal-date { display: flex; align-items: center; justify-content: space-between; }
 .go-cal-date > span:last-child { float: none !important; padding-right: 4px; color: var(--go-text-muted); }
 
+/* Edit employee: private contact details sit in their own labelled group. */
+.go-contact-fields { margin: 0; padding: 16px 16px 18px; border: 1.5px dashed var(--go-line); border-radius: 18px; background: var(--go-snow); }
+.go-contact-fields legend { padding: 0 8px; font-size: 13px; font-weight: 800; color: var(--go-navy); }
+.go-contact-fields legend span { margin-left: 6px; font-weight: 600; color: var(--go-text-muted); }
+
 /* ---------- Employee directory ---------- */
 .go-directory-avatar { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--go-cream); color: var(--go-orange-ink); font-size: 13px; font-weight: 800; object-fit: cover; }
 .go-directory-avatar.is-large { width: 46px; height: 46px; font-size: 14px; }

@@ -1169,13 +1169,7 @@ export const EmployeeManagement: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <fieldset className="sm:col-span-2 grid gap-3"><legend>Personal and emergency contacts (optional)</legend>
-<label className="block">Personal email<input className="go-filter-input" type="email" maxLength={254} value={editingEmployee.personal_email ?? ''} onChange={e=>setEditingEmployee({...editingEmployee,personal_email:e.target.value})}/></label>
-<label className="block">Personal phone number<input className="go-filter-input" type="tel" maxLength={254} value={editingEmployee.personal_phone ?? ''} onChange={e=>setEditingEmployee({...editingEmployee,personal_phone:e.target.value})}/></label>
-<label className="block">Emergency contact name<input className="go-filter-input" type="text" maxLength={254} value={editingEmployee.emergency_contact_name ?? ''} onChange={e=>setEditingEmployee({...editingEmployee,emergency_contact_name:e.target.value})}/></label>
-<label className="block">Emergency contact number<input className="go-filter-input" type="tel" maxLength={254} value={editingEmployee.emergency_contact_phone ?? ''} onChange={e=>setEditingEmployee({...editingEmployee,emergency_contact_phone:e.target.value})}/></label>
-</fieldset>
-<div>
+                <div>
                   <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
                   <input
                     type="text"
@@ -1317,6 +1311,60 @@ export const EmployeeManagement: React.FC = () => {
                   />
                 </div>
               </div>
+
+              <fieldset className="go-contact-fields">
+                <legend>Personal and emergency contacts <span>Optional · only HR and the employee can see these</span></legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1" htmlFor="edit-personal-email">Personal email</label>
+                    <input
+                      id="edit-personal-email"
+                      type="email"
+                      maxLength={254}
+                      autoComplete="off"
+                      value={editingEmployee.personal_email ?? ''}
+                      onChange={(e) => setEditingEmployee({ ...editingEmployee, personal_email: e.target.value })}
+                      className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1" htmlFor="edit-personal-phone">Personal phone number</label>
+                    <input
+                      id="edit-personal-phone"
+                      type="tel"
+                      maxLength={254}
+                      autoComplete="off"
+                      value={editingEmployee.personal_phone ?? ''}
+                      onChange={(e) => setEditingEmployee({ ...editingEmployee, personal_phone: e.target.value })}
+                      className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1" htmlFor="edit-emergency-name">Emergency contact name</label>
+                    <input
+                      id="edit-emergency-name"
+                      type="text"
+                      maxLength={254}
+                      autoComplete="off"
+                      value={editingEmployee.emergency_contact_name ?? ''}
+                      onChange={(e) => setEditingEmployee({ ...editingEmployee, emergency_contact_name: e.target.value })}
+                      className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1" htmlFor="edit-emergency-phone">Emergency contact number</label>
+                    <input
+                      id="edit-emergency-phone"
+                      type="tel"
+                      maxLength={254}
+                      autoComplete="off"
+                      value={editingEmployee.emergency_contact_phone ?? ''}
+                      onChange={(e) => setEditingEmployee({ ...editingEmployee, emergency_contact_phone: e.target.value })}
+                      className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900"
+                    />
+                  </div>
+                </div>
+              </fieldset>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
