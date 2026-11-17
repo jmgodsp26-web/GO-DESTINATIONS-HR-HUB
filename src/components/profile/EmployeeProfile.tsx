@@ -87,6 +87,7 @@ export const EmployeeProfile: React.FC = () => {
             <ProfileField label="Work phone" value={user.phone} />
             <ProfileField label="Personal email" value={user.personal_email ?? ''} />
             <ProfileField label="Personal phone number" value={user.personal_phone ?? ''} />
+            <ProfileField label="Home address" value={user.home_address ?? ''} />
             <ProfileField label="Emergency contact name" value={user.emergency_contact_name ?? ''} />
             <ProfileField label="Emergency contact number" value={user.emergency_contact_phone ?? ''} />
             <ProfileField label="Account access" value={user.role === 'admin' ? 'Administrator' : 'Employee'} />

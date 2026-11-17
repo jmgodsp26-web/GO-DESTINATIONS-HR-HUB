@@ -60,6 +60,8 @@ export interface UserProfile {
   phone: string;
   personal_email?: string;
   personal_phone?: string;
+  /** Home address. Private: only HR and the employee can see it. */
+  home_address?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
   department: string;

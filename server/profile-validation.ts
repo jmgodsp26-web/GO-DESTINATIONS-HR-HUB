@@ -1,5 +1,7 @@
 import { MAX_PROFILE_PHOTO_BYTES } from '../src/utils/profilePhoto.js';
 
+export const MAX_HOME_ADDRESS_LENGTH = 500;
+
 /** Validate before mutating credentials/profile or reaching the Firestore transaction. */
 export function validateProfileStorage(profile: Record<string, unknown>): void {
   const photo = profile.avatar_url;
@@ -12,6 +14,11 @@ export function validateProfileStorage(profile: Record<string, unknown>): void {
     if (value === undefined || value === '') continue;
     if (typeof value !== 'string' || value.length > 254) throw new Error('Invalid contact details.');
     if (field === 'personal_email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) throw new Error('Enter a valid personal email address.');
+  }
+  const address = profile.home_address;
+  if (address !== undefined && address !== '') {
+    if (typeof address !== 'string') throw new Error('Invalid contact details.');
+    if (address.length > MAX_HOME_ADDRESS_LENGTH) throw new Error(`Home address must be ${MAX_HOME_ADDRESS_LENGTH} characters or fewer.`);
   }
   const textFields = ['full_name', 'email', 'phone', 'department', 'job_title', 'country', 'region', 'timezone',
     'holiday_calendar', 'holiday_region', 'date_joined', 'hire_date', 'date_of_birth', 'birthday'];
