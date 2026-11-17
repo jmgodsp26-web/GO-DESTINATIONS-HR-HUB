@@ -7,6 +7,12 @@ export function validateProfileStorage(profile: Record<string, unknown>): void {
   if (typeof photo === 'string' && Buffer.byteLength(photo, 'utf8') > MAX_PROFILE_PHOTO_BYTES) {
     throw new Error('The profile photo is too large to save. Please upload the photo again so it can be resized, or remove it.');
   }
+  for (const field of ['personal_email', 'personal_phone', 'emergency_contact_name', 'emergency_contact_phone']) {
+    const value = profile[field];
+    if (value === undefined || value === '') continue;
+    if (typeof value !== 'string' || value.length > 254) throw new Error('Invalid contact details.');
+    if (field === 'personal_email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) throw new Error('Enter a valid personal email address.');
+  }
   const textFields = ['full_name', 'email', 'phone', 'department', 'job_title', 'country', 'region', 'timezone',
     'holiday_calendar', 'holiday_region', 'date_joined', 'hire_date', 'date_of_birth', 'birthday'];
   for (const field of textFields) {
