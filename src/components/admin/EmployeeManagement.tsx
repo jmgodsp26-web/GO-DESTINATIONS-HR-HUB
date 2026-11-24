@@ -232,7 +232,7 @@ export const EmployeeManagement: React.FC = () => {
       const payload: any = {
         full_name: editingEmployee.full_name,
         email: editingEmployee.email,
-        phone: editingEmployee.phone,
+        phone: (editingEmployee.phone ?? '').trim(),
         personal_email: editingEmployee.personal_email?.trim() ?? '',
         personal_phone: editingEmployee.personal_phone?.trim() ?? '',
         home_address: editingEmployee.home_address?.trim() ?? '',
@@ -978,6 +978,7 @@ export const EmployeeManagement: React.FC = () => {
                     placeholder="+1 (555) 000-0000"
                     className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500"
                   />
+                  <p className="text-[12px] text-slate-500 mt-1">The company number. Add a personal number afterwards under Edit, in Personal details.</p>
                 </div>
 
                 <div>
@@ -1276,6 +1277,21 @@ export const EmployeeManagement: React.FC = () => {
                     {EMPLOYEE_COUNTRIES.map(c => <option key={c} value={c}>{getCountryFlag(c)} {c}</option>)}
                   </select>
                   <p className="text-[12px] text-slate-500 mt-1">Controls holiday dates and leave-day calculations, independently of country.</p>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1" htmlFor="edit-work-phone">Work Phone</label>
+                  <input
+                    id="edit-work-phone"
+                    type="tel"
+                    maxLength={254}
+                    autoComplete="off"
+                    value={editingEmployee.phone ?? ''}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, phone: e.target.value })}
+                    placeholder="+1 (555) 000-0000"
+                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="text-[12px] text-slate-500 mt-1">The company number. A personal number goes under Personal details below.</p>
                 </div>
               </div>
 

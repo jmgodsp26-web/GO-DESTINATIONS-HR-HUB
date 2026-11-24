@@ -37,6 +37,18 @@ test('HR can save and clear a home address, and unknown fields are still ignored
   assert.equal(db.getAllEmployees()[0].home_address,'12 Sample Street\nMakati City');
   assert.equal(db.updateEmployee(admin.id,{home_address:''},admin).home_address,'');
 });
+test('HR can correct and clear a work phone after the employee is created', () => {
+  process.env.INITIAL_ADMIN_EMAIL='phone-admin@example.test';
+  process.env.INITIAL_ADMIN_PASSWORD='Synthetic-Phone-Admin-417!';
+  const db=HRDatabase.bootstrap();
+  const admin=db.getAllEmployees()[0];
+  const created=db.createEmployee({full_name:'Phone Sample',email:'phone-sample@example.test',password:'Synthetic-Phone-User-552!',phone:'+1 555 0100',department:'Operations',job_title:'Coordinator',date_joined:'2026-01-05',role:'employee'},admin);
+  assert.equal(created.phone,'+1 555 0100');
+  assert.equal(db.updateEmployee(created.id,{phone:'+1 555 0199'},admin).phone,'+1 555 0199');
+  assert.equal(db.updateEmployee(created.id,{phone:''},admin).phone,'');
+  assert.throws(()=>db.updateEmployee(created.id,{phone:{number:'nested'}},admin),/phone/);
+  assert.equal(db.getAllEmployees().find(e=>e.id===created.id).phone,'');
+});
 test('invalid photo update cannot partially change employee email', () => {
   process.env.INITIAL_ADMIN_EMAIL='profile-admin@example.test';
   process.env.INITIAL_ADMIN_PASSWORD='Synthetic-Profile-Admin-938!';
