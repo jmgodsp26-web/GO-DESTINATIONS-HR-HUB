@@ -78,7 +78,10 @@ export interface UserProfile {
   avatar_url: string;
   role: UserRole;
   status: EmployeeStatus;
+  /** Stored: HR's choice (true/false) or absent for automatic. In employee lists: the effective value. */
   is_pc?: boolean;
+  /** HR's choice in employee lists: true, false, or null when department and job title decide. */
+  is_pc_override?: boolean | null;
   created_at: string;
   updated_at: string;
 }

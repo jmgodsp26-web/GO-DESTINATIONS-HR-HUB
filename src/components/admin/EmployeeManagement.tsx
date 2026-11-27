@@ -10,6 +10,7 @@ import { PageHeading } from '../common/WorkspaceUI';
 import { prepareProfilePhoto, normalizeProfilePhoto } from '../../utils/profilePhoto';
 import { employeeReportCsv } from '../../utils/employeeReport';
 import { employeeCalendar } from '../../utils/employeeCalendar';
+import { coordinatorFromRole, coordinatorOverride, coordinatorSetting, type CoordinatorSetting } from '../../utils/programCoordinator';
 import { motion } from 'motion/react';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -252,6 +253,7 @@ export const EmployeeManagement: React.FC = () => {
         birthday: editingEmployee.date_of_birth || editingEmployee.birthday,
         role: editingEmployee.role,
         status: editingEmployee.status,
+        is_pc: editingEmployee.is_pc_override ?? null,
       };
       if (editPassword && editPassword.trim()) {
         payload.password = editPassword.trim();
@@ -544,6 +546,7 @@ export const EmployeeManagement: React.FC = () => {
                     <td className="px-5 py-3.5">
                       <p className="font-semibold text-slate-800">{emp.job_title}</p>
                       <p className="text-[12px] text-slate-500">{emp.department}</p>
+                      {emp.is_pc && <span className="go-chip go-directory-pc" title="Counts as a Program Coordinator">PC</span>}
                     </td>
 
                     {/* Location */}
@@ -1227,6 +1230,23 @@ export const EmployeeManagement: React.FC = () => {
                     }
                     className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1" htmlFor="edit-program-coordinator">Program Coordinator (PC)</label>
+                  <select
+                    id="edit-program-coordinator"
+                    value={coordinatorSetting(editingEmployee.is_pc_override)}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, is_pc_override: coordinatorOverride(e.target.value as CoordinatorSetting) })}
+                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white text-slate-900"
+                  >
+                    <option value="auto">Automatic: {coordinatorFromRole(editingEmployee) ? 'Yes' : 'No'} (from department and job title)</option>
+                    <option value="yes">Yes, counts as a PC</option>
+                    <option value="no">No, not a PC</option>
+                  </select>
+                  <p className="text-[12px] text-slate-500 mt-1">PCs show a PC badge and count toward the Program Coordinators needed on each holiday. Automatic means the Program Coordinator department or a &ldquo;Program Coordinator&rdquo; / &ldquo;PC&rdquo; job title.</p>
                 </div>
               </div>
 
