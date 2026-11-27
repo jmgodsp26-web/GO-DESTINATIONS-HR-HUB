@@ -6,6 +6,7 @@ import { OnboardingService, type OnboardingState } from './onboarding.js';
 import type { Announcement, AnnouncementView, AnnouncementReceipt, AnnouncementReport } from '../src/types.js';
 import { validateProfileStorage } from './profile-validation.js';
 import { employeeCalendar } from '../src/utils/employeeCalendar.js';
+import { isProgramCoordinator } from '../src/utils/programCoordinator.js';
 import type { WorkScheduleRules, WorkScheduleUpdate, WorkScheduleView } from '../src/types/workSchedule.js';
 import { validateWorkSchedule } from '../src/utils/workSchedule.js';
 import { workingDates, workingDays, holidayApplies } from '../src/utils/workingDays.js';
@@ -80,17 +81,8 @@ interface SessionRecord {
   expiresAt: number;
 }
 
-export function isProgramCoordinator(user: { job_title?: string; department?: string; is_pc?: boolean }): boolean {
-  if (user.is_pc === true) return true;
-  const title = (user.job_title || '').toLowerCase();
-  return (
-    title.includes('program coordinator') ||
-    title.includes('coordinator') ||
-    title.includes(' pc') ||
-    title.startsWith('pc ') ||
-    title === 'pc'
-  );
-}
+// Who counts as a Program Coordinator lives in one place, shared with the HR screens.
+export { isProgramCoordinator };
 
 export class HRDatabase {
   private onboardingState: OnboardingState = { templates: [], plans: [], files: [], messages: [] };
@@ -241,6 +233,7 @@ export class HRDatabase {
         ...data.companySettings,
       };
     }
+    this.syncCoordinatorFlags();
   }
 
   // --- AUTH METHODS ---
@@ -342,17 +335,28 @@ export class HRDatabase {
   }
 
   // --- EMPLOYEE PROFILE & MANAGEMENT METHODS ---
+  /** Holiday shifts carry a copy of the PC flag; keep it in step with the employee's current status. */
+  private syncCoordinatorFlags(employeeId?: string) {
+    const byId = new Map(this.users.map((u) => [u.id, u.profile]));
+    for (const shift of this.holidayShifts) {
+      if (employeeId && shift.employee_id !== employeeId) continue;
+      const profile = byId.get(shift.employee_id);
+      if (profile) shift.is_pc = isProgramCoordinator(profile);
+    }
+  }
+
   public getProfile(userId: string): UserProfile | null {
     const user = this.users.find((u) => u.id === userId);
     return user ? user.profile : null;
   }
 
-  public getAllEmployees(): (UserProfile & { leave_balances: LeaveBalance[]; is_pc: boolean })[] {
+  public getAllEmployees(): (UserProfile & { leave_balances: LeaveBalance[]; is_pc: boolean; is_pc_override: boolean | null })[] {
     return this.users.map((u) => {
       const balances = this.leaveBalances.filter((b) => b.employee_id === u.id);
       return {
         ...u.profile,
         is_pc: isProgramCoordinator(u.profile),
+        is_pc_override: typeof u.profile.is_pc === 'boolean' ? u.profile.is_pc : null,
         leave_balances: balances,
       };
     });
@@ -551,7 +555,8 @@ export class HRDatabase {
       if (key in updates) throw new Error('This account field cannot be changed.');
     }
     updates = Object.fromEntries(Object.entries(updates || {}).filter(([key]) => key === 'password' || EDITABLE_PROFILE_FIELDS.includes(key))) as typeof updates;
-    if (updates.is_pc !== undefined && typeof updates.is_pc !== 'boolean') throw new Error('Invalid program coordinator setting.');
+    if (updates.is_pc !== undefined && updates.is_pc !== null && typeof updates.is_pc !== 'boolean') throw new Error('Invalid program coordinator setting.');
+    const previousCoordinator = isProgramCoordinator(user.profile);
     for (const field of ['holiday_calendar', 'holiday_region'] as const) {
       if (updates[field] !== undefined && (typeof updates[field] !== 'string' || updates[field].length > 100)) throw new Error('Invalid holiday calendar setting.');
     }
@@ -599,6 +604,9 @@ export class HRDatabase {
       ...profileUpdates,
       updated_at: new Date().toISOString(),
     };
+    if ((user.profile as { is_pc?: boolean | null }).is_pc === null) delete user.profile.is_pc;   // automatic again
+    this.syncCoordinatorFlags(user.id);
+    const coordinatorNow = isProgramCoordinator(user.profile);
 
     let details = `Updated profile information for ${user.profile.full_name}.`;
     if (updates.status && updates.status !== previousStatus) {
@@ -612,6 +620,9 @@ export class HRDatabase {
     }
     if (updates.password !== undefined && updates.password.trim()) {
       details += ` Reset credentials/password.`;
+    }
+    if (coordinatorNow !== previousCoordinator) {
+      details += coordinatorNow ? ' Now counts as a Program Coordinator.' : ' No longer counts as a Program Coordinator.';
     }
 
     this.logAudit({
